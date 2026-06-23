@@ -59,7 +59,7 @@ Ristrutturare la soluzione aggiungendo i tre progetti mancanti e configurando i 
 ## TASK-02 — Modelli di dominio (PlateArchive.Core)
 
 **Priorità:** Alta  
-**Stato:** `[ ]`
+**Stato:** `[x]` — completato 2026-06-23
 
 ### Contesto
 
@@ -209,9 +209,9 @@ public class ClientePiastra
 
 ### Acceptance criteria
 
-- [ ] Tutti i modelli compilano senza warning nullable
-- [ ] Gli enum coprono tutti i valori definiti nell'analisi funzionale
-- [ ] Nessun riferimento a EF Core o a librerie UI in `PlateArchive.Core`
+- [x] Tutti i modelli compilano senza warning nullable
+- [x] Gli enum coprono tutti i valori definiti nell'analisi funzionale
+- [x] Nessun riferimento a EF Core o a librerie UI in `PlateArchive.Core`
 
 ---
 
