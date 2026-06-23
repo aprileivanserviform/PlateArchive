@@ -218,7 +218,7 @@ public class ClientePiastra
 ## TASK-03 — Database e EF Core (PlateArchive.Data)
 
 **Priorità:** Alta  
-**Stato:** `[ ]`
+**Stato:** `[x]` — completato 2026-06-23
 
 ### Contesto
 
@@ -309,11 +309,11 @@ dotnet ef database update --startup-project ../PlateArchive.Wpf
 
 ### Acceptance criteria
 
-- [ ] `dotnet ef migrations add InitialCreate` genera la migrazione senza errori
-- [ ] `dotnet ef database update` crea il file `.db` con tutte le tabelle
-- [ ] Il vincolo `UNIQUE (IdPiastra)` su `Disegni` impedisce fisicamente due disegni per la stessa piastra
-- [ ] Il vincolo `UNIQUE (IdCliente, IdPiastra)` su `ClientePiastra` impedisce duplicati
-- [ ] I repository espongono almeno: `GetByIdAsync`, `GetAllAsync`, `AddAsync`, `UpdateAsync`, `DeleteAsync`
+- [x] `dotnet ef migrations add InitialCreate` genera la migrazione senza errori
+- [x] `dotnet ef database update` crea il file `.db` con tutte le tabelle
+- [x] Il vincolo `UNIQUE (IdPiastra)` su `Disegni` impedisce fisicamente due disegni per la stessa piastra
+- [x] Il vincolo `UNIQUE (IdCliente, IdPiastra)` su `ClientePiastra` impedisce duplicati
+- [x] I repository espongono almeno: `GetByIdAsync`, `GetAllAsync`, `AddAsync`, `UpdateAsync`, `DeleteAsync`
 
 ---
 
