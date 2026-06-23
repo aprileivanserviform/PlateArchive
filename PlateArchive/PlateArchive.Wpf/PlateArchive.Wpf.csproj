@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>PlateArchive.Wpf</RootNamespace>
+    <AssemblyName>PlateArchive.Wpf</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PlateArchive.Core\PlateArchive.Core.csproj" />
+    <ProjectReference Include="..\PlateArchive.Data\PlateArchive.Data.csproj" />
+    <ProjectReference Include="..\PlateArchive.Services\PlateArchive.Services.csproj" />
+  </ItemGroup>
+
+</Project>

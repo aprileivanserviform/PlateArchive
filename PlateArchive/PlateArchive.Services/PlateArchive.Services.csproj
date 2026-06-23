@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>PlateArchive.Services</RootNamespace>
+    <AssemblyName>PlateArchive.Services</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PlateArchive.Core\PlateArchive.Core.csproj" />
+    <ProjectReference Include="..\PlateArchive.Data\PlateArchive.Data.csproj" />
+  </ItemGroup>
+
+</Project>
