@@ -5,6 +5,7 @@ using System.Windows.Input;
 using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
 using PlateArchive.Data.Repositories.Interfaces;
+using PlateArchive.Services;
 using PlateArchive.Wpf.Commands;
 
 namespace PlateArchive.Wpf.ViewModels;
@@ -16,6 +17,7 @@ public class PiastreViewModel : ViewModelBase
     private readonly IClientePiastraRepository   _clientiPiastreRepo;
     private readonly IMacchinaStandardRepository _macchineRepo;
     private readonly IDisegnoRepository          _disegniRepo;
+    private readonly IFileArchivioService        _fileArchivio;
 
     private readonly ObservableCollection<Piastra> _tutti = [];
 
@@ -43,13 +45,15 @@ public class PiastreViewModel : ViewModelBase
         ICompatibilitaRepository    compatRepo,
         IClientePiastraRepository   clientiPiastreRepo,
         IMacchinaStandardRepository macchineRepo,
-        IDisegnoRepository          disegniRepo)
+        IDisegnoRepository          disegniRepo,
+        IFileArchivioService        fileArchivio)
     {
         _piastreRepo        = piastreRepo;
         _compatRepo         = compatRepo;
         _clientiPiastreRepo = clientiPiastreRepo;
         _macchineRepo       = macchineRepo;
         _disegniRepo        = disegniRepo;
+        _fileArchivio       = fileArchivio;
 
         NuovaCommand                    = new RelayCommand(_ => ApriFormNuova());
         ModificaCommand                 = new RelayCommand(_ => ApriFormModifica(),             _ => PiastraSelezionata is not null);
@@ -384,7 +388,11 @@ public class PiastreViewModel : ViewModelBase
 
     public async Task AssociaDisegnoAsync(Piastra piastra, string percorsoFile)
     {
-        var formato = Path.GetExtension(percorsoFile).TrimStart('.').ToUpper();
+        // Copia nella cartella condivisa se configurata; altrimenti usa il percorso originale
+        var percorsoEffettivo = await _fileArchivio.ArchiviaDisegnoAsync(percorsoFile, piastra.CodicePiastra)
+                                ?? percorsoFile;
+
+        var formato = Path.GetExtension(percorsoEffettivo).TrimStart('.').ToUpper();
 
         if (piastra.Disegno is null)
         {
@@ -392,8 +400,8 @@ public class PiastreViewModel : ViewModelBase
             {
                 IdPiastra              = piastra.IdPiastra,
                 CodiceDisegno          = piastra.CodicePiastra,
-                NomeFile               = Path.GetFileName(percorsoFile),
-                PercorsoFile           = percorsoFile,
+                NomeFile               = Path.GetFileName(percorsoEffettivo),
+                PercorsoFile           = percorsoEffettivo,
                 Formato                = formato,
                 Stato                  = StatoDisegno.DaVerificare,
                 DataUltimaModificaFile = DateTime.UtcNow
@@ -403,8 +411,8 @@ public class PiastreViewModel : ViewModelBase
         }
         else
         {
-            piastra.Disegno.NomeFile               = Path.GetFileName(percorsoFile);
-            piastra.Disegno.PercorsoFile           = percorsoFile;
+            piastra.Disegno.NomeFile               = Path.GetFileName(percorsoEffettivo);
+            piastra.Disegno.PercorsoFile           = percorsoEffettivo;
             piastra.Disegno.Formato                = formato;
             piastra.Disegno.DataUltimaModificaFile = DateTime.UtcNow;
             await _disegniRepo.UpdateAsync(piastra.Disegno);
