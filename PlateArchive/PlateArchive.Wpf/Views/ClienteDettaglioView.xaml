@@ -244,11 +244,23 @@
                                               Padding="8,6">
                                         <ComboBox.ItemTemplate>
                                             <DataTemplate>
-                                                <TextBlock>
-                                                    <Run Text="{Binding CodicePiastra}" FontWeight="SemiBold"/>
-                                                    <Run Text=" — "/>
-                                                    <Run Text="{Binding Descrizione}"/>
-                                                </TextBlock>
+                                                <DockPanel>
+                                                    <!-- Badge verde "compatibile" solo per le piastre abbinate alle macchine del cliente -->
+                                                    <Border DockPanel.Dock="Left"
+                                                            Background="#2E7D32" CornerRadius="2"
+                                                            Padding="5,1" Margin="0,0,7,0"
+                                                            Visibility="{Binding IsCompatibile, Converter={StaticResource BoolToVis}}"
+                                                            VerticalAlignment="Center">
+                                                        <TextBlock Text="✓ compatibile"
+                                                                   FontSize="9" FontWeight="SemiBold"
+                                                                   Foreground="White"/>
+                                                    </Border>
+                                                    <TextBlock VerticalAlignment="Center">
+                                                        <Run Text="{Binding Piastra.CodicePiastra}" FontWeight="SemiBold"/>
+                                                        <Run Text=" — "/>
+                                                        <Run Text="{Binding Piastra.Descrizione}"/>
+                                                    </TextBlock>
+                                                </DockPanel>
                                             </DataTemplate>
                                         </ComboBox.ItemTemplate>
                                     </ComboBox>

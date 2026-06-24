@@ -13,6 +13,8 @@ namespace PlateArchive.Wpf.ViewModels;
 
 public record CompatibilitaRow(string NomeMacchina, string CodicePiastra, string? DescrizionePiastra, bool Attiva);
 
+public record PiastraOpzione(Piastra Piastra, bool IsCompatibile);
+
 public class ClienteDettaglioViewModel : ViewModelBase
 {
     private readonly IClienteRepository          _clienteRepo;
@@ -34,7 +36,7 @@ public class ClienteDettaglioViewModel : ViewModelBase
 
     // Form piastra
     private bool _isAggiungiPiastraVisible;
-    private Piastra? _piastraSelezionata;
+    private PiastraOpzione? _piastraSelezionata;
     private ClienteMacchina? _macchinaPerPiastra;
     private string? _errorePiastraEsistente;
     private string? _erroreDisegno;
@@ -133,7 +135,7 @@ public class ClienteDettaglioViewModel : ViewModelBase
     public ObservableCollection<ClientePiastra>    Piastre             { get; } = [];
     public ObservableCollection<CompatibilitaRow>  Compatibilita       { get; } = [];
     public ObservableCollection<MacchinaStandard>  MacchineDisponibili { get; } = [];
-    public ObservableCollection<Piastra>           PiastreDisponibili  { get; } = [];
+    public ObservableCollection<PiastraOpzione>    PiastreDisponibili  { get; } = [];
 
     // Form piastra
     public bool IsAggiungiPiastraVisible
@@ -142,7 +144,7 @@ public class ClienteDettaglioViewModel : ViewModelBase
         set => SetField(ref _isAggiungiPiastraVisible, value);
     }
 
-    public Piastra? PiastraSelezionata
+    public PiastraOpzione? PiastraSelezionata
     {
         get => _piastraSelezionata;
         set => SetField(ref _piastraSelezionata, value);
@@ -269,16 +271,33 @@ public class ClienteDettaglioViewModel : ViewModelBase
 
     private async Task AprirFormAggiungiPiastraAsync()
     {
-        var tutte = await _piastraRepo.GetAllAsync();
+        // Raccoglie gli IdPiastra compatibili con qualsiasi macchina del cliente
+        var idCompatibili = new HashSet<int>();
+        foreach (var cm in Macchine)
+        {
+            var comp = await _compatRepo.GetByMacchinaAsync(cm.IdMacchinaStandard);
+            foreach (var c in comp)
+                idCompatibili.Add(c.IdPiastra);
+        }
+
+        var tutte    = await _piastraRepo.GetAllAsync();
         var associate = Piastre.Select(cp => cp.IdPiastra).ToHashSet();
 
         PiastreDisponibili.Clear();
-        foreach (var p in tutte.Where(p => !associate.Contains(p.IdPiastra)).OrderBy(p => p.CodicePiastra))
-            PiastreDisponibili.Add(p);
 
-        PiastraSelezionata  = null;
-        MacchinaPerPiastra  = null;
-        ErrorePiastraEsistente = null;
+        // Compatibili prima (badge visivo), poi le altre — entrambi ordinati per codice
+        var disponibili = tutte
+            .Where(p => !associate.Contains(p.IdPiastra))
+            .Select(p => new PiastraOpzione(p, idCompatibili.Contains(p.IdPiastra)))
+            .OrderByDescending(o => o.IsCompatibile)
+            .ThenBy(o => o.Piastra.CodicePiastra);
+
+        foreach (var po in disponibili)
+            PiastreDisponibili.Add(po);
+
+        PiastraSelezionata       = null;
+        MacchinaPerPiastra       = null;
+        ErrorePiastraEsistente   = null;
         IsAggiungiPiastraVisible = true;
     }
 
@@ -286,7 +305,9 @@ public class ClienteDettaglioViewModel : ViewModelBase
     {
         if (PiastraSelezionata is null || Cliente is null) return;
 
-        if (await _piastreRepo.ExistsAsync(Cliente.IdCliente, PiastraSelezionata.IdPiastra))
+        var idPiastra = PiastraSelezionata.Piastra.IdPiastra;
+
+        if (await _piastreRepo.ExistsAsync(Cliente.IdCliente, idPiastra))
         {
             ErrorePiastraEsistente = "Questa piastra è già associata al cliente.";
             return;
@@ -295,7 +316,7 @@ public class ClienteDettaglioViewModel : ViewModelBase
         await _piastreRepo.AddAsync(new ClientePiastra
         {
             IdCliente         = Cliente.IdCliente,
-            IdPiastra         = PiastraSelezionata.IdPiastra,
+            IdPiastra         = idPiastra,
             IdClienteMacchina = MacchinaPerPiastra?.IdClienteMacchina,
             Stato             = StatoClientePiastra.Attiva
         });
