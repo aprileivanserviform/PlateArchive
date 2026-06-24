@@ -26,6 +26,14 @@ public class ClientePiastraRepository(PlateArchiveDbContext db) : IClientePiastr
             .OrderBy(cp => cp.Piastra.CodicePiastra)
             .ToListAsync();
 
+    public async Task<IEnumerable<ClientePiastra>> GetByPiastraAsync(int idPiastra) =>
+        await db.ClientiPiastre
+            .Include(cp => cp.Cliente)
+            .Include(cp => cp.ClienteMacchina).ThenInclude(cm => cm!.MacchinaStandard)
+            .Where(cp => cp.IdPiastra == idPiastra)
+            .OrderBy(cp => cp.Cliente.RagioneSociale)
+            .ToListAsync();
+
     public async Task<bool> ExistsAsync(int idCliente, int idPiastra) =>
         await db.ClientiPiastre.AnyAsync(cp => cp.IdCliente == idCliente && cp.IdPiastra == idPiastra);
 
