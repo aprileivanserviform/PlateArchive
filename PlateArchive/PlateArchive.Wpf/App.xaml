@@ -10,6 +10,9 @@
         <DataTemplate DataType="{x:Type vm:ClientiViewModel}">
             <views:ClientiView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ClienteDettaglioViewModel}">
+            <views:ClienteDettaglioView/>
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:PiastreViewModel}">
             <views:PiastreView/>
         </DataTemplate>

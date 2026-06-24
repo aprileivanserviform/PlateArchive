@@ -36,6 +36,7 @@ public partial class App : Application
         // ViewModels (Transient: nuova istanza a ogni navigazione via scope)
         services.AddTransient<DashboardViewModel>();
         services.AddTransient<ClientiViewModel>();
+        services.AddTransient<ClienteDettaglioViewModel>();
         services.AddTransient<PiastreViewModel>();
         services.AddTransient<MacchineViewModel>();
         services.AddTransient<DisegniViewModel>();
