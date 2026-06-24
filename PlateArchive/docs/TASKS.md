@@ -554,7 +554,7 @@ ViewModels/
 ## TASK-07 — Schermata Macchine Standard
 
 **Priorità:** Alta  
-**Stato:** `[ ]`
+**Stato:** `[x]` — completato 2026-06-24
 
 ### Contesto
 
@@ -606,12 +606,12 @@ Campi opzionali: `Famiglia`, `Formato`, `Versione`, `Produttore`, `Note`
 
 ### Acceptance criteria
 
-- [ ] La ricerca filtra su codice, nome e famiglia in tempo reale
-- [ ] Il checkbox "Solo attive" nasconde le macchine con `Attiva = false`
-- [ ] Durante l'inserimento, l'avviso di duplicato potenziale appare entro 300ms dalla digitazione (debounce)
-- [ ] La lista piastre compatibili mostra `CodicePiastra` e `Descrizione`
-- [ ] La lista clienti associati mostra `CodiceClienteGestionale` e `RagioneSociale`
-- [ ] La disabilitazione di una macchina (`Attiva = false`) non cancella le associazioni esistenti
+- [x] La ricerca filtra su codice, nome e famiglia in tempo reale
+- [x] Il checkbox "Solo attive" nasconde le macchine con `Attiva = false`
+- [x] Durante l'inserimento, l'avviso di duplicato potenziale appare entro 300ms dalla digitazione (debounce)
+- [x] La lista piastre compatibili mostra `CodicePiastra` e `Descrizione`
+- [x] La lista clienti associati mostra `CodiceClienteGestionale` e `RagioneSociale`
+- [x] La disabilitazione di una macchina (`Attiva = false`) non cancella le associazioni esistenti
 
 ---
 
