@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Windows.Input;
 using PlateArchive.Core.Enums;
@@ -35,6 +37,7 @@ public class ClienteDettaglioViewModel : ViewModelBase
     private Piastra? _piastraSelezionata;
     private ClienteMacchina? _macchinaPerPiastra;
     private string? _errorePiastraEsistente;
+    private string? _erroreDisegno;
 
     public ClienteDettaglioViewModel(
         IClienteRepository          clienteRepo,
@@ -84,7 +87,7 @@ public class ClienteDettaglioViewModel : ViewModelBase
         AnnullaAggiungiPiastraCommand = new RelayCommand(_ => ChiudiFormPiastra());
 
         AprirDisegnoCommand = new RelayCommand(
-            _ => { /* TASK-12: apertura file */ },
+            p => AprirDisegno((ClientePiastra)p!),
             p => p is ClientePiastra cp && !string.IsNullOrWhiteSpace(cp.Piastra?.Disegno?.PercorsoFile));
     }
 
@@ -158,6 +161,14 @@ public class ClienteDettaglioViewModel : ViewModelBase
     }
 
     public bool IsErrorePiastraVisible => !string.IsNullOrEmpty(_errorePiastraEsistente);
+
+    public string? ErroreDisegno
+    {
+        get => _erroreDisegno;
+        set { if (SetField(ref _erroreDisegno, value)) OnPropertyChanged(nameof(IsErroreDisegnoVisible)); }
+    }
+
+    public bool IsErroreDisegnoVisible => !string.IsNullOrEmpty(_erroreDisegno);
 
     // --- Comandi ---
 
@@ -306,5 +317,28 @@ public class ClienteDettaglioViewModel : ViewModelBase
     {
         await _piastreRepo.DeleteAsync(piastra.IdClientePiastra);
         Piastre.Remove(piastra);
+    }
+
+    private void AprirDisegno(ClientePiastra cp)
+    {
+        var percorso = cp.Piastra?.Disegno?.PercorsoFile;
+        if (string.IsNullOrEmpty(percorso)) return;
+
+        ErroreDisegno = null;
+
+        if (!File.Exists(percorso))
+        {
+            ErroreDisegno = $"File non trovato: {percorso}";
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(percorso) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            ErroreDisegno = $"Impossibile aprire il file: {ex.Message}";
+        }
     }
 }

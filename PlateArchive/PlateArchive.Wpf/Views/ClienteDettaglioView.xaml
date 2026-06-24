@@ -282,6 +282,12 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- Errore apertura file disegno -->
+                    <TextBlock Text="{Binding ErroreDisegno}"
+                               Foreground="#C62828" FontSize="12"
+                               Margin="0,0,0,6" TextWrapping="Wrap"
+                               Visibility="{Binding IsErroreDisegnoVisible, Converter={StaticResource BoolToVis}}"/>
+
                     <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1">
                         <DataGrid ItemsSource="{Binding Piastre}"
                                   AutoGenerateColumns="False" CanUserAddRows="False"

@@ -462,6 +462,14 @@
                                 </Border>
                             </Grid>
 
+                            <!-- Errore apertura file disegno -->
+                            <Border Background="#FFEBEE" BorderBrush="#EF9A9A" BorderThickness="1"
+                                    Padding="10,8" Margin="0,0,0,12"
+                                    Visibility="{Binding IsErroreDisegnoVisible, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="{Binding ErroreDisegno}"
+                                           TextWrapping="Wrap" FontSize="11" Foreground="#C62828"/>
+                            </Border>
+
                             <!-- Sezione Macchine compatibili -->
                             <DockPanel Margin="0,0,0,6">
                                 <Button DockPanel.Dock="Right"

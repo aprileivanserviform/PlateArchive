@@ -42,6 +42,7 @@ public class PiastreViewModel : ViewModelBase
     private string       _formSpessore        = string.Empty;
     private string       _formNote            = string.Empty;
     private string?      _erroreCodiceDuplicato;
+    private string?      _erroreDisegno;
     private string?      _percorsoDisegnoPendente;
 
     // Aggiungi macchina compatibile
@@ -117,6 +118,7 @@ public class PiastreViewModel : ViewModelBase
         {
             if (SetField(ref _piastraSelezionata, value))
             {
+                ErroreDisegno = null;
                 OnPropertyChanged(nameof(IsDetailVisible));
                 OnPropertyChanged(nameof(IsDisegnoPresente));
                 OnPropertyChanged(nameof(IsDisegnoAssente));
@@ -126,6 +128,18 @@ public class PiastreViewModel : ViewModelBase
             }
         }
     }
+
+    public string? ErroreDisegno
+    {
+        get => _erroreDisegno;
+        set
+        {
+            if (SetField(ref _erroreDisegno, value))
+                OnPropertyChanged(nameof(IsErroreDisegnoVisible));
+        }
+    }
+
+    public bool IsErroreDisegnoVisible => !string.IsNullOrEmpty(_erroreDisegno);
 
     // ─── Proprietà pannello dettaglio ────────────────────────────
 
@@ -492,11 +506,23 @@ public class PiastreViewModel : ViewModelBase
     {
         var percorso = PiastraSelezionata?.Disegno?.PercorsoFile;
         if (string.IsNullOrEmpty(percorso)) return;
+
+        ErroreDisegno = null;
+
+        if (!File.Exists(percorso))
+        {
+            ErroreDisegno = $"File non trovato: {percorso}";
+            return;
+        }
+
         try
         {
             Process.Start(new ProcessStartInfo(percorso) { UseShellExecute = true });
         }
-        catch { /* file non raggiungibile — TASK-12 gestirà il feedback UI */ }
+        catch (Exception ex)
+        {
+            ErroreDisegno = $"Impossibile aprire il file: {ex.Message}";
+        }
     }
 
     // ─── Associazione disegno via drag & drop ────────────────────
