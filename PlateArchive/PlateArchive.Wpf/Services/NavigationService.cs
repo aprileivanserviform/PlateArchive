@@ -16,11 +16,13 @@ public class NavigationService(IServiceScopeFactory scopeFactory) : INotifyPrope
         private set { _currentViewModel = value; OnPropertyChanged(); }
     }
 
-    public void Navigate<TViewModel>() where TViewModel : ViewModelBase
+    public void Navigate<TViewModel>(Action<TViewModel>? configure = null) where TViewModel : ViewModelBase
     {
         _currentScope?.Dispose();
         _currentScope = scopeFactory.CreateScope();
-        CurrentViewModel = _currentScope.ServiceProvider.GetRequiredService<TViewModel>();
+        var vm = _currentScope.ServiceProvider.GetRequiredService<TViewModel>();
+        configure?.Invoke(vm);
+        CurrentViewModel = vm;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

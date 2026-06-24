@@ -418,7 +418,7 @@ protected override void OnStartup(StartupEventArgs e)
 ## TASK-05 — Dashboard principale
 
 **Priorità:** Media  
-**Stato:** `[ ]`
+**Stato:** `[x]` — completato 2026-06-24
 
 ### Contesto
 
@@ -465,9 +465,9 @@ ViewModels/
 
 ### Acceptance criteria
 
-- [ ] Le tre barre di ricerca rapida navigano alle schermate corrette passando il testo di ricerca
-- [ ] La lista "Ultime piastre" si aggiorna ogni volta che si torna alla Dashboard
-- [ ] I pulsanti rapidi sono visibili e funzionanti (possono aprire schermate vuote negli sprint iniziali)
+- [x] Le tre barre di ricerca rapida navigano alle schermate corrette passando il testo di ricerca
+- [x] La lista "Ultime piastre" si aggiorna ogni volta che si torna alla Dashboard
+- [x] I pulsanti rapidi sono visibili e funzionanti (possono aprire schermate vuote negli sprint iniziali)
 
 ---
 
