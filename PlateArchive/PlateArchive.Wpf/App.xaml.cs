@@ -43,6 +43,14 @@ public partial class App : Application
         var cartellaCondivisa = config["CartellaCondivisaDisegni"] ?? string.Empty;
         services.AddSingleton<IFileArchivioService>(new FileArchivioService(cartellaCondivisa));
 
+        var db2ConnStr = config["Db2:ConnectionString"] ?? string.Empty;
+        var db2Query   = config["Db2:QueryClienti"]     ?? "SELECT CODCLI, RAGSOC, PIVA FROM THIP.CLIENTI_VEN";
+        services.AddTransient<ISincronizzazioneGestionaleService>(sp =>
+            new SincronizzazioneGestionaleService(
+                db2ConnStr,
+                db2Query,
+                sp.GetRequiredService<IClienteRepository>()));
+
         // ViewModels (Transient: nuova istanza a ogni navigazione via scope)
         services.AddTransient<DashboardViewModel>();
         services.AddTransient<ClientiViewModel>();
