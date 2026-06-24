@@ -6,3 +6,8 @@ obj/
 packages/
 *.dll
 *.pdb
+
+# Database SQLite locale (dev)
+*.db
+*.db-shm
+*.db-wal

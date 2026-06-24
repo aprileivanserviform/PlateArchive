@@ -320,7 +320,7 @@ dotnet ef database update --startup-project ../PlateArchive.Wpf
 ## TASK-04 — Infrastruttura MVVM e navigazione (PlateArchive.Wpf)
 
 **Priorità:** Alta  
-**Stato:** `[ ]`
+**Stato:** `[x]` — completato 2026-06-24
 
 ### Contesto
 
@@ -408,10 +408,10 @@ protected override void OnStartup(StartupEventArgs e)
 
 ### Acceptance criteria
 
-- [ ] `RelayCommand` risponde correttamente a `CanExecuteChanged`
-- [ ] `SetField` in `ViewModelBase` notifica il binding solo se il valore cambia effettivamente
-- [ ] La navigazione tra due ViewModel di test funziona aggiornando il `ContentControl` in `MainWindow`
-- [ ] Tutti i servizi e i repository si risolvono correttamente dal container DI all'avvio
+- [x] `RelayCommand` risponde correttamente a `CanExecuteChanged`
+- [x] `SetField` in `ViewModelBase` notifica il binding solo se il valore cambia effettivamente
+- [x] La navigazione tra due ViewModel di test funziona aggiornando il `ContentControl` in `MainWindow`
+- [x] Tutti i servizi e i repository si risolvono correttamente dal container DI all'avvio
 
 ---
 
