@@ -97,6 +97,8 @@ public class PiastreViewModel : ViewModelBase
                 OnPropertyChanged(nameof(IsDetailVisible));
                 OnPropertyChanged(nameof(IsDisegnoPresente));
                 OnPropertyChanged(nameof(IsDisegnoAssente));
+                if (IsFormVisible && IsModifica && value is not null)
+                    ApriFormModifica();
                 _ = LoadDettaglioAsync();
             }
         }

@@ -76,6 +76,8 @@ public class MacchineViewModel : ViewModelBase
             {
                 OnPropertyChanged(nameof(IsDetailVisible));
                 OnPropertyChanged(nameof(ToggleAttivaLabel));
+                if (IsFormVisible && IsModifica && value is not null)
+                    ApriFormModifica();
                 _ = LoadDettaglioAsync();
             }
         }
