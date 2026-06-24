@@ -57,6 +57,14 @@ public partial class App : Application
 
         var provider = services.BuildServiceProvider();
 
+        // Seed dati di esempio (solo se il DB è vuoto)
+        using (var scope = provider.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<PlateArchiveDbContext>();
+            db.Database.EnsureCreated();
+            PlateArchive.Data.DbSeeder.SeedAsync(db).GetAwaiter().GetResult();
+        }
+
         // Navigazione iniziale alla Dashboard
         var navigation = provider.GetRequiredService<NavigationService>();
         navigation.Navigate<DashboardViewModel>();
