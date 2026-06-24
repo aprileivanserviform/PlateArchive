@@ -1,12 +1,284 @@
 <UserControl x:Class="PlateArchive.Wpf.Views.MacchineView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Grid Background="#F5F7FA">
-        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-            <TextBlock Text="Macchine" FontSize="32" FontWeight="Light"
-                       Foreground="#BDBDBD" HorizontalAlignment="Center"/>
-            <TextBlock Text="In costruzione — TASK-07" FontSize="14"
-                       Foreground="#D0D0D0" HorizontalAlignment="Center" Margin="0,8,0,0"/>
-        </StackPanel>
-    </Grid>
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <Style x:Key="PrimaryBtn" TargetType="Button">
+            <Setter Property="Background"   Value="#1E2A3B"/>
+            <Setter Property="Foreground"   Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding"      Value="14,7"/>
+            <Setter Property="Cursor"       Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#263340"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="#BDBDBD"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SecondaryBtn" TargetType="Button">
+            <Setter Property="Padding"         Value="12,6"/>
+            <Setter Property="FontSize"        Value="12"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="BorderBrush"     Value="#BDBDBD"/>
+            <Setter Property="Background"      Value="White"/>
+        </Style>
+
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="FontSize"   Value="11"/>
+            <Setter Property="Foreground" Value="#757575"/>
+            <Setter Property="Margin"     Value="0,0,0,3"/>
+        </Style>
+        <Style x:Key="FieldBox" TargetType="TextBox">
+            <Setter Property="Padding"     Value="7,5"/>
+            <Setter Property="BorderBrush" Value="#BDBDBD"/>
+            <Setter Property="Margin"      Value="0,0,0,10"/>
+        </Style>
+    </UserControl.Resources>
+
+    <DockPanel Background="#F0F2F5">
+
+        <!-- ── Header ─────────────────────────────────────────── -->
+        <Border DockPanel.Dock="Top" Background="White" Padding="24,14"
+                BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+            <DockPanel>
+                <Button DockPanel.Dock="Right"
+                        Content="+ Nuova macchina"
+                        Command="{Binding NuovaCommand}"
+                        Style="{StaticResource PrimaryBtn}"/>
+
+                <StackPanel DockPanel.Dock="Left">
+                    <TextBlock Text="Macchine Standard"
+                               FontSize="20" FontWeight="SemiBold"
+                               Foreground="#212121" Margin="0,0,0,10"/>
+                    <DockPanel>
+                        <CheckBox DockPanel.Dock="Right"
+                                  Content="Solo attive"
+                                  IsChecked="{Binding SoloAttive}"
+                                  VerticalAlignment="Center" Margin="16,0,0,0"/>
+                        <TextBox Text="{Binding FiltroRicerca, UpdateSourceTrigger=PropertyChanged}"
+                                 Padding="8,6" BorderBrush="#BDBDBD"
+                                 FontSize="13"/>
+                    </DockPanel>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- ── Body ───────────────────────────────────────────── -->
+        <Grid Margin="24,20,24,24">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="360"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Lista macchine -->
+            <Border Grid.Column="0" Background="White"
+                    BorderBrush="#E0E0E0" BorderThickness="1">
+                <DataGrid ItemsSource="{Binding MacchineFiltrate}"
+                          SelectedItem="{Binding MacchinaSelezionata, Mode=TwoWay}"
+                          AutoGenerateColumns="False" CanUserAddRows="False"
+                          IsReadOnly="True" HeadersVisibility="Column"
+                          SelectionMode="Single" GridLinesVisibility="Horizontal"
+                          Background="White" AlternatingRowBackground="#FAFAFA"
+                          BorderThickness="0" RowHeight="34" ColumnHeaderHeight="34">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Codice"
+                                           Binding="{Binding CodiceMacchina}"
+                                           Width="160"/>
+                        <DataGridTextColumn Header="Nome"
+                                           Binding="{Binding NomeMacchina}"
+                                           Width="*"/>
+                        <DataGridTextColumn Header="Famiglia"
+                                           Binding="{Binding Famiglia}"
+                                           Width="100"/>
+                        <DataGridTextColumn Header="Formato"
+                                           Binding="{Binding Formato}"
+                                           Width="70"/>
+                        <DataGridCheckBoxColumn Header="Att."
+                                               Binding="{Binding Attiva}"
+                                               Width="45"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+
+            <!-- Pannello destra: dettaglio OPPURE form -->
+            <Grid Grid.Column="2">
+
+                <!-- ── Form creazione/modifica ─────────────────── -->
+                <Border Visibility="{Binding IsFormVisible, Converter={StaticResource BoolToVis}}"
+                        Background="White" BorderBrush="#E0E0E0" BorderThickness="1"
+                        Padding="20" VerticalAlignment="Top">
+                    <StackPanel>
+                        <TextBlock Text="{Binding FormTitolo}"
+                                   FontSize="14" FontWeight="SemiBold" Margin="0,0,0,16"/>
+
+                        <!-- Avviso duplicato -->
+                        <Border Background="#FFF9C4" BorderBrush="#F9A825" BorderThickness="1"
+                                Padding="10,8" Margin="0,0,0,12"
+                                Visibility="{Binding IsAvvisoDuplicatoVisible, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="{Binding AvvisoDuplicato}"
+                                       TextWrapping="Wrap" FontSize="12" Foreground="#795548"/>
+                        </Border>
+
+                        <TextBlock Text="Codice macchina *" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FormCodiceMacchina, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource FieldBox}"/>
+
+                        <TextBlock Text="Nome macchina *" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FormNomeMacchina, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource FieldBox}"/>
+
+                        <TextBlock Text="Famiglia" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FormFamiglia, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource FieldBox}"/>
+
+                        <TextBlock Text="Formato" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FormFormato, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource FieldBox}"/>
+
+                        <TextBlock Text="Versione" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FormVersione, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource FieldBox}"/>
+
+                        <TextBlock Text="Produttore" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FormProduttore, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource FieldBox}"/>
+
+                        <TextBlock Text="Note" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FormNote, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource FieldBox}"
+                                 AcceptsReturn="True" Height="60"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <Button Content="Salva"
+                                    Command="{Binding SalvaCommand}"
+                                    Style="{StaticResource PrimaryBtn}"
+                                    Margin="0,0,10,0"/>
+                            <Button Content="Annulla"
+                                    Command="{Binding AnnullaFormCommand}"
+                                    Style="{StaticResource SecondaryBtn}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- ── Dettaglio macchina selezionata ──────────── -->
+                <Border Visibility="{Binding IsDetailVisible, Converter={StaticResource BoolToVis}}"
+                        Background="White" BorderBrush="#E0E0E0" BorderThickness="1"
+                        Padding="20">
+                    <DockPanel>
+                        <!-- Header dettaglio -->
+                        <Border DockPanel.Dock="Top" Margin="0,0,0,16">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Left">
+                                    <TextBlock Text="{Binding MacchinaSelezionata.NomeMacchina}"
+                                               FontSize="15" FontWeight="SemiBold" Foreground="#212121"/>
+                                    <TextBlock Text="{Binding MacchinaSelezionata.CodiceMacchina}"
+                                               FontSize="11" Foreground="#757575" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal"
+                                            VerticalAlignment="Top">
+                                    <Button Content="Modifica"
+                                            Command="{Binding ModificaCommand}"
+                                            Style="{StaticResource SecondaryBtn}"
+                                            Margin="0,0,8,0"/>
+                                    <Button Content="{Binding ToggleAttivaLabel}"
+                                            Command="{Binding ToggleAttivaCommand}"
+                                            Style="{StaticResource SecondaryBtn}"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+
+                        <!-- Info base -->
+                        <Border DockPanel.Dock="Top" Margin="0,0,0,16"
+                                Background="#F5F7FA" Padding="12,10">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Famiglia" FontSize="10" Foreground="#9E9E9E"/>
+                                    <TextBlock Text="{Binding MacchinaSelezionata.Famiglia, FallbackValue='—'}"
+                                               FontSize="13" Margin="0,0,0,8"/>
+                                    <TextBlock Text="Formato" FontSize="10" Foreground="#9E9E9E"/>
+                                    <TextBlock Text="{Binding MacchinaSelezionata.Formato, FallbackValue='—'}"
+                                               FontSize="13"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Text="Versione" FontSize="10" Foreground="#9E9E9E"/>
+                                    <TextBlock Text="{Binding MacchinaSelezionata.Versione, FallbackValue='—'}"
+                                               FontSize="13" Margin="0,0,0,8"/>
+                                    <TextBlock Text="Produttore" FontSize="10" Foreground="#9E9E9E"/>
+                                    <TextBlock Text="{Binding MacchinaSelezionata.Produttore, FallbackValue='—'}"
+                                               FontSize="13"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Piastre compatibili -->
+                        <TextBlock DockPanel.Dock="Top"
+                                   Text="Piastre compatibili"
+                                   FontWeight="SemiBold" FontSize="12" Foreground="#424242"
+                                   Margin="0,0,0,6"/>
+                        <Border DockPanel.Dock="Top" BorderBrush="#E0E0E0" BorderThickness="1"
+                                Margin="0,0,0,16" MaxHeight="180">
+                            <DataGrid ItemsSource="{Binding PiastreCompatibili}"
+                                      AutoGenerateColumns="False" CanUserAddRows="False"
+                                      IsReadOnly="True" HeadersVisibility="Column"
+                                      Background="White" BorderThickness="0"
+                                      RowHeight="28" ColumnHeaderHeight="28">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Codice"
+                                                       Binding="{Binding Piastra.CodicePiastra}"
+                                                       Width="120"/>
+                                    <DataGridTextColumn Header="Descrizione"
+                                                       Binding="{Binding Piastra.Descrizione}"
+                                                       Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Border>
+
+                        <!-- Clienti associati -->
+                        <TextBlock DockPanel.Dock="Top"
+                                   Text="Clienti che la possiedono"
+                                   FontWeight="SemiBold" FontSize="12" Foreground="#424242"
+                                   Margin="0,0,0,6"/>
+                        <Border DockPanel.Dock="Top" BorderBrush="#E0E0E0" BorderThickness="1"
+                                MaxHeight="150">
+                            <DataGrid ItemsSource="{Binding ClientiAssociati}"
+                                      AutoGenerateColumns="False" CanUserAddRows="False"
+                                      IsReadOnly="True" HeadersVisibility="Column"
+                                      Background="White" BorderThickness="0"
+                                      RowHeight="28" ColumnHeaderHeight="28">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Ragione Sociale"
+                                                       Binding="{Binding Cliente.RagioneSociale}"
+                                                       Width="*"/>
+                                    <DataGridTextColumn Header="Matricola"
+                                                       Binding="{Binding Matricola}"
+                                                       Width="90"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Border>
+                    </DockPanel>
+                </Border>
+
+            </Grid>
+        </Grid>
+    </DockPanel>
 </UserControl>
