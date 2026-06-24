@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Windows.Input;
 using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
@@ -14,6 +15,7 @@ public class PiastreViewModel : ViewModelBase
     private readonly ICompatibilitaRepository    _compatRepo;
     private readonly IClientePiastraRepository   _clientiPiastreRepo;
     private readonly IMacchinaStandardRepository _macchineRepo;
+    private readonly IDisegnoRepository          _disegniRepo;
 
     private readonly ObservableCollection<Piastra> _tutti = [];
 
@@ -40,12 +42,14 @@ public class PiastreViewModel : ViewModelBase
         IPiastraRepository          piastreRepo,
         ICompatibilitaRepository    compatRepo,
         IClientePiastraRepository   clientiPiastreRepo,
-        IMacchinaStandardRepository macchineRepo)
+        IMacchinaStandardRepository macchineRepo,
+        IDisegnoRepository          disegniRepo)
     {
         _piastreRepo        = piastreRepo;
         _compatRepo         = compatRepo;
         _clientiPiastreRepo = clientiPiastreRepo;
         _macchineRepo       = macchineRepo;
+        _disegniRepo        = disegniRepo;
 
         NuovaCommand                    = new RelayCommand(_ => ApriFormNuova());
         ModificaCommand                 = new RelayCommand(_ => ApriFormModifica(),             _ => PiastraSelezionata is not null);
@@ -374,6 +378,44 @@ public class PiastreViewModel : ViewModelBase
             Process.Start(new ProcessStartInfo(percorso) { UseShellExecute = true });
         }
         catch { /* file non raggiungibile — TASK-12 gestirà il feedback UI */ }
+    }
+
+    // ─── Associazione disegno via drag & drop ────────────────────
+
+    public async Task AssociaDisegnoAsync(Piastra piastra, string percorsoFile)
+    {
+        var formato = Path.GetExtension(percorsoFile).TrimStart('.').ToUpper();
+
+        if (piastra.Disegno is null)
+        {
+            var nuovoDisegno = new Disegno
+            {
+                IdPiastra              = piastra.IdPiastra,
+                CodiceDisegno          = piastra.CodicePiastra,
+                NomeFile               = Path.GetFileName(percorsoFile),
+                PercorsoFile           = percorsoFile,
+                Formato                = formato,
+                Stato                  = StatoDisegno.DaVerificare,
+                DataUltimaModificaFile = DateTime.UtcNow
+            };
+            await _disegniRepo.AddAsync(nuovoDisegno);
+            piastra.Disegno = nuovoDisegno;
+        }
+        else
+        {
+            piastra.Disegno.NomeFile               = Path.GetFileName(percorsoFile);
+            piastra.Disegno.PercorsoFile           = percorsoFile;
+            piastra.Disegno.Formato                = formato;
+            piastra.Disegno.DataUltimaModificaFile = DateTime.UtcNow;
+            await _disegniRepo.UpdateAsync(piastra.Disegno);
+        }
+
+        if (PiastraSelezionata == piastra)
+        {
+            OnPropertyChanged(nameof(PiastraSelezionata));
+            OnPropertyChanged(nameof(IsDisegnoPresente));
+            OnPropertyChanged(nameof(IsDisegnoAssente));
+        }
     }
 
     private static string? N(string s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();

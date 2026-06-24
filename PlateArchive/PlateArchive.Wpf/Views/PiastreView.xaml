@@ -104,28 +104,45 @@
             <!-- Lista piastre -->
             <Border Grid.Column="0" Background="White"
                     BorderBrush="#E0E0E0" BorderThickness="1">
-                <DataGrid ItemsSource="{Binding PiastreFiltrate}"
-                          SelectedItem="{Binding PiastraSelezionata, Mode=TwoWay}"
-                          AutoGenerateColumns="False" CanUserAddRows="False"
-                          IsReadOnly="True" HeadersVisibility="Column"
-                          SelectionMode="Single" GridLinesVisibility="Horizontal"
-                          Background="White" AlternatingRowBackground="#FAFAFA"
-                          BorderThickness="0" RowHeight="34" ColumnHeaderHeight="34">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Codice"
-                                           Binding="{Binding CodicePiastra}"
-                                           Width="140"/>
-                        <DataGridTextColumn Header="Art. Gestionale"
-                                           Binding="{Binding CodiceArticoloGestionale}"
-                                           Width="130"/>
-                        <DataGridTextColumn Header="Descrizione"
-                                           Binding="{Binding Descrizione}"
-                                           Width="*"/>
-                        <DataGridTextColumn Header="Stato"
-                                           Binding="{Binding Stato}"
-                                           Width="90"/>
-                    </DataGrid.Columns>
-                </DataGrid>
+                <Grid>
+                    <DataGrid x:Name="PiastreDataGrid"
+                              ItemsSource="{Binding PiastreFiltrate}"
+                              SelectedItem="{Binding PiastraSelezionata, Mode=TwoWay}"
+                              AutoGenerateColumns="False" CanUserAddRows="False"
+                              IsReadOnly="True" HeadersVisibility="Column"
+                              SelectionMode="Single" GridLinesVisibility="Horizontal"
+                              Background="White" AlternatingRowBackground="#FAFAFA"
+                              BorderThickness="0" RowHeight="34" ColumnHeaderHeight="34"
+                              AllowDrop="True"
+                              DragOver="DataGrid_DragOver"
+                              DragLeave="DataGrid_DragLeave"
+                              Drop="DataGrid_Drop">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Codice"
+                                               Binding="{Binding CodicePiastra}"
+                                               Width="140"/>
+                            <DataGridTextColumn Header="Art. Gestionale"
+                                               Binding="{Binding CodiceArticoloGestionale}"
+                                               Width="130"/>
+                            <DataGridTextColumn Header="Descrizione"
+                                               Binding="{Binding Descrizione}"
+                                               Width="*"/>
+                            <DataGridTextColumn Header="Stato"
+                                               Binding="{Binding Stato}"
+                                               Width="90"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <!-- Overlay drag & drop -->
+                    <Border x:Name="DataGridDropOverlay"
+                            Visibility="Collapsed" IsHitTestVisible="False"
+                            Background="#CC1565C0" BorderBrush="#1565C0" BorderThickness="3">
+                        <TextBlock Text="Rilascia il file sulla piastra"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Foreground="White" FontSize="14" TextWrapping="Wrap"
+                                   Padding="20" FontWeight="SemiBold"/>
+                    </Border>
+                </Grid>
             </Border>
 
             <!-- Pannello destra: dettaglio OPPURE form -->
@@ -237,40 +254,59 @@
                             <!-- Sezione Disegno -->
                             <TextBlock Text="Disegno" Style="{StaticResource SectionTitle}"/>
 
-                            <!-- Disegno presente -->
-                            <Border Visibility="{Binding IsDisegnoPresente, Converter={StaticResource BoolToVis}}"
-                                    Background="#F5F7FA" Padding="12,10" Margin="0,0,0,16">
-                                <DockPanel>
-                                    <Button DockPanel.Dock="Right"
-                                            Content="Apri file"
-                                            Command="{Binding AprirDisegnoCommand}"
-                                            Style="{StaticResource SecondaryBtn}"
-                                            VerticalAlignment="Center"
-                                            Margin="8,0,0,0"/>
-                                    <StackPanel DockPanel.Dock="Left">
-                                        <TextBlock Text="{Binding PiastraSelezionata.Disegno.CodiceDisegno}"
-                                                   FontSize="13" FontWeight="SemiBold"/>
-                                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                            <TextBlock Text="Rev. " FontSize="11" Foreground="#757575"/>
-                                            <TextBlock Text="{Binding PiastraSelezionata.Disegno.Revisione, FallbackValue='—'}"
-                                                       FontSize="11" Foreground="#757575"/>
-                                            <TextBlock Text=" · " FontSize="11" Foreground="#757575"/>
-                                            <TextBlock Text="{Binding PiastraSelezionata.Disegno.Stato}"
-                                                       FontSize="11" Foreground="#757575"/>
-                                        </StackPanel>
-                                        <TextBlock Text="{Binding PiastraSelezionata.Disegno.PercorsoFile}"
-                                                   FontSize="10" Foreground="#9E9E9E" Margin="0,2,0,0"
-                                                   TextTrimming="CharacterEllipsis"/>
-                                    </StackPanel>
-                                </DockPanel>
-                            </Border>
+                            <!-- Drop zone disegno (file DWG/DXF/PDF) -->
+                            <Grid Margin="0,0,0,16"
+                                  AllowDrop="True"
+                                  DragOver="DisegnoSection_DragOver"
+                                  DragLeave="DisegnoSection_DragLeave"
+                                  Drop="DisegnoSection_Drop">
+                                <StackPanel>
+                                    <!-- Disegno presente -->
+                                    <Border Visibility="{Binding IsDisegnoPresente, Converter={StaticResource BoolToVis}}"
+                                            Background="#F5F7FA" Padding="12,10">
+                                        <DockPanel>
+                                            <Button DockPanel.Dock="Right"
+                                                    Content="Apri file"
+                                                    Command="{Binding AprirDisegnoCommand}"
+                                                    Style="{StaticResource SecondaryBtn}"
+                                                    VerticalAlignment="Center"
+                                                    Margin="8,0,0,0"/>
+                                            <StackPanel DockPanel.Dock="Left">
+                                                <TextBlock Text="{Binding PiastraSelezionata.Disegno.CodiceDisegno}"
+                                                           FontSize="13" FontWeight="SemiBold"/>
+                                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                                    <TextBlock Text="Rev. " FontSize="11" Foreground="#757575"/>
+                                                    <TextBlock Text="{Binding PiastraSelezionata.Disegno.Revisione, FallbackValue='—'}"
+                                                               FontSize="11" Foreground="#757575"/>
+                                                    <TextBlock Text=" · " FontSize="11" Foreground="#757575"/>
+                                                    <TextBlock Text="{Binding PiastraSelezionata.Disegno.Stato}"
+                                                               FontSize="11" Foreground="#757575"/>
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding PiastraSelezionata.Disegno.PercorsoFile}"
+                                                           FontSize="10" Foreground="#9E9E9E" Margin="0,2,0,0"
+                                                           TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </Border>
 
-                            <!-- Disegno assente -->
-                            <Border Visibility="{Binding IsDisegnoAssente, Converter={StaticResource BoolToVis}}"
-                                    Background="#F5F7FA" Padding="12,10" Margin="0,0,0,16">
-                                <TextBlock Text="Nessun disegno associato."
-                                           FontSize="12" Foreground="#9E9E9E"/>
-                            </Border>
+                                    <!-- Disegno assente -->
+                                    <Border Visibility="{Binding IsDisegnoAssente, Converter={StaticResource BoolToVis}}"
+                                            Background="#F5F7FA" Padding="12,10" MinHeight="44">
+                                        <TextBlock Text="Nessun disegno associato. Trascina qui un file DWG/DXF/PDF."
+                                                   FontSize="12" Foreground="#9E9E9E"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- Overlay drag attivo -->
+                                <Border x:Name="DisegnoSectionOverlay"
+                                        Visibility="Collapsed" IsHitTestVisible="False"
+                                        Background="#CC1565C0" BorderBrush="#1565C0" BorderThickness="2">
+                                    <TextBlock Text="Rilascia per associare il disegno"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Foreground="White" FontSize="12" FontWeight="SemiBold"/>
+                                </Border>
+                            </Grid>
 
                             <!-- Sezione Macchine compatibili -->
                             <DockPanel Margin="0,0,0,6">
