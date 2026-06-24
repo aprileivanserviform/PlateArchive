@@ -683,7 +683,7 @@ Flusso guidato:
 ## TASK-09 — Schermata Disegni
 
 **Priorità:** Media  
-**Stato:** `[ ]`
+**Stato:** `[x]` — completato 2026-06-24
 
 ### Contesto
 
@@ -725,11 +725,11 @@ ViewModels/
 
 ### Acceptance criteria
 
-- [ ] La ricerca filtra per `CodiceDisegno` e `CodicePiastra` associata
-- [ ] Il filtro stato mostra i disegni "Da verificare" in cima o evidenziati
-- [ ] Il pulsante `[📂]` apre un `OpenFileDialog` e popola il campo percorso
-- [ ] Il pulsante "Apri file" usa `Process.Start` per aprire il file con l'applicazione predefinita
-- [ ] Se il file non è raggiungibile al percorso indicato, mostrare messaggio: _"File non trovato al percorso indicato"_ (non eccezione)
+- [x] La ricerca filtra per `CodiceDisegno` e `CodicePiastra` associata
+- [x] Il filtro stato mostra i disegni "Da verificare" in cima o evidenziati
+- [x] Il pulsante `[📂]` apre un `OpenFileDialog` e popola il campo percorso
+- [x] Il pulsante "Apri file" usa `Process.Start` per aprire il file con l'applicazione predefinita
+- [x] Se il file non è raggiungibile al percorso indicato, mostrare messaggio: _"File non trovato al percorso indicato"_ (non eccezione)
 
 ---
 

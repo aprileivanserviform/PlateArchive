@@ -1,12 +1,231 @@
 <UserControl x:Class="PlateArchive.Wpf.Views.DisegniView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Grid Background="#F5F7FA">
-        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-            <TextBlock Text="Disegni" FontSize="32" FontWeight="Light"
-                       Foreground="#BDBDBD" HorizontalAlignment="Center"/>
-            <TextBlock Text="In costruzione — TASK-09" FontSize="14"
-                       Foreground="#D0D0D0" HorizontalAlignment="Center" Margin="0,8,0,0"/>
-        </StackPanel>
-    </Grid>
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <Style x:Key="PrimaryBtn" TargetType="Button">
+            <Setter Property="Background"      Value="#1E2A3B"/>
+            <Setter Property="Foreground"      Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding"         Value="14,7"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#263340"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="#BDBDBD"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SecondaryBtn" TargetType="Button">
+            <Setter Property="Padding"     Value="12,6"/>
+            <Setter Property="FontSize"    Value="12"/>
+            <Setter Property="Cursor"      Value="Hand"/>
+            <Setter Property="BorderBrush" Value="#BDBDBD"/>
+            <Setter Property="Background"  Value="White"/>
+        </Style>
+
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="FontSize"   Value="11"/>
+            <Setter Property="Foreground" Value="#757575"/>
+            <Setter Property="Margin"     Value="0,0,0,3"/>
+        </Style>
+        <Style x:Key="FieldBox" TargetType="TextBox">
+            <Setter Property="Padding"     Value="7,5"/>
+            <Setter Property="BorderBrush" Value="#BDBDBD"/>
+            <Setter Property="Margin"      Value="0,0,0,10"/>
+        </Style>
+
+        <!-- Riga evidenziata per DaVerificare -->
+        <Style x:Key="RowStyleDisegni" TargetType="DataGridRow">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Stato}" Value="DaVerificare">
+                    <Setter Property="Background" Value="#FFF9C4"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <DockPanel Background="#F0F2F5">
+
+        <!-- ── Header ─────────────────────────────────────────── -->
+        <Border DockPanel.Dock="Top" Background="White" Padding="24,14"
+                BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+            <StackPanel>
+                <TextBlock Text="Disegni" FontSize="20" FontWeight="SemiBold"
+                           Foreground="#212121" Margin="0,0,0,10"/>
+                <DockPanel>
+                    <ComboBox DockPanel.Dock="Right"
+                              ItemsSource="{Binding StatiFiltro}"
+                              SelectedItem="{Binding FiltroStatoSelezionato}"
+                              Width="130" Margin="10,0,0,0"
+                              VerticalAlignment="Center"/>
+                    <TextBox Text="{Binding FiltroRicerca, UpdateSourceTrigger=PropertyChanged}"
+                             Padding="8,6" BorderBrush="#BDBDBD" FontSize="13"/>
+                </DockPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- ── Body ───────────────────────────────────────────── -->
+        <Grid Margin="24,20,24,24">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="380"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Lista disegni -->
+            <Border Grid.Column="0" Background="White"
+                    BorderBrush="#E0E0E0" BorderThickness="1">
+                <DataGrid ItemsSource="{Binding DisegniFiltrati}"
+                          SelectedItem="{Binding DisegnoSelezionato, Mode=TwoWay}"
+                          AutoGenerateColumns="False" CanUserAddRows="False"
+                          IsReadOnly="True" HeadersVisibility="Column"
+                          SelectionMode="Single" GridLinesVisibility="Horizontal"
+                          Background="White" AlternatingRowBackground="#FAFAFA"
+                          BorderThickness="0" RowHeight="34" ColumnHeaderHeight="34"
+                          RowStyle="{StaticResource RowStyleDisegni}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Codice"
+                                           Binding="{Binding CodiceDisegno}"
+                                           Width="130"/>
+                        <DataGridTextColumn Header="Piastra"
+                                           Binding="{Binding Piastra.CodicePiastra}"
+                                           Width="120"/>
+                        <DataGridTextColumn Header="Rev."
+                                           Binding="{Binding Revisione}"
+                                           Width="45"/>
+                        <DataGridTextColumn Header="Formato"
+                                           Binding="{Binding Formato}"
+                                           Width="60"/>
+                        <DataGridTextColumn Header="Stato"
+                                           Binding="{Binding Stato}"
+                                           Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+
+            <!-- Pannello modifica -->
+            <Border Grid.Column="2"
+                    Visibility="{Binding IsDetailVisible, Converter={StaticResource BoolToVis}}"
+                    Background="White" BorderBrush="#E0E0E0" BorderThickness="1"
+                    Padding="20" VerticalAlignment="Top">
+                <StackPanel>
+                    <!-- Titolo -->
+                    <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0,0,0,16">
+                        <Run Text="Modifica: "/>
+                        <Run Text="{Binding DisegnoSelezionato.CodiceDisegno}"/>
+                    </TextBlock>
+
+                    <!-- Errore file non trovato -->
+                    <Border Background="#FFEBEE" BorderBrush="#EF9A9A" BorderThickness="1"
+                            Padding="10,8" Margin="0,0,0,12"
+                            Visibility="{Binding IsErroreFileVisible, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="{Binding ErroreFileNonTrovato}"
+                                   TextWrapping="Wrap" FontSize="12" Foreground="#C62828"/>
+                    </Border>
+
+                    <!-- Percorso file -->
+                    <TextBlock Text="Percorso file" Style="{StaticResource FieldLabel}"/>
+                    <DockPanel Margin="0,0,0,10">
+                        <Button DockPanel.Dock="Right"
+                                Content="Sfoglia"
+                                Command="{Binding SfogliaFileCommand}"
+                                Style="{StaticResource SecondaryBtn}"
+                                Padding="10,5" FontSize="11"
+                                Margin="6,0,0,0"/>
+                        <TextBox Text="{Binding FormPercorsoFile, UpdateSourceTrigger=PropertyChanged}"
+                                 Padding="7,5" BorderBrush="#BDBDBD"/>
+                    </DockPanel>
+
+                    <!-- Revisione + Formato -->
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Revisione" Style="{StaticResource FieldLabel}"/>
+                            <TextBox Text="{Binding FormRevisione, UpdateSourceTrigger=PropertyChanged}"
+                                     Padding="7,5" BorderBrush="#BDBDBD"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Formato" Style="{StaticResource FieldLabel}"/>
+                            <ComboBox ItemsSource="{Binding FormatiDisponibili}"
+                                      Text="{Binding FormFormato, UpdateSourceTrigger=PropertyChanged}"
+                                      IsEditable="True"
+                                      Padding="7,5" BorderBrush="#BDBDBD"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Stato + Data ultima modifica -->
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Stato" Style="{StaticResource FieldLabel}"/>
+                            <ComboBox ItemsSource="{Binding StatiDisegno}"
+                                      SelectedItem="{Binding FormStato}"
+                                      Padding="7,5" BorderBrush="#BDBDBD"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Ult. modifica file" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock FontSize="13" Margin="0,5,0,0" Foreground="#424242">
+                                <TextBlock.Text>
+                                    <Binding Path="DisegnoSelezionato.DataUltimaModificaFile"
+                                             StringFormat="dd/MM/yyyy"
+                                             FallbackValue="—"/>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Note -->
+                    <TextBlock Text="Note" Style="{StaticResource FieldLabel}"/>
+                    <TextBox Text="{Binding FormNote, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource FieldBox}"
+                             AcceptsReturn="True" Height="60"/>
+
+                    <!-- Bottoni -->
+                    <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                        <Button Content="Salva"
+                                Command="{Binding SalvaCommand}"
+                                Style="{StaticResource PrimaryBtn}"
+                                Margin="0,0,10,0"/>
+                        <Button Content="Apri file"
+                                Command="{Binding AprirFileCommand}"
+                                Style="{StaticResource SecondaryBtn}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Placeholder quando nessun disegno è selezionato -->
+            <Border Grid.Column="2"
+                    Visibility="{Binding IsNessunDisegnoSelezionato, Converter={StaticResource BoolToVis}}"
+                    Background="White" BorderBrush="#E0E0E0" BorderThickness="1">
+                <TextBlock Text="Seleziona un disegno dalla lista per modificarne i metadati."
+                           FontSize="12" Foreground="#9E9E9E"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           TextWrapping="Wrap" Padding="20"/>
+            </Border>
+
+        </Grid>
+    </DockPanel>
 </UserControl>
