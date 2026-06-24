@@ -62,7 +62,8 @@ public partial class App : Application
         {
             var db = scope.ServiceProvider.GetRequiredService<PlateArchiveDbContext>();
             db.Database.EnsureCreated();
-            PlateArchive.Data.DbSeeder.SeedAsync(db).GetAwaiter().GetResult();
+            try { PlateArchive.Data.DbSeeder.SeedAsync(db).GetAwaiter().GetResult(); }
+            catch { /* seeder non critico: l'app parte anche senza dati seed */ }
         }
 
         // Navigazione iniziale alla Dashboard

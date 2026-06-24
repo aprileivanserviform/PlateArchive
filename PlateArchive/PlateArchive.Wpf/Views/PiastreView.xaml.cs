@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using PlateArchive.Core.Models;
 using PlateArchive.Wpf.ViewModels;
@@ -10,6 +11,12 @@ namespace PlateArchive.Wpf.Views;
 public partial class PiastreView : UserControl
 {
     public PiastreView() => InitializeComponent();
+
+    private void Row_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is DataGridRow { DataContext: Piastra } && DataContext is PiastreViewModel vm)
+            vm.ModificaCommand.Execute(null);
+    }
 
     private static readonly string[] _extensioniAccettate = [".dwg", ".dxf", ".pdf"];
 

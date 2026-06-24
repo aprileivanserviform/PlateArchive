@@ -47,15 +47,45 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
             .HasForeignKey<Disegno>(d => d.IdPiastra)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Chiave composta univoca su PiastraMacchinaCompatibile
+        // ClienteMacchina: FK esplicite (Id{Entity} non corrisponde alla convenzione EF Core {Entity}Id)
+        mb.Entity<ClienteMacchina>()
+            .HasOne(cm => cm.Cliente)
+            .WithMany(c => c.Macchine)
+            .HasForeignKey(cm => cm.IdCliente);
+
+        mb.Entity<ClienteMacchina>()
+            .HasOne(cm => cm.MacchinaStandard)
+            .WithMany(m => m.ClientiAssociati)
+            .HasForeignKey(cm => cm.IdMacchinaStandard);
+
+        // PiastraMacchinaCompatibile: FK esplicite
         mb.Entity<PiastraMacchinaCompatibile>()
             .HasIndex(x => new { x.IdPiastra, x.IdMacchinaStandard }).IsUnique();
 
-        // v1: un cliente può avere una piastra una sola volta
+        mb.Entity<PiastraMacchinaCompatibile>()
+            .HasOne(x => x.Piastra)
+            .WithMany(p => p.MacchineCompatibili)
+            .HasForeignKey(x => x.IdPiastra);
+
+        mb.Entity<PiastraMacchinaCompatibile>()
+            .HasOne(x => x.MacchinaStandard)
+            .WithMany(m => m.PiastreCompatibili)
+            .HasForeignKey(x => x.IdMacchinaStandard);
+
+        // ClientePiastra: FK esplicite
         mb.Entity<ClientePiastra>()
             .HasIndex(x => new { x.IdCliente, x.IdPiastra }).IsUnique();
 
-        // IdClienteMacchina nullable → relazione opzionale
+        mb.Entity<ClientePiastra>()
+            .HasOne(cp => cp.Cliente)
+            .WithMany(c => c.Piastre)
+            .HasForeignKey(cp => cp.IdCliente);
+
+        mb.Entity<ClientePiastra>()
+            .HasOne(cp => cp.Piastra)
+            .WithMany(p => p.ClientiAssociati)
+            .HasForeignKey(cp => cp.IdPiastra);
+
         mb.Entity<ClientePiastra>()
             .HasOne(cp => cp.ClienteMacchina)
             .WithMany()

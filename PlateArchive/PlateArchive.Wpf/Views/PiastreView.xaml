@@ -117,6 +117,12 @@
                               DragOver="DataGrid_DragOver"
                               DragLeave="DataGrid_DragLeave"
                               Drop="DataGrid_Drop">
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <EventSetter Event="MouseDoubleClick" Handler="Row_MouseDoubleClick"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                            </Style>
+                        </DataGrid.RowStyle>
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Codice"
                                                Binding="{Binding CodicePiastra}"
