@@ -474,7 +474,7 @@ ViewModels/
 ## TASK-06 — Schermata Clienti
 
 **Priorità:** Alta  
-**Stato:** `[ ]`
+**Stato:** `[x]` — completato 2026-06-24
 
 ### Contesto
 
@@ -542,12 +542,12 @@ ViewModels/
 
 ### Acceptance criteria
 
-- [ ] La ricerca filtra in tempo reale su codice, ragione sociale e P.IVA
-- [ ] Il tab "Macchine" mostra tutte le `ClienteMacchina` del cliente con macchina e matricola
-- [ ] Il tab "Piastre" mostra tutte le `ClientePiastra` del cliente con lo stato e il pulsante "Apri disegno"
-- [ ] Il tab "Compatibilità" mostra le piastre compatibili con le macchine del cliente (da `PiastraMacchinaCompatibile`)
-- [ ] Il pulsante "Apri disegno" è attivo solo se la piastra ha un disegno con `PercorsoFile` valorizzato
-- [ ] I dati anagrafici sono in sola lettura (fonte DB2)
+- [x] La ricerca filtra in tempo reale su codice, ragione sociale e P.IVA
+- [x] Il tab "Macchine" mostra tutte le `ClienteMacchina` del cliente con macchina e matricola
+- [x] Il tab "Piastre" mostra tutte le `ClientePiastra` del cliente con lo stato e il pulsante "Apri disegno"
+- [x] Il tab "Compatibilità" mostra le piastre compatibili con le macchine del cliente (da `PiastraMacchinaCompatibile`)
+- [x] Il pulsante "Apri disegno" è attivo solo se la piastra ha un disegno con `PercorsoFile` valorizzato
+- [x] I dati anagrafici sono in sola lettura (fonte DB2)
 
 ---
 
