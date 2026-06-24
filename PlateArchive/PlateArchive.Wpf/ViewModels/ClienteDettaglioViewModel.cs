@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows.Input;
+using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
 using PlateArchive.Data.Repositories.Interfaces;
 using PlateArchive.Wpf.Commands;
@@ -16,14 +18,23 @@ public class ClienteDettaglioViewModel : ViewModelBase
     private readonly IClientePiastraRepository   _piastreRepo;
     private readonly ICompatibilitaRepository    _compatRepo;
     private readonly IMacchinaStandardRepository _macchineStdRepo;
+    private readonly IPiastraRepository          _piastraRepo;
     private readonly NavigationService           _navigation;
 
     private int _idCliente;
     private Cliente? _cliente;
+
+    // Form macchina
     private bool _isAggiungiMacchinaVisible;
     private MacchinaStandard? _macchinaSelezionata;
     private string _matricolaNuova = string.Empty;
     private string _noteNuovaMacchina = string.Empty;
+
+    // Form piastra
+    private bool _isAggiungiPiastraVisible;
+    private Piastra? _piastraSelezionata;
+    private ClienteMacchina? _macchinaPerPiastra;
+    private string? _errorePiastraEsistente;
 
     public ClienteDettaglioViewModel(
         IClienteRepository          clienteRepo,
@@ -31,6 +42,7 @@ public class ClienteDettaglioViewModel : ViewModelBase
         IClientePiastraRepository   piastreRepo,
         ICompatibilitaRepository    compatRepo,
         IMacchinaStandardRepository macchineStdRepo,
+        IPiastraRepository          piastraRepo,
         NavigationService           navigation)
     {
         _clienteRepo     = clienteRepo;
@@ -38,6 +50,7 @@ public class ClienteDettaglioViewModel : ViewModelBase
         _piastreRepo     = piastreRepo;
         _compatRepo      = compatRepo;
         _macchineStdRepo = macchineStdRepo;
+        _piastraRepo     = piastraRepo;
         _navigation      = navigation;
 
         TornaIndietroCommand = new RelayCommand(_ => _navigation.Navigate<ClientiViewModel>());
@@ -61,6 +74,14 @@ public class ClienteDettaglioViewModel : ViewModelBase
 
         RimuoviPiastraCommand = new RelayCommand(
             async p => await RimuoviPiastraAsync((ClientePiastra)p!));
+
+        AggiungiPiastraCommand = new RelayCommand(async _ => await AprirFormAggiungiPiastraAsync());
+
+        ConfermaAggiungiPiastraCommand = new RelayCommand(
+            async _ => await ConfermaAggiungiPiastraAsync(),
+            _ => PiastraSelezionata is not null);
+
+        AnnullaAggiungiPiastraCommand = new RelayCommand(_ => ChiudiFormPiastra());
 
         AprirDisegnoCommand = new RelayCommand(
             _ => { /* TASK-12: apertura file */ },
@@ -105,10 +126,38 @@ public class ClienteDettaglioViewModel : ViewModelBase
         set => SetField(ref _noteNuovaMacchina, value);
     }
 
-    public ObservableCollection<ClienteMacchina>   Macchine         { get; } = [];
-    public ObservableCollection<ClientePiastra>    Piastre          { get; } = [];
-    public ObservableCollection<CompatibilitaRow>  Compatibilita    { get; } = [];
+    public ObservableCollection<ClienteMacchina>   Macchine            { get; } = [];
+    public ObservableCollection<ClientePiastra>    Piastre             { get; } = [];
+    public ObservableCollection<CompatibilitaRow>  Compatibilita       { get; } = [];
     public ObservableCollection<MacchinaStandard>  MacchineDisponibili { get; } = [];
+    public ObservableCollection<Piastra>           PiastreDisponibili  { get; } = [];
+
+    // Form piastra
+    public bool IsAggiungiPiastraVisible
+    {
+        get => _isAggiungiPiastraVisible;
+        set => SetField(ref _isAggiungiPiastraVisible, value);
+    }
+
+    public Piastra? PiastraSelezionata
+    {
+        get => _piastraSelezionata;
+        set => SetField(ref _piastraSelezionata, value);
+    }
+
+    public ClienteMacchina? MacchinaPerPiastra
+    {
+        get => _macchinaPerPiastra;
+        set => SetField(ref _macchinaPerPiastra, value);
+    }
+
+    public string? ErrorePiastraEsistente
+    {
+        get => _errorePiastraEsistente;
+        set { if (SetField(ref _errorePiastraEsistente, value)) OnPropertyChanged(nameof(IsErrorePiastraVisible)); }
+    }
+
+    public bool IsErrorePiastraVisible => !string.IsNullOrEmpty(_errorePiastraEsistente);
 
     // --- Comandi ---
 
@@ -117,6 +166,9 @@ public class ClienteDettaglioViewModel : ViewModelBase
     public ICommand ConfermaAggiungiMacchinaCommand { get; }
     public ICommand AnnullaAggiungiMacchinaCommand  { get; }
     public ICommand RimuoviMacchinaCommand          { get; }
+    public ICommand AggiungiPiastraCommand          { get; }
+    public ICommand ConfermaAggiungiPiastraCommand  { get; }
+    public ICommand AnnullaAggiungiPiastraCommand   { get; }
     public ICommand RimuoviPiastraCommand           { get; }
     public ICommand AprirDisegnoCommand             { get; }
 
@@ -202,6 +254,52 @@ public class ClienteDettaglioViewModel : ViewModelBase
         await _macchineRepo.DeleteAsync(macchina.IdClienteMacchina);
         Macchine.Remove(macchina);
         await CaricaCompatibilitaAsync();
+    }
+
+    private async Task AprirFormAggiungiPiastraAsync()
+    {
+        var tutte = await _piastraRepo.GetAllAsync();
+        var associate = Piastre.Select(cp => cp.IdPiastra).ToHashSet();
+
+        PiastreDisponibili.Clear();
+        foreach (var p in tutte.Where(p => !associate.Contains(p.IdPiastra)).OrderBy(p => p.CodicePiastra))
+            PiastreDisponibili.Add(p);
+
+        PiastraSelezionata  = null;
+        MacchinaPerPiastra  = null;
+        ErrorePiastraEsistente = null;
+        IsAggiungiPiastraVisible = true;
+    }
+
+    private async Task ConfermaAggiungiPiastraAsync()
+    {
+        if (PiastraSelezionata is null || Cliente is null) return;
+
+        if (await _piastreRepo.ExistsAsync(Cliente.IdCliente, PiastraSelezionata.IdPiastra))
+        {
+            ErrorePiastraEsistente = "Questa piastra è già associata al cliente.";
+            return;
+        }
+
+        await _piastreRepo.AddAsync(new ClientePiastra
+        {
+            IdCliente         = Cliente.IdCliente,
+            IdPiastra         = PiastraSelezionata.IdPiastra,
+            IdClienteMacchina = MacchinaPerPiastra?.IdClienteMacchina,
+            Stato             = StatoClientePiastra.Attiva
+        });
+
+        await CaricaPiastreAsync();
+        ChiudiFormPiastra();
+    }
+
+    private void ChiudiFormPiastra()
+    {
+        IsAggiungiPiastraVisible = false;
+        PiastraSelezionata       = null;
+        MacchinaPerPiastra       = null;
+        ErrorePiastraEsistente   = null;
+        PiastreDisponibili.Clear();
     }
 
     private async Task RimuoviPiastraAsync(ClientePiastra piastra)
