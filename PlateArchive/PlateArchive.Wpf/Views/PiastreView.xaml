@@ -186,7 +186,44 @@
                                  Style="{StaticResource FieldBox}"
                                  AcceptsReturn="True" Height="60"/>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <!-- Drop zone disegno nel form -->
+                        <TextBlock Text="Disegno" Style="{StaticResource FieldLabel}" Margin="0,4,0,4"/>
+                        <Grid AllowDrop="True"
+                              DragOver="FormDisegno_DragOver"
+                              DragLeave="FormDisegno_DragLeave"
+                              Drop="FormDisegno_Drop"
+                              Margin="0,0,0,16" MinHeight="56">
+                            <Rectangle Stroke="#BDBDBD" StrokeDashArray="5,3"
+                                       StrokeThickness="1.5" Fill="#F5F7FA"
+                                       RadiusX="3" RadiusY="3"/>
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        Margin="8">
+                                <TextBlock Text="Trascina qui DWG / DXF / PDF"
+                                           FontSize="11" Foreground="#9E9E9E"
+                                           HorizontalAlignment="Center"
+                                           Visibility="{Binding IsDisegnoPendenteAssente,
+                                               Converter={StaticResource BoolToVis}}"/>
+                                <TextBlock Text="{Binding NomeFilePendente}"
+                                           FontSize="12" FontWeight="SemiBold"
+                                           Foreground="#1565C0" HorizontalAlignment="Center"
+                                           Visibility="{Binding IsDisegnoPendenteVisible,
+                                               Converter={StaticResource BoolToVis}}"/>
+                                <TextBlock Text="(verrà associato al salvataggio)"
+                                           FontSize="10" Foreground="#9E9E9E"
+                                           HorizontalAlignment="Center"
+                                           Visibility="{Binding IsDisegnoPendenteVisible,
+                                               Converter={StaticResource BoolToVis}}"/>
+                            </StackPanel>
+                            <Border x:Name="FormDisegnoOverlay"
+                                    Visibility="Collapsed" IsHitTestVisible="False"
+                                    Background="#CC1565C0" BorderBrush="#1565C0" BorderThickness="2">
+                                <TextBlock Text="Rilascia per allegare il disegno"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Foreground="White" FontSize="12" FontWeight="SemiBold"/>
+                            </Border>
+                        </Grid>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
                             <Button Content="Salva"
                                     Command="{Binding SalvaCommand}"
                                     Style="{StaticResource PrimaryBtn}"

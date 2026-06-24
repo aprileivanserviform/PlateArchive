@@ -108,4 +108,39 @@ public partial class PiastreView : UserControl
         var file = ((string[])e.Data.GetData(DataFormats.FileDrop))[0];
         await vm.AssociaDisegnoAsync(vm.PiastraSelezionata, file);
     }
+
+    // ── Drop zone nel form (file pendente) ──────────────────────
+
+    private void FormDisegno_DragOver(object sender, DragEventArgs e)
+    {
+        if (IsValidFileDrop(e))
+        {
+            e.Effects = DragDropEffects.Copy;
+            FormDisegnoOverlay.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            e.Effects = DragDropEffects.None;
+        }
+        e.Handled = true;
+    }
+
+    private void FormDisegno_DragLeave(object sender, DragEventArgs e)
+    {
+        if (sender is UIElement el)
+        {
+            var pos  = e.GetPosition(el);
+            var size = el.RenderSize;
+            if (pos.X < 0 || pos.Y < 0 || pos.X > size.Width || pos.Y > size.Height)
+                FormDisegnoOverlay.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void FormDisegno_Drop(object sender, DragEventArgs e)
+    {
+        FormDisegnoOverlay.Visibility = Visibility.Collapsed;
+        if (!IsValidFileDrop(e)) return;
+        if (DataContext is not PiastreViewModel vm) return;
+        vm.PercorsoDisegnoPendente = ((string[])e.Data.GetData(DataFormats.FileDrop))[0];
+    }
 }

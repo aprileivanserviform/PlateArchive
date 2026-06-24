@@ -35,6 +35,7 @@ public class PiastreViewModel : ViewModelBase
     private StatoPiastra _formStato          = StatoPiastra.Attiva;
     private string       _formNote           = string.Empty;
     private string?      _erroreCodiceDuplicato;
+    private string?      _percorsoDisegnoPendente;
 
     // Aggiungi macchina compatibile
     private bool              _isAggiungiMacchinaVisible;
@@ -186,6 +187,24 @@ public class PiastreViewModel : ViewModelBase
 
     public bool IsErroreVisible => !string.IsNullOrEmpty(_erroreCodiceDuplicato);
 
+    public string? PercorsoDisegnoPendente
+    {
+        get => _percorsoDisegnoPendente;
+        set
+        {
+            if (SetField(ref _percorsoDisegnoPendente, value))
+            {
+                OnPropertyChanged(nameof(IsDisegnoPendenteVisible));
+                OnPropertyChanged(nameof(IsDisegnoPendenteAssente));
+                OnPropertyChanged(nameof(NomeFilePendente));
+            }
+        }
+    }
+
+    public bool    IsDisegnoPendenteVisible => !string.IsNullOrEmpty(_percorsoDisegnoPendente);
+    public bool    IsDisegnoPendenteAssente => string.IsNullOrEmpty(_percorsoDisegnoPendente);
+    public string? NomeFilePendente         => Path.GetFileName(_percorsoDisegnoPendente);
+
     // ─── Comandi ─────────────────────────────────────────────────
 
     public ICommand NuovaCommand                    { get; }
@@ -292,7 +311,8 @@ public class PiastreViewModel : ViewModelBase
     {
         FormCodicePiastra = FormCodiceArticolo = FormDescrizione = FormNote = string.Empty;
         FormStato         = StatoPiastra.Attiva;
-        ErroreCodiceDuplicato = null;
+        ErroreCodiceDuplicato   = null;
+        PercorsoDisegnoPendente = null;
     }
 
     private async Task SalvaAsync()
@@ -300,6 +320,7 @@ public class PiastreViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(FormCodicePiastra)) return;
         if (IsErroreVisible) return;
 
+        Piastra piastraSalvata;
         if (IsModifica)
         {
             var p = _tutti.FirstOrDefault(x => x.IdPiastra == _idPiastraInModifica);
@@ -310,7 +331,7 @@ public class PiastreViewModel : ViewModelBase
             p.Stato                    = FormStato;
             p.Note                     = N(FormNote);
             await _piastreRepo.UpdateAsync(p);
-            PiastraSelezionata = p;
+            piastraSalvata = p;
         }
         else
         {
@@ -324,11 +345,17 @@ public class PiastreViewModel : ViewModelBase
             };
             await _piastreRepo.AddAsync(nuova);
             _tutti.Add(nuova);
-            PiastraSelezionata = nuova;
+            piastraSalvata = nuova;
         }
 
+        // Associa il disegno trascinato nel form (se presente)
+        var filePendente = _percorsoDisegnoPendente;
         AggiornaFiltro();
         ChiudiForm();
+        PiastraSelezionata = piastraSalvata;
+
+        if (!string.IsNullOrEmpty(filePendente))
+            await AssociaDisegnoAsync(piastraSalvata, filePendente);
     }
 
     // ─── Aggiungi / rimuovi macchina compatibile ─────────────────
