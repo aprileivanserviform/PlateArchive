@@ -9,6 +9,11 @@ public class Piastra
     public string? CodiceArticoloGestionale { get; set; }
     public string? Descrizione { get; set; }
     public StatoPiastra Stato { get; set; }
+    public CategoriaPiastra? Categoria { get; set; }
+    public string? FormatoMacchina { get; set; }
+    public decimal? LarghezzaMm { get; set; }
+    public decimal? LunghezzaMm { get; set; }
+    public decimal? SpessoreMm { get; set; }
     public string? Note { get; set; }
     public DateTime DataCreazione { get; set; }
     public DateTime DataUltimaModifica { get; set; }

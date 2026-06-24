@@ -84,7 +84,17 @@
                         <ComboBox DockPanel.Dock="Right"
                                   ItemsSource="{Binding StatiFiltro}"
                                   SelectedItem="{Binding FiltroStatoSelezionato}"
-                                  Width="130" Margin="10,0,0,0"
+                                  Width="110" Margin="10,0,0,0"
+                                  VerticalAlignment="Center"/>
+                        <ComboBox DockPanel.Dock="Right"
+                                  ItemsSource="{Binding CategorieFiltro}"
+                                  SelectedItem="{Binding FiltroCategoriaSelezionato}"
+                                  Width="100" Margin="10,0,0,0"
+                                  VerticalAlignment="Center"/>
+                        <ComboBox DockPanel.Dock="Right"
+                                  ItemsSource="{Binding FormatiMacchinaFiltro}"
+                                  SelectedItem="{Binding FiltroFormatoSelezionato}"
+                                  Width="80" Margin="10,0,0,0"
                                   VerticalAlignment="Center"/>
                         <TextBox Text="{Binding FiltroRicerca, UpdateSourceTrigger=PropertyChanged}"
                                  Padding="8,6" BorderBrush="#BDBDBD" FontSize="13"/>
@@ -126,13 +136,19 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Codice"
                                                Binding="{Binding CodicePiastra}"
-                                               Width="140"/>
+                                               Width="130"/>
                             <DataGridTextColumn Header="Art. Gestionale"
                                                Binding="{Binding CodiceArticoloGestionale}"
-                                               Width="130"/>
+                                               Width="110"/>
                             <DataGridTextColumn Header="Descrizione"
                                                Binding="{Binding Descrizione}"
                                                Width="*"/>
+                            <DataGridTextColumn Header="Categoria"
+                                               Binding="{Binding Categoria}"
+                                               Width="80"/>
+                            <DataGridTextColumn Header="Formato"
+                                               Binding="{Binding FormatoMacchina}"
+                                               Width="65"/>
                             <DataGridTextColumn Header="Stato"
                                                Binding="{Binding Stato}"
                                                Width="90"/>
@@ -186,6 +202,54 @@
                         <ComboBox ItemsSource="{Binding StatiPiastra}"
                                   SelectedItem="{Binding FormStato}"
                                   Margin="0,0,0,10" Padding="7,5"/>
+
+                        <!-- Categoria e Formato macchina -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Categoria" Style="{StaticResource FieldLabel}"/>
+                                <ComboBox ItemsSource="{Binding CategorieForm}"
+                                          SelectedItem="{Binding FormCategoria}"
+                                          Padding="7,5"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Formato macchina" Style="{StaticResource FieldLabel}"/>
+                                <ComboBox ItemsSource="{Binding FormatiMacchina}"
+                                          SelectedItem="{Binding FormFormatoMacchina}"
+                                          Padding="7,5"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Misure -->
+                        <TextBlock Text="Misure (mm)" Style="{StaticResource FieldLabel}"/>
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Larghezza" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding FormLarghezza, UpdateSourceTrigger=PropertyChanged}"
+                                         Padding="7,5" BorderBrush="#BDBDBD"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Lunghezza" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding FormLunghezza, UpdateSourceTrigger=PropertyChanged}"
+                                         Padding="7,5" BorderBrush="#BDBDBD"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="4">
+                                <TextBlock Text="Spessore" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding FormSpessore, UpdateSourceTrigger=PropertyChanged}"
+                                         Padding="7,5" BorderBrush="#BDBDBD"/>
+                            </StackPanel>
+                        </Grid>
 
                         <TextBlock Text="Note" Style="{StaticResource FieldLabel}"/>
                         <TextBox Text="{Binding FormNote, UpdateSourceTrigger=PropertyChanged}"
@@ -263,7 +327,7 @@
                             </DockPanel>
 
                             <!-- Info base -->
-                            <Border Background="#F5F7FA" Padding="12,10" Margin="0,0,0,16">
+                            <Border Background="#F5F7FA" Padding="12,10" Margin="0,0,0,8">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -273,11 +337,17 @@
                                         <TextBlock Text="Stato" FontSize="10" Foreground="#9E9E9E"/>
                                         <TextBlock Text="{Binding PiastraSelezionata.Stato}"
                                                    FontSize="13" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Categoria" FontSize="10" Foreground="#9E9E9E"/>
+                                        <TextBlock Text="{Binding PiastraSelezionata.Categoria, FallbackValue='—'}"
+                                                   FontSize="13" Margin="0,0,0,8"/>
                                         <TextBlock Text="Art. gestionale" FontSize="10" Foreground="#9E9E9E"/>
                                         <TextBlock Text="{Binding PiastraSelezionata.CodiceArticoloGestionale, FallbackValue='—'}"
                                                    FontSize="13"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Formato macchina" FontSize="10" Foreground="#9E9E9E"/>
+                                        <TextBlock Text="{Binding PiastraSelezionata.FormatoMacchina, FallbackValue='—'}"
+                                                   FontSize="13" Margin="0,0,0,8"/>
                                         <TextBlock Text="Creato il" FontSize="10" Foreground="#9E9E9E"/>
                                         <TextBlock FontSize="13" Margin="0,0,0,8">
                                             <TextBlock.Text>
@@ -288,6 +358,47 @@
                                         <TextBlock FontSize="13">
                                             <TextBlock.Text>
                                                 <Binding Path="PiastraSelezionata.DataUltimaModifica" StringFormat="dd/MM/yyyy"/>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- Misure -->
+                            <Border Background="#F5F7FA" Padding="12,10" Margin="0,0,0,16">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Larghezza" FontSize="10" Foreground="#9E9E9E"/>
+                                        <TextBlock FontSize="13">
+                                            <TextBlock.Text>
+                                                <Binding Path="PiastraSelezionata.LarghezzaMm"
+                                                         StringFormat="{}{0:F1} mm"
+                                                         FallbackValue="—" TargetNullValue="—"/>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Lunghezza" FontSize="10" Foreground="#9E9E9E"/>
+                                        <TextBlock FontSize="13">
+                                            <TextBlock.Text>
+                                                <Binding Path="PiastraSelezionata.LunghezzaMm"
+                                                         StringFormat="{}{0:F1} mm"
+                                                         FallbackValue="—" TargetNullValue="—"/>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Spessore" FontSize="10" Foreground="#9E9E9E"/>
+                                        <TextBlock FontSize="13">
+                                            <TextBlock.Text>
+                                                <Binding Path="PiastraSelezionata.SpessoreMm"
+                                                         StringFormat="{}{0:F2} mm"
+                                                         FallbackValue="—" TargetNullValue="—"/>
                                             </TextBlock.Text>
                                         </TextBlock>
                                     </StackPanel>

@@ -21,19 +21,26 @@ public class PiastreViewModel : ViewModelBase
 
     private readonly ObservableCollection<Piastra> _tutti = [];
 
-    private string    _filtroRicerca          = string.Empty;
-    private string    _filtroStatoSelezionato = "Tutti";
+    private string    _filtroRicerca              = string.Empty;
+    private string    _filtroStatoSelezionato     = "Tutti";
+    private string    _filtroCategoriaSelezionato = "Tutti";
+    private string    _filtroFormatoSelezionato   = "Tutti";
     private Piastra?  _piastraSelezionata;
     private bool      _isFormVisible;
     private bool      _isModifica;
     private int       _idPiastraInModifica;
 
     // Campi form
-    private string       _formCodicePiastra  = string.Empty;
-    private string       _formCodiceArticolo = string.Empty;
-    private string       _formDescrizione    = string.Empty;
-    private StatoPiastra _formStato          = StatoPiastra.Attiva;
-    private string       _formNote           = string.Empty;
+    private string       _formCodicePiastra   = string.Empty;
+    private string       _formCodiceArticolo  = string.Empty;
+    private string       _formDescrizione     = string.Empty;
+    private StatoPiastra _formStato           = StatoPiastra.Attiva;
+    private string       _formCategoria       = "—";
+    private string       _formFormatoMacchina = string.Empty;
+    private string       _formLarghezza       = string.Empty;
+    private string       _formLunghezza       = string.Empty;
+    private string       _formSpessore        = string.Empty;
+    private string       _formNote            = string.Empty;
     private string?      _erroreCodiceDuplicato;
     private string?      _percorsoDisegnoPendente;
 
@@ -83,7 +90,23 @@ public class PiastreViewModel : ViewModelBase
         set { if (SetField(ref _filtroStatoSelezionato, value)) AggiornaFiltro(); }
     }
 
-    public IEnumerable<string> StatiFiltro { get; } = ["Tutti", "Attiva", "Obsoleta", "Da verificare"];
+    public string FiltroCategoriaSelezionato
+    {
+        get => _filtroCategoriaSelezionato;
+        set { if (SetField(ref _filtroCategoriaSelezionato, value)) AggiornaFiltro(); }
+    }
+
+    public string FiltroFormatoSelezionato
+    {
+        get => _filtroFormatoSelezionato;
+        set { if (SetField(ref _filtroFormatoSelezionato, value)) AggiornaFiltro(); }
+    }
+
+    public IEnumerable<string> StatiFiltro        { get; } = ["Tutti", "Attiva", "Obsoleta", "Da verificare"];
+    public IEnumerable<string> CategorieFiltro    { get; } = ["Tutti", "Standard", "Speciale"];
+    public IEnumerable<string> FormatiMacchinaFiltro { get; } = ["Tutti", "102", "106", "145"];
+    public IEnumerable<string> CategorieForm      { get; } = ["—", "Standard", "Speciale"];
+    public IEnumerable<string> FormatiMacchina    { get; } = ["", "102", "106", "145"];
 
     public ObservableCollection<Piastra> PiastreFiltrate { get; } = [];
 
@@ -171,6 +194,36 @@ public class PiastreViewModel : ViewModelBase
         set => SetField(ref _formStato, value);
     }
 
+    public string FormCategoria
+    {
+        get => _formCategoria;
+        set => SetField(ref _formCategoria, value);
+    }
+
+    public string FormFormatoMacchina
+    {
+        get => _formFormatoMacchina;
+        set => SetField(ref _formFormatoMacchina, value);
+    }
+
+    public string FormLarghezza
+    {
+        get => _formLarghezza;
+        set => SetField(ref _formLarghezza, value);
+    }
+
+    public string FormLunghezza
+    {
+        get => _formLunghezza;
+        set => SetField(ref _formLunghezza, value);
+    }
+
+    public string FormSpessore
+    {
+        get => _formSpessore;
+        set => SetField(ref _formSpessore, value);
+    }
+
     public string FormNote
     {
         get => _formNote;
@@ -253,10 +306,21 @@ public class PiastreViewModel : ViewModelBase
             _               => null
         };
 
+        CategoriaPiastra? catFiltro = FiltroCategoriaSelezionato switch
+        {
+            "Standard" => CategoriaPiastra.Standard,
+            "Speciale"  => CategoriaPiastra.Speciale,
+            _           => null
+        };
+
+        var formatoFiltro = FiltroFormatoSelezionato == "Tutti" ? null : FiltroFormatoSelezionato;
         var f = FiltroRicerca.Trim().ToLower();
+
         PiastreFiltrate.Clear();
         foreach (var p in _tutti.Where(p =>
             (statoFiltro is null || p.Stato == statoFiltro)
+            && (catFiltro is null || p.Categoria == catFiltro)
+            && (formatoFiltro is null || p.FormatoMacchina == formatoFiltro)
             && (string.IsNullOrEmpty(f)
                 || p.CodicePiastra.ToLower().Contains(f)
                 || (p.CodiceArticoloGestionale?.ToLower().Contains(f) ?? false)
@@ -293,11 +357,21 @@ public class PiastreViewModel : ViewModelBase
     {
         if (PiastraSelezionata is null) return;
         _idPiastraInModifica = PiastraSelezionata.IdPiastra;
-        FormCodicePiastra  = PiastraSelezionata.CodicePiastra;
-        FormCodiceArticolo = PiastraSelezionata.CodiceArticoloGestionale ?? string.Empty;
-        FormDescrizione    = PiastraSelezionata.Descrizione               ?? string.Empty;
-        FormStato          = PiastraSelezionata.Stato;
-        FormNote           = PiastraSelezionata.Note                      ?? string.Empty;
+        FormCodicePiastra   = PiastraSelezionata.CodicePiastra;
+        FormCodiceArticolo  = PiastraSelezionata.CodiceArticoloGestionale ?? string.Empty;
+        FormDescrizione     = PiastraSelezionata.Descrizione               ?? string.Empty;
+        FormStato           = PiastraSelezionata.Stato;
+        FormCategoria       = PiastraSelezionata.Categoria switch
+        {
+            CategoriaPiastra.Standard => "Standard",
+            CategoriaPiastra.Speciale  => "Speciale",
+            _                          => "—"
+        };
+        FormFormatoMacchina = PiastraSelezionata.FormatoMacchina ?? string.Empty;
+        FormLarghezza       = PiastraSelezionata.LarghezzaMm?.ToString("F1") ?? string.Empty;
+        FormLunghezza       = PiastraSelezionata.LunghezzaMm?.ToString("F1") ?? string.Empty;
+        FormSpessore        = PiastraSelezionata.SpessoreMm?.ToString("F2")  ?? string.Empty;
+        FormNote            = PiastraSelezionata.Note                         ?? string.Empty;
         ErroreCodiceDuplicato = null;
         IsModifica    = true;
         IsFormVisible = true;
@@ -312,7 +386,9 @@ public class PiastreViewModel : ViewModelBase
     private void ResetForm()
     {
         FormCodicePiastra = FormCodiceArticolo = FormDescrizione = FormNote = string.Empty;
-        FormStato         = StatoPiastra.Attiva;
+        FormFormatoMacchina = FormLarghezza = FormLunghezza = FormSpessore = string.Empty;
+        FormStato     = StatoPiastra.Attiva;
+        FormCategoria = "—";
         ErroreCodiceDuplicato   = null;
         PercorsoDisegnoPendente = null;
     }
@@ -331,6 +407,11 @@ public class PiastreViewModel : ViewModelBase
             p.CodiceArticoloGestionale = N(FormCodiceArticolo);
             p.Descrizione              = N(FormDescrizione);
             p.Stato                    = FormStato;
+            p.Categoria                = ParseCategoria(FormCategoria);
+            p.FormatoMacchina          = N(FormFormatoMacchina);
+            p.LarghezzaMm              = ParseMm(FormLarghezza);
+            p.LunghezzaMm              = ParseMm(FormLunghezza);
+            p.SpessoreMm               = ParseMm(FormSpessore);
             p.Note                     = N(FormNote);
             await _piastreRepo.UpdateAsync(p);
             piastraSalvata = p;
@@ -343,6 +424,11 @@ public class PiastreViewModel : ViewModelBase
                 CodiceArticoloGestionale = N(FormCodiceArticolo),
                 Descrizione              = N(FormDescrizione),
                 Stato                    = FormStato,
+                Categoria                = ParseCategoria(FormCategoria),
+                FormatoMacchina          = N(FormFormatoMacchina),
+                LarghezzaMm              = ParseMm(FormLarghezza),
+                LunghezzaMm              = ParseMm(FormLunghezza),
+                SpessoreMm               = ParseMm(FormSpessore),
                 Note                     = N(FormNote)
             };
             await _piastreRepo.AddAsync(nuova);
@@ -456,4 +542,16 @@ public class PiastreViewModel : ViewModelBase
     }
 
     private static string? N(string s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+
+    private static CategoriaPiastra? ParseCategoria(string s) => s switch
+    {
+        "Standard" => CategoriaPiastra.Standard,
+        "Speciale"  => CategoriaPiastra.Speciale,
+        _           => null
+    };
+
+    private static decimal? ParseMm(string s) =>
+        decimal.TryParse(s.Replace(',', '.'),
+            System.Globalization.NumberStyles.Any,
+            System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : null;
 }

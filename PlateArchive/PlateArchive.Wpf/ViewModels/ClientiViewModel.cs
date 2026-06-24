@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
+using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
 using PlateArchive.Data.Repositories.Interfaces;
 using PlateArchive.Wpf.Commands;
@@ -12,7 +13,8 @@ public class ClientiViewModel : ViewModelBase
     private readonly IClienteRepository _repo;
     private readonly NavigationService _navigation;
     private readonly ObservableCollection<Cliente> _tutti = [];
-    private string _filtroRicerca = string.Empty;
+    private string _filtroRicerca        = string.Empty;
+    private string _filtroStatoSelezionato = "Tutti";
 
     public ClientiViewModel(IClienteRepository repo, NavigationService navigation)
     {
@@ -30,12 +32,16 @@ public class ClientiViewModel : ViewModelBase
     public string FiltroRicerca
     {
         get => _filtroRicerca;
-        set
-        {
-            if (SetField(ref _filtroRicerca, value))
-                AggiornaFiltro();
-        }
+        set { if (SetField(ref _filtroRicerca, value)) AggiornaFiltro(); }
     }
+
+    public string FiltroStatoSelezionato
+    {
+        get => _filtroStatoSelezionato;
+        set { if (SetField(ref _filtroStatoSelezionato, value)) AggiornaFiltro(); }
+    }
+
+    public IEnumerable<string> StatiFiltro { get; } = ["Tutti", "Attivo", "Disattivato", "Storico"];
 
     public ObservableCollection<Cliente> ClientiFiltrati { get; } = [];
 
@@ -50,13 +56,22 @@ public class ClientiViewModel : ViewModelBase
 
     private void AggiornaFiltro()
     {
+        StatoCliente? statoFiltro = FiltroStatoSelezionato switch
+        {
+            "Attivo"      => StatoCliente.Attivo,
+            "Disattivato" => StatoCliente.Disattivato,
+            "Storico"     => StatoCliente.Storico,
+            _             => null
+        };
+
         ClientiFiltrati.Clear();
         var f = FiltroRicerca.Trim().ToLower();
         foreach (var c in _tutti.Where(c =>
-            string.IsNullOrEmpty(f)
-            || c.CodiceClienteGestionale.ToLower().Contains(f)
-            || c.RagioneSociale.ToLower().Contains(f)
-            || (c.PartitaIVA?.ToLower().Contains(f) ?? false)))
+            (statoFiltro is null || c.StatoCliente == statoFiltro)
+            && (string.IsNullOrEmpty(f)
+                || c.CodiceClienteGestionale.ToLower().Contains(f)
+                || c.RagioneSociale.ToLower().Contains(f)
+                || (c.PartitaIVA?.ToLower().Contains(f) ?? false))))
         {
             ClientiFiltrati.Add(c);
         }
