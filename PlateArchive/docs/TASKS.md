@@ -618,7 +618,7 @@ Campi opzionali: `Famiglia`, `Formato`, `Versione`, `Produttore`, `Note`
 ## TASK-08 — Schermata Piastre
 
 **Priorità:** Alta  
-**Stato:** `[ ]`
+**Stato:** `[x]` — completato 2026-06-24
 
 ### Contesto
 
@@ -672,11 +672,11 @@ Flusso guidato:
 
 ### Acceptance criteria
 
-- [ ] La ricerca filtra su `CodicePiastra`, `CodiceArticoloGestionale` e `Descrizione`
-- [ ] Il filtro per stato funziona (Attiva / Obsoleta / Da verificare / Tutti)
-- [ ] Il form impedisce il salvataggio se `CodicePiastra` è già presente (errore inline)
-- [ ] Dalla sezione "Macchine compatibili" si possono aggiungere e rimuovere associazioni
-- [ ] Dalla sezione "Disegno" si può aprire il file se `PercorsoFile` è valorizzato
+- [x] La ricerca filtra su `CodicePiastra`, `CodiceArticoloGestionale` e `Descrizione`
+- [x] Il filtro per stato funziona (Attiva / Obsoleta / Da verificare / Tutti)
+- [x] Il form impedisce il salvataggio se `CodicePiastra` è già presente (errore inline)
+- [x] Dalla sezione "Macchine compatibili" si possono aggiungere e rimuovere associazioni
+- [x] Dalla sezione "Disegno" si può aprire il file se `PercorsoFile` è valorizzato
 
 ---
 
