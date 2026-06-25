@@ -3,4 +3,5 @@
   <Project Path="PlateArchive.Core\PlateArchive.Core.csproj" />
   <Project Path="PlateArchive.Data\PlateArchive.Data.csproj" />
   <Project Path="PlateArchive.Services\PlateArchive.Services.csproj" />
+  <Project Path="PlateArchive.Ui\PlateArchive.Ui.csproj" />
 </Solution>

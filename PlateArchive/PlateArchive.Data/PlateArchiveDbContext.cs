@@ -5,18 +5,21 @@ namespace PlateArchive.Data;
 
 public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> options) : DbContext(options)
 {
-    public DbSet<Cliente> Clienti => Set<Cliente>();
-    public DbSet<MacchinaStandard> MacchineStandard => Set<MacchinaStandard>();
-    public DbSet<Piastra> Piastre => Set<Piastra>();
-    public DbSet<Disegno> Disegni => Set<Disegno>();
+    public DbSet<Cliente>                    Clienti                  => Set<Cliente>();
+    public DbSet<MacchinaStandard>           MacchineStandard         => Set<MacchinaStandard>();
+    public DbSet<CategoriaPiastra>           CategoriePiastre         => Set<CategoriaPiastra>();
+    public DbSet<Piastra>                    Piastre                  => Set<Piastra>();
+    public DbSet<Disegno>                    Disegni                  => Set<Disegno>();
     public DbSet<PiastraMacchinaCompatibile> PiastreMacchineCompatibili => Set<PiastraMacchinaCompatibile>();
-    public DbSet<ClienteMacchina> ClientiMacchine => Set<ClienteMacchina>();
-    public DbSet<ClientePiastra> ClientiPiastre => Set<ClientePiastra>();
+    public DbSet<ClienteMacchina>            ClientiMacchine          => Set<ClienteMacchina>();
+    public DbSet<ClientePiastra>             ClientiPiastre           => Set<ClientePiastra>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
         mb.Entity<Cliente>().HasKey(c => c.IdCliente);
         mb.Entity<MacchinaStandard>().HasKey(m => m.IdMacchinaStandard);
+        mb.Entity<CategoriaPiastra>().HasKey(c => c.IdCategoriaPiastra);
+        mb.Entity<CategoriaPiastra>().HasIndex(c => c.Codice).IsUnique();
         mb.Entity<Piastra>().HasKey(p => p.IdPiastra);
         mb.Entity<Disegno>().HasKey(d => d.IdDisegno);
         mb.Entity<PiastraMacchinaCompatibile>().HasKey(x => x.IdCompatibilita);
@@ -32,11 +35,21 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
         mb.Entity<Piastra>()
             .HasIndex(p => p.CodicePiastra).IsUnique();
 
-        // CodiceArticoloGestionale è nullable: indice filtrato per escludere i NULL
         mb.Entity<Piastra>()
             .HasIndex(p => p.CodiceArticoloGestionale)
             .IsUnique()
-            .HasFilter("\"CodiceArticoloGestionale\" IS NOT NULL");
+            .HasFilter("[CodiceArticoloGestionale] IS NOT NULL");
+
+        // Soft delete: le query EF escludono automaticamente le piastre eliminate
+        mb.Entity<Piastra>().HasQueryFilter(p => !p.IsEliminata);
+
+        // FK Piastra → CategoriePiastre (opzionale; SET NULL se la categoria viene rimossa)
+        mb.Entity<Piastra>()
+            .HasOne(p => p.Categoria)
+            .WithMany()
+            .HasForeignKey(p => p.IdCategoriaPiastra)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // Relazione 1:1 Piastra → Disegno
         mb.Entity<Disegno>()

@@ -20,8 +20,7 @@ public class ClienteRepository(PlateArchiveDbContext db) : IClienteRepository
         var q = query.ToLower();
         return await db.Clienti
             .Where(c => c.RagioneSociale.ToLower().Contains(q)
-                     || c.CodiceClienteGestionale.ToLower().Contains(q)
-                     || (c.PartitaIVA != null && c.PartitaIVA.Contains(q)))
+                     || c.CodiceClienteGestionale.ToLower().Contains(q))
             .OrderBy(c => c.RagioneSociale)
             .ToListAsync();
     }

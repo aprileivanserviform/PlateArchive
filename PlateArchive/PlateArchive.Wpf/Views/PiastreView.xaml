@@ -2,84 +2,23 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <UserControl.Resources>
-        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
-
-        <Style x:Key="PrimaryBtn" TargetType="Button">
-            <Setter Property="Background"      Value="#1E2A3B"/>
-            <Setter Property="Foreground"      Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding"         Value="14,7"/>
-            <Setter Property="Cursor"          Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#263340"/>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Background" Value="#BDBDBD"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="SecondaryBtn" TargetType="Button">
-            <Setter Property="Padding"     Value="12,6"/>
-            <Setter Property="FontSize"    Value="12"/>
-            <Setter Property="Cursor"      Value="Hand"/>
-            <Setter Property="BorderBrush" Value="#BDBDBD"/>
-            <Setter Property="Background"  Value="White"/>
-        </Style>
-
-        <Style x:Key="DangerBtn" TargetType="Button">
-            <Setter Property="Padding"         Value="8,4"/>
-            <Setter Property="FontSize"        Value="11"/>
-            <Setter Property="Cursor"          Value="Hand"/>
-            <Setter Property="Background"      Value="#FFEBEE"/>
-            <Setter Property="Foreground"      Value="#C62828"/>
-            <Setter Property="BorderBrush"     Value="#EF9A9A"/>
-            <Setter Property="BorderThickness" Value="1"/>
-        </Style>
-
-        <Style x:Key="FieldLabel" TargetType="TextBlock">
-            <Setter Property="FontSize"   Value="11"/>
-            <Setter Property="Foreground" Value="#757575"/>
-            <Setter Property="Margin"     Value="0,0,0,3"/>
-        </Style>
-        <Style x:Key="FieldBox" TargetType="TextBox">
-            <Setter Property="Padding"     Value="7,5"/>
-            <Setter Property="BorderBrush" Value="#BDBDBD"/>
-            <Setter Property="Margin"      Value="0,0,0,10"/>
-        </Style>
-        <Style x:Key="SectionTitle" TargetType="TextBlock">
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize"   Value="12"/>
-            <Setter Property="Foreground" Value="#424242"/>
-            <Setter Property="Margin"     Value="0,0,0,6"/>
-        </Style>
-    </UserControl.Resources>
-
-    <DockPanel Background="#F0F2F5">
+    <DockPanel Background="{DynamicResource Brush.Background}">
 
         <!-- ── Header ─────────────────────────────────────────── -->
-        <Border DockPanel.Dock="Top" Background="White" Padding="24,14"
-                BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource Brush.Surface}"
+                Padding="24,14"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,0,0,1">
             <DockPanel>
                 <Button DockPanel.Dock="Right"
                         Content="+ Nuova piastra"
-                        Command="{Binding NuovaCommand}"
-                        Style="{StaticResource PrimaryBtn}"/>
+                        Command="{Binding NuovaCommand}"/>
 
                 <StackPanel DockPanel.Dock="Left">
-                    <TextBlock Text="Piastre" FontSize="20" FontWeight="SemiBold"
-                               Foreground="#212121" Margin="0,0,0,10"/>
+                    <TextBlock Text="Piastre"
+                               Style="{StaticResource TextBlock.Title}"
+                               Margin="0,0,0,10"/>
                     <DockPanel>
                         <ComboBox DockPanel.Dock="Right"
                                   ItemsSource="{Binding StatiFiltro}"
@@ -91,13 +30,7 @@
                                   SelectedItem="{Binding FiltroCategoriaSelezionato}"
                                   Width="100" Margin="10,0,0,0"
                                   VerticalAlignment="Center"/>
-                        <ComboBox DockPanel.Dock="Right"
-                                  ItemsSource="{Binding FormatiMacchinaFiltro}"
-                                  SelectedItem="{Binding FiltroFormatoSelezionato}"
-                                  Width="80" Margin="10,0,0,0"
-                                  VerticalAlignment="Center"/>
-                        <TextBox Text="{Binding FiltroRicerca, UpdateSourceTrigger=PropertyChanged}"
-                                 Padding="8,6" BorderBrush="#BDBDBD" FontSize="13"/>
+                        <TextBox Text="{Binding FiltroRicerca, UpdateSourceTrigger=PropertyChanged}"/>
                     </DockPanel>
                 </StackPanel>
             </DockPanel>
@@ -112,23 +45,22 @@
             </Grid.ColumnDefinitions>
 
             <!-- Lista piastre -->
-            <Border Grid.Column="0" Background="White"
-                    BorderBrush="#E0E0E0" BorderThickness="1">
+            <Border Grid.Column="0"
+                    Background="{DynamicResource Brush.Surface}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="1">
                 <Grid>
                     <DataGrid x:Name="PiastreDataGrid"
                               ItemsSource="{Binding PiastreFiltrate}"
                               SelectedItem="{Binding PiastraSelezionata, Mode=TwoWay}"
-                              AutoGenerateColumns="False" CanUserAddRows="False"
-                              IsReadOnly="True" HeadersVisibility="Column"
-                              SelectionMode="Single" GridLinesVisibility="Horizontal"
-                              Background="White" AlternatingRowBackground="#FAFAFA"
-                              BorderThickness="0" RowHeight="34" ColumnHeaderHeight="34"
+                              CanUserAddRows="False" IsReadOnly="True"
+                              RowHeight="36"
                               AllowDrop="True"
                               DragOver="DataGrid_DragOver"
                               DragLeave="DataGrid_DragLeave"
                               Drop="DataGrid_Drop">
                         <DataGrid.RowStyle>
-                            <Style TargetType="DataGridRow">
+                            <Style TargetType="DataGridRow" BasedOn="{StaticResource DataGridRow.Base}">
                                 <EventSetter Event="MouseDoubleClick" Handler="Row_MouseDoubleClick"/>
                                 <Setter Property="Cursor" Value="Hand"/>
                             </Style>
@@ -144,11 +76,8 @@
                                                Binding="{Binding Descrizione}"
                                                Width="*"/>
                             <DataGridTextColumn Header="Categoria"
-                                               Binding="{Binding Categoria}"
+                                               Binding="{Binding Categoria.Descrizione}"
                                                Width="80"/>
-                            <DataGridTextColumn Header="Formato"
-                                               Binding="{Binding FormatoMacchina}"
-                                               Width="65"/>
                             <DataGridTextColumn Header="Stato"
                                                Binding="{Binding Stato}"
                                                Width="90"/>
@@ -158,11 +87,16 @@
                     <!-- Overlay drag & drop -->
                     <Border x:Name="DataGridDropOverlay"
                             Visibility="Collapsed" IsHitTestVisible="False"
-                            Background="#CC1565C0" BorderBrush="#1565C0" BorderThickness="3">
+                            Background="{DynamicResource Brush.Overlay}"
+                            BorderBrush="{DynamicResource Brush.Primary}"
+                            BorderThickness="3">
                         <TextBlock Text="Rilascia il file sulla piastra"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   Foreground="White" FontSize="14" TextWrapping="Wrap"
-                                   Padding="20" FontWeight="SemiBold"/>
+                                   Foreground="{DynamicResource Brush.OnPrimary}"
+                                   FontSize="{StaticResource FontSize.BodyLarge}"
+                                   TextWrapping="Wrap"
+                                   Padding="20"
+                                   FontWeight="{StaticResource FontWeight.SemiBold}"/>
                     </Border>
                 </Grid>
             </Border>
@@ -172,18 +106,27 @@
 
                 <!-- ── Form creazione/modifica ─────────────────── -->
                 <Border Visibility="{Binding IsFormVisible, Converter={StaticResource BoolToVis}}"
-                        Background="White" BorderBrush="#E0E0E0" BorderThickness="1"
+                        Background="{DynamicResource Brush.Surface}"
+                        BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource Radius.M}"
                         Padding="20" VerticalAlignment="Top">
                     <StackPanel>
                         <TextBlock Text="{Binding FormTitolo}"
-                                   FontSize="14" FontWeight="SemiBold" Margin="0,0,0,16"/>
+                                   Style="{StaticResource TextBlock.Subtitle}"
+                                   Margin="0,0,0,16"/>
 
                         <!-- Errore codice duplicato -->
-                        <Border Background="#FFEBEE" BorderBrush="#EF9A9A" BorderThickness="1"
+                        <Border Background="{DynamicResource Brush.ErrorSurface}"
+                                BorderBrush="{DynamicResource Brush.Error}"
+                                BorderThickness="1"
+                                CornerRadius="{StaticResource Radius.S}"
                                 Padding="10,8" Margin="0,0,0,12"
                                 Visibility="{Binding IsErroreVisible, Converter={StaticResource BoolToVis}}">
                             <TextBlock Text="{Binding ErroreCodiceDuplicato}"
-                                       TextWrapping="Wrap" FontSize="12" Foreground="#C62828"/>
+                                       TextWrapping="Wrap"
+                                       FontSize="{StaticResource FontSize.Caption}"
+                                       Foreground="{DynamicResource Brush.Error}"/>
                         </Border>
 
                         <TextBlock Text="Codice piastra *" Style="{StaticResource FieldLabel}"/>
@@ -201,9 +144,9 @@
                         <TextBlock Text="Stato" Style="{StaticResource FieldLabel}"/>
                         <ComboBox ItemsSource="{Binding StatiPiastra}"
                                   SelectedItem="{Binding FormStato}"
-                                  Margin="0,0,0,10" Padding="7,5"/>
+                                  Margin="0,0,0,10"/>
 
-                        <!-- Categoria e Formato macchina -->
+                        <!-- Categoria e Peso -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -212,15 +155,13 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0">
                                 <TextBlock Text="Categoria" Style="{StaticResource FieldLabel}"/>
-                                <ComboBox ItemsSource="{Binding CategorieForm}"
-                                          SelectedItem="{Binding FormCategoria}"
-                                          Padding="7,5"/>
+                                <ComboBox ItemsSource="{Binding CategoriePiastre}"
+                                          SelectedItem="{Binding FormCategoriaSelezionata}"
+                                          DisplayMemberPath="Descrizione"/>
                             </StackPanel>
                             <StackPanel Grid.Column="2">
-                                <TextBlock Text="Formato macchina" Style="{StaticResource FieldLabel}"/>
-                                <ComboBox ItemsSource="{Binding FormatiMacchina}"
-                                          SelectedItem="{Binding FormFormatoMacchina}"
-                                          Padding="7,5"/>
+                                <TextBlock Text="Peso (kg)" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding FormPeso, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                         </Grid>
 
@@ -233,21 +174,24 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="8"/>
                                 <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0">
                                 <TextBlock Text="Larghezza" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Text="{Binding FormLarghezza, UpdateSourceTrigger=PropertyChanged}"
-                                         Padding="7,5" BorderBrush="#BDBDBD"/>
+                                <TextBox Text="{Binding FormLarghezza, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                             <StackPanel Grid.Column="2">
-                                <TextBlock Text="Lunghezza" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Text="{Binding FormLunghezza, UpdateSourceTrigger=PropertyChanged}"
-                                         Padding="7,5" BorderBrush="#BDBDBD"/>
+                                <TextBlock Text="Altezza" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding FormAltezza, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                             <StackPanel Grid.Column="4">
                                 <TextBlock Text="Spessore" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Text="{Binding FormSpessore, UpdateSourceTrigger=PropertyChanged}"
-                                         Padding="7,5" BorderBrush="#BDBDBD"/>
+                                <TextBox Text="{Binding FormSpessore, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="6">
+                                <TextBlock Text="Durezza" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding FormDurezza, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                         </Grid>
 
@@ -263,44 +207,59 @@
                               DragLeave="FormDisegno_DragLeave"
                               Drop="FormDisegno_Drop"
                               Margin="0,0,0,16" MinHeight="56">
-                            <Rectangle Stroke="#BDBDBD" StrokeDashArray="5,3"
-                                       StrokeThickness="1.5" Fill="#F5F7FA"
-                                       RadiusX="3" RadiusY="3"/>
+                            <Border Background="{DynamicResource Brush.SurfaceAlt}"
+                                    BorderBrush="{DynamicResource Brush.Border}"
+                                    BorderThickness="1.5"
+                                    CornerRadius="{StaticResource Radius.S}">
+                            </Border>
+                            <Rectangle Stroke="{DynamicResource Brush.Border}"
+                                       StrokeDashArray="5,3"
+                                       StrokeThickness="1.5"
+                                       Fill="{DynamicResource Brush.SurfaceAlt}"
+                                       RadiusX="4" RadiusY="4"/>
                             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
                                         Margin="8">
                                 <TextBlock Text="Trascina qui DWG / DXF / PDF"
-                                           FontSize="11" Foreground="#9E9E9E"
+                                           FontSize="{StaticResource FontSize.Caption}"
+                                           Foreground="{DynamicResource Brush.TextDisabled}"
                                            HorizontalAlignment="Center"
                                            Visibility="{Binding IsDisegnoPendenteAssente,
                                                Converter={StaticResource BoolToVis}}"/>
                                 <TextBlock Text="{Binding NomeFilePendente}"
-                                           FontSize="12" FontWeight="SemiBold"
-                                           Foreground="#1565C0" HorizontalAlignment="Center"
+                                           FontSize="{StaticResource FontSize.Body}"
+                                           FontWeight="{StaticResource FontWeight.SemiBold}"
+                                           Foreground="{DynamicResource Brush.Primary}"
+                                           HorizontalAlignment="Center"
                                            Visibility="{Binding IsDisegnoPendenteVisible,
                                                Converter={StaticResource BoolToVis}}"/>
                                 <TextBlock Text="(verrà associato al salvataggio)"
-                                           FontSize="10" Foreground="#9E9E9E"
+                                           FontSize="{StaticResource FontSize.Caption}"
+                                           Foreground="{DynamicResource Brush.TextDisabled}"
                                            HorizontalAlignment="Center"
                                            Visibility="{Binding IsDisegnoPendenteVisible,
                                                Converter={StaticResource BoolToVis}}"/>
                             </StackPanel>
                             <Border x:Name="FormDisegnoOverlay"
                                     Visibility="Collapsed" IsHitTestVisible="False"
-                                    Background="#CC1565C0" BorderBrush="#1565C0" BorderThickness="2">
+                                    Background="{DynamicResource Brush.Overlay}"
+                                    BorderBrush="{DynamicResource Brush.Primary}"
+                                    BorderThickness="2"
+                                    CornerRadius="{StaticResource Radius.S}">
                                 <TextBlock Text="Rilascia per allegare il disegno"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"
-                                           Foreground="White" FontSize="12" FontWeight="SemiBold"/>
+                                           Foreground="{DynamicResource Brush.OnPrimary}"
+                                           FontSize="{StaticResource FontSize.Body}"
+                                           FontWeight="{StaticResource FontWeight.SemiBold}"/>
                             </Border>
                         </Grid>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
+                        <StackPanel Orientation="Horizontal">
                             <Button Content="Salva"
                                     Command="{Binding SalvaCommand}"
-                                    Style="{StaticResource PrimaryBtn}"
                                     Margin="0,0,10,0"/>
                             <Button Content="Annulla"
                                     Command="{Binding AnnullaFormCommand}"
-                                    Style="{StaticResource SecondaryBtn}"/>
+                                    Style="{StaticResource Button.Secondary}"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -308,54 +267,55 @@
                 <!-- ── Dettaglio piastra selezionata ──────────── -->
                 <ScrollViewer Visibility="{Binding IsDetailVisible, Converter={StaticResource BoolToVis}}"
                               VerticalScrollBarVisibility="Auto">
-                    <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1"
+                    <Border Background="{DynamicResource Brush.Surface}"
+                            BorderBrush="{DynamicResource Brush.Border}"
+                            BorderThickness="1"
+                            CornerRadius="{StaticResource Radius.M}"
                             Padding="20">
                         <StackPanel>
                             <!-- Header dettaglio -->
                             <DockPanel Margin="0,0,0,16">
                                 <StackPanel DockPanel.Dock="Left">
                                     <TextBlock Text="{Binding PiastraSelezionata.CodicePiastra}"
-                                               FontSize="15" FontWeight="SemiBold" Foreground="#212121"/>
+                                               Style="{StaticResource TextBlock.BodyLarge}"
+                                               FontWeight="{StaticResource FontWeight.SemiBold}"/>
                                     <TextBlock Text="{Binding PiastraSelezionata.Descrizione}"
-                                               FontSize="11" Foreground="#757575" Margin="0,2,0,0"/>
+                                               Style="{StaticResource TextBlock.Caption}"
+                                               Margin="0,2,0,0"/>
                                 </StackPanel>
                                 <Button DockPanel.Dock="Right"
                                         Content="Modifica"
                                         Command="{Binding ModificaCommand}"
-                                        Style="{StaticResource SecondaryBtn}"
+                                        Style="{StaticResource Button.Secondary}"
                                         VerticalAlignment="Top"/>
                             </DockPanel>
 
                             <!-- Info base -->
-                            <Border Background="#F5F7FA" Padding="12,10" Margin="0,0,0,8">
+                            <Border Style="{StaticResource Card.Subtle}" Padding="12,10" Margin="0,0,0,8">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Text="Stato" FontSize="10" Foreground="#9E9E9E"/>
-                                        <TextBlock Text="{Binding PiastraSelezionata.Stato}"
-                                                   FontSize="13" Margin="0,0,0,8"/>
-                                        <TextBlock Text="Categoria" FontSize="10" Foreground="#9E9E9E"/>
-                                        <TextBlock Text="{Binding PiastraSelezionata.Categoria, FallbackValue='—'}"
-                                                   FontSize="13" Margin="0,0,0,8"/>
-                                        <TextBlock Text="Art. gestionale" FontSize="10" Foreground="#9E9E9E"/>
-                                        <TextBlock Text="{Binding PiastraSelezionata.CodiceArticoloGestionale, FallbackValue='—'}"
-                                                   FontSize="13"/>
+                                        <TextBlock Text="Stato" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock Text="{Binding PiastraSelezionata.Stato}" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Categoria" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock Text="{Binding PiastraSelezionata.Categoria.Descrizione, FallbackValue='—'}" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Art. gestionale" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock Text="{Binding PiastraSelezionata.CodiceArticoloGestionale, FallbackValue='—'}"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="1">
-                                        <TextBlock Text="Formato macchina" FontSize="10" Foreground="#9E9E9E"/>
-                                        <TextBlock Text="{Binding PiastraSelezionata.FormatoMacchina, FallbackValue='—'}"
-                                                   FontSize="13" Margin="0,0,0,8"/>
-                                        <TextBlock Text="Creato il" FontSize="10" Foreground="#9E9E9E"/>
-                                        <TextBlock FontSize="13" Margin="0,0,0,8">
+                                        <TextBlock Text="Peso (kg)" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock Text="{Binding PiastraSelezionata.Peso, StringFormat='{}{0:F3}', FallbackValue='—', TargetNullValue='—'}" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Creato il" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock Margin="0,0,0,8">
                                             <TextBlock.Text>
                                                 <Binding Path="PiastraSelezionata.DataCreazione" StringFormat="dd/MM/yyyy"/>
                                             </TextBlock.Text>
                                         </TextBlock>
-                                        <TextBlock Text="Ultima modifica" FontSize="10" Foreground="#9E9E9E"/>
-                                        <TextBlock FontSize="13">
+                                        <TextBlock Text="Ultima modifica" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock>
                                             <TextBlock.Text>
                                                 <Binding Path="PiastraSelezionata.DataUltimaModifica" StringFormat="dd/MM/yyyy"/>
                                             </TextBlock.Text>
@@ -365,16 +325,17 @@
                             </Border>
 
                             <!-- Misure -->
-                            <Border Background="#F5F7FA" Padding="12,10" Margin="0,0,0,16">
+                            <Border Style="{StaticResource Card.Subtle}" Padding="12,10" Margin="0,0,0,16">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Text="Larghezza" FontSize="10" Foreground="#9E9E9E"/>
-                                        <TextBlock FontSize="13">
+                                        <TextBlock Text="Larghezza" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock>
                                             <TextBlock.Text>
                                                 <Binding Path="PiastraSelezionata.LarghezzaMm"
                                                          StringFormat="{}{0:F1} mm"
@@ -383,21 +344,31 @@
                                         </TextBlock>
                                     </StackPanel>
                                     <StackPanel Grid.Column="1">
-                                        <TextBlock Text="Lunghezza" FontSize="10" Foreground="#9E9E9E"/>
-                                        <TextBlock FontSize="13">
+                                        <TextBlock Text="Altezza" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock>
                                             <TextBlock.Text>
-                                                <Binding Path="PiastraSelezionata.LunghezzaMm"
+                                                <Binding Path="PiastraSelezionata.AltezzaMm"
                                                          StringFormat="{}{0:F1} mm"
                                                          FallbackValue="—" TargetNullValue="—"/>
                                             </TextBlock.Text>
                                         </TextBlock>
                                     </StackPanel>
                                     <StackPanel Grid.Column="2">
-                                        <TextBlock Text="Spessore" FontSize="10" Foreground="#9E9E9E"/>
-                                        <TextBlock FontSize="13">
+                                        <TextBlock Text="Spessore" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock>
                                             <TextBlock.Text>
                                                 <Binding Path="PiastraSelezionata.SpessoreMm"
                                                          StringFormat="{}{0:F2} mm"
+                                                         FallbackValue="—" TargetNullValue="—"/>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="3">
+                                        <TextBlock Text="Durezza" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock>
+                                            <TextBlock.Text>
+                                                <Binding Path="PiastraSelezionata.Durezza"
+                                                         StringFormat="{}{0:F1}"
                                                          FallbackValue="—" TargetNullValue="—"/>
                                             </TextBlock.Text>
                                         </TextBlock>
@@ -408,7 +379,7 @@
                             <!-- Sezione Disegno -->
                             <TextBlock Text="Disegno" Style="{StaticResource SectionTitle}"/>
 
-                            <!-- Drop zone disegno (file DWG/DXF/PDF) -->
+                            <!-- Drop zone disegno -->
                             <Grid Margin="0,0,0,16"
                                   AllowDrop="True"
                                   DragOver="DisegnoSection_DragOver"
@@ -417,27 +388,29 @@
                                 <StackPanel>
                                     <!-- Disegno presente -->
                                     <Border Visibility="{Binding IsDisegnoPresente, Converter={StaticResource BoolToVis}}"
-                                            Background="#F5F7FA" Padding="12,10">
+                                            Style="{StaticResource Card.Subtle}"
+                                            Padding="12,10">
                                         <DockPanel>
                                             <Button DockPanel.Dock="Right"
                                                     Content="Apri file"
                                                     Command="{Binding AprirDisegnoCommand}"
-                                                    Style="{StaticResource SecondaryBtn}"
+                                                    Style="{StaticResource Button.Secondary}"
                                                     VerticalAlignment="Center"
                                                     Margin="8,0,0,0"/>
                                             <StackPanel DockPanel.Dock="Left">
                                                 <TextBlock Text="{Binding PiastraSelezionata.Disegno.CodiceDisegno}"
-                                                           FontSize="13" FontWeight="SemiBold"/>
+                                                           FontWeight="{StaticResource FontWeight.SemiBold}"/>
                                                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                                    <TextBlock Text="Rev. " FontSize="11" Foreground="#757575"/>
+                                                    <TextBlock Text="Rev. " Style="{StaticResource TextBlock.Caption}"/>
                                                     <TextBlock Text="{Binding PiastraSelezionata.Disegno.Revisione, FallbackValue='—'}"
-                                                               FontSize="11" Foreground="#757575"/>
-                                                    <TextBlock Text=" · " FontSize="11" Foreground="#757575"/>
+                                                               Style="{StaticResource TextBlock.Caption}"/>
+                                                    <TextBlock Text=" · " Style="{StaticResource TextBlock.Caption}"/>
                                                     <TextBlock Text="{Binding PiastraSelezionata.Disegno.Stato}"
-                                                               FontSize="11" Foreground="#757575"/>
+                                                               Style="{StaticResource TextBlock.Caption}"/>
                                                 </StackPanel>
                                                 <TextBlock Text="{Binding PiastraSelezionata.Disegno.PercorsoFile}"
-                                                           FontSize="10" Foreground="#9E9E9E" Margin="0,2,0,0"
+                                                           Style="{StaticResource TextBlock.Caption}"
+                                                           Margin="0,2,0,0"
                                                            TextTrimming="CharacterEllipsis"/>
                                             </StackPanel>
                                         </DockPanel>
@@ -445,9 +418,11 @@
 
                                     <!-- Disegno assente -->
                                     <Border Visibility="{Binding IsDisegnoAssente, Converter={StaticResource BoolToVis}}"
-                                            Background="#F5F7FA" Padding="12,10" MinHeight="44">
+                                            Style="{StaticResource Card.Subtle}"
+                                            Padding="12,10" MinHeight="44">
                                         <TextBlock Text="Nessun disegno associato. Trascina qui un file DWG/DXF/PDF."
-                                                   FontSize="12" Foreground="#9E9E9E"
+                                                   Foreground="{DynamicResource Brush.TextDisabled}"
+                                                   FontSize="{StaticResource FontSize.Caption}"
                                                    VerticalAlignment="Center"/>
                                     </Border>
                                 </StackPanel>
@@ -455,19 +430,29 @@
                                 <!-- Overlay drag attivo -->
                                 <Border x:Name="DisegnoSectionOverlay"
                                         Visibility="Collapsed" IsHitTestVisible="False"
-                                        Background="#CC1565C0" BorderBrush="#1565C0" BorderThickness="2">
+                                        Background="{DynamicResource Brush.Overlay}"
+                                        BorderBrush="{DynamicResource Brush.Primary}"
+                                        BorderThickness="2"
+                                        CornerRadius="{StaticResource Radius.S}">
                                     <TextBlock Text="Rilascia per associare il disegno"
                                                HorizontalAlignment="Center" VerticalAlignment="Center"
-                                               Foreground="White" FontSize="12" FontWeight="SemiBold"/>
+                                               Foreground="{DynamicResource Brush.OnPrimary}"
+                                               FontSize="{StaticResource FontSize.Body}"
+                                               FontWeight="{StaticResource FontWeight.SemiBold}"/>
                                 </Border>
                             </Grid>
 
                             <!-- Errore apertura file disegno -->
-                            <Border Background="#FFEBEE" BorderBrush="#EF9A9A" BorderThickness="1"
+                            <Border Background="{DynamicResource Brush.ErrorSurface}"
+                                    BorderBrush="{DynamicResource Brush.Error}"
+                                    BorderThickness="1"
+                                    CornerRadius="{StaticResource Radius.S}"
                                     Padding="10,8" Margin="0,0,0,12"
                                     Visibility="{Binding IsErroreDisegnoVisible, Converter={StaticResource BoolToVis}}">
                                 <TextBlock Text="{Binding ErroreDisegno}"
-                                           TextWrapping="Wrap" FontSize="11" Foreground="#C62828"/>
+                                           TextWrapping="Wrap"
+                                           FontSize="{StaticResource FontSize.Caption}"
+                                           Foreground="{DynamicResource Brush.Error}"/>
                             </Border>
 
                             <!-- Sezione Macchine compatibili -->
@@ -475,45 +460,44 @@
                                 <Button DockPanel.Dock="Right"
                                         Content="+ Aggiungi"
                                         Command="{Binding AggiungiMacchinaCommand}"
-                                        Style="{StaticResource SecondaryBtn}"
-                                        FontSize="11" Padding="8,4"/>
-                                <TextBlock Text="Macchine compatibili" Style="{StaticResource SectionTitle}"
+                                        Style="{StaticResource Button.Ghost}"
+                                        Padding="8,4"/>
+                                <TextBlock Text="Macchine compatibili"
+                                           Style="{StaticResource SectionTitle}"
                                            VerticalAlignment="Center" Margin="0"/>
                             </DockPanel>
 
                             <!-- Inline: aggiungi macchina compatibile -->
                             <Border Visibility="{Binding IsAggiungiMacchinaVisible, Converter={StaticResource BoolToVis}}"
-                                    Background="#E3F2FD" BorderBrush="#90CAF9" BorderThickness="1"
+                                    Style="{StaticResource Card.Accent}"
                                     Padding="12,10" Margin="0,0,0,8">
                                 <StackPanel>
-                                    <TextBlock Text="Seleziona macchina:" FontSize="11" Foreground="#1565C0"
+                                    <TextBlock Text="Seleziona macchina:"
+                                               FontSize="{StaticResource FontSize.Caption}"
+                                               Foreground="{DynamicResource Brush.Primary}"
                                                Margin="0,0,0,6"/>
                                     <ComboBox ItemsSource="{Binding MacchineDisponibili}"
                                               SelectedItem="{Binding MacchinaCompatibileDaAggiungere}"
                                               DisplayMemberPath="NomeMacchina"
-                                              Margin="0,0,0,8" Padding="7,5"/>
+                                              Margin="0,0,0,8"/>
                                     <StackPanel Orientation="Horizontal">
                                         <Button Content="Conferma"
                                                 Command="{Binding ConfermaAggiungiMacchinaCommand}"
-                                                Style="{StaticResource PrimaryBtn}"
-                                                FontSize="11" Padding="10,5"
                                                 Margin="0,0,8,0"/>
                                         <Button Content="Annulla"
                                                 Command="{Binding AnnullaAggiungiMacchinaCommand}"
-                                                Style="{StaticResource SecondaryBtn}"
-                                                FontSize="11" Padding="10,5"/>
+                                                Style="{StaticResource Button.Secondary}"/>
                                     </StackPanel>
                                 </StackPanel>
                             </Border>
 
                             <!-- DataGrid macchine compatibili -->
-                            <Border BorderBrush="#E0E0E0" BorderThickness="1"
+                            <Border BorderBrush="{DynamicResource Brush.Border}"
+                                    BorderThickness="1"
                                     Margin="0,0,0,16" MaxHeight="180">
                                 <DataGrid ItemsSource="{Binding MacchineCompatibili}"
-                                          AutoGenerateColumns="False" CanUserAddRows="False"
-                                          IsReadOnly="True" HeadersVisibility="Column"
-                                          Background="White" BorderThickness="0"
-                                          RowHeight="28" ColumnHeaderHeight="28">
+                                          CanUserAddRows="False" IsReadOnly="True"
+                                          RowHeight="30" ColumnHeaderHeight="30">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="Macchina"
                                                            Binding="{Binding MacchinaStandard.NomeMacchina}"
@@ -525,12 +509,11 @@
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <Button Content="Rimuovi"
-                                                            FontSize="10" Padding="6,3"
+                                                            Padding="6,3"
                                                             Style="{StaticResource DangerBtn}"
                                                             Command="{Binding DataContext.RimuoviCompatibilitaCommand,
                                                                       RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                            CommandParameter="{Binding}"
-                                                            Cursor="Hand"/>
+                                                            CommandParameter="{Binding}"/>
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
@@ -540,12 +523,11 @@
 
                             <!-- Sezione Clienti associati -->
                             <TextBlock Text="Clienti associati" Style="{StaticResource SectionTitle}"/>
-                            <Border BorderBrush="#E0E0E0" BorderThickness="1" MaxHeight="160">
+                            <Border BorderBrush="{DynamicResource Brush.Border}"
+                                    BorderThickness="1" MaxHeight="160">
                                 <DataGrid ItemsSource="{Binding ClientiAssociati}"
-                                          AutoGenerateColumns="False" CanUserAddRows="False"
-                                          IsReadOnly="True" HeadersVisibility="Column"
-                                          Background="White" BorderThickness="0"
-                                          RowHeight="28" ColumnHeaderHeight="28">
+                                          CanUserAddRows="False" IsReadOnly="True"
+                                          RowHeight="30" ColumnHeaderHeight="30">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="Cliente"
                                                            Binding="{Binding Cliente.RagioneSociale}"

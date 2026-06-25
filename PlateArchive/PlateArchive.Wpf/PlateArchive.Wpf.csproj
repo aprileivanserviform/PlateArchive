@@ -14,6 +14,7 @@
     <ProjectReference Include="..\PlateArchive.Core\PlateArchive.Core.csproj" />
     <ProjectReference Include="..\PlateArchive.Data\PlateArchive.Data.csproj" />
     <ProjectReference Include="..\PlateArchive.Services\PlateArchive.Services.csproj" />
+    <ProjectReference Include="..\PlateArchive.Ui\PlateArchive.Ui.csproj" />
   </ItemGroup>
 
   <ItemGroup>

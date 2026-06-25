@@ -4,23 +4,36 @@
              xmlns:vm="clr-namespace:PlateArchive.Wpf.ViewModels"
              xmlns:views="clr-namespace:PlateArchive.Wpf.Views">
     <Application.Resources>
-        <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
-            <views:DashboardView/>
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:ClientiViewModel}">
-            <views:ClientiView/>
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:ClienteDettaglioViewModel}">
-            <views:ClienteDettaglioView/>
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:PiastreViewModel}">
-            <views:PiastreView/>
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:MacchineViewModel}">
-            <views:MacchineView/>
-        </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:DisegniViewModel}">
-            <views:DisegniView/>
-        </DataTemplate>
+        <ResourceDictionary>
+
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Design system PlateArchive (token + brush + stili controllo) -->
+                <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/PlateArchiveTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- ───────────────────────────────────────────────
+                 ROUTING: DataTemplate ViewModel → View
+                 (restano qui: dipendono da tipi di questo assembly)
+            ─────────────────────────────────────────────── -->
+            <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
+                <views:DashboardView/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ClientiViewModel}">
+                <views:ClientiView/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ClienteDettaglioViewModel}">
+                <views:ClienteDettaglioView/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:PiastreViewModel}">
+                <views:PiastreView/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:MacchineViewModel}">
+                <views:MacchineView/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:DisegniViewModel}">
+                <views:DisegniView/>
+            </DataTemplate>
+
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

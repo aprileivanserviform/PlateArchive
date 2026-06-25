@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
 using PlateArchive.Data.Repositories.Interfaces;
 
@@ -58,5 +59,13 @@ public class ClientePiastraRepository(PlateArchiveDbContext db) : IClientePiastr
             db.ClientiPiastre.Remove(entity);
             await db.SaveChangesAsync();
         }
+    }
+
+    public async Task SetStatoAsync(int idClientePiastra, StatoClientePiastra stato)
+    {
+        var entity = await db.ClientiPiastre.FindAsync(idClientePiastra);
+        if (entity is null) return;
+        entity.Stato = stato;
+        await db.SaveChangesAsync();
     }
 }

@@ -41,6 +41,10 @@ public class ClienteDettaglioViewModel : ViewModelBase
     private string? _errorePiastraEsistente;
     private string? _erroreDisegno;
 
+    // Filtro storiche
+    private readonly ObservableCollection<ClientePiastra> _tuttePiastre = [];
+    private bool _mostraStoriche;
+
     public ClienteDettaglioViewModel(
         IClienteRepository          clienteRepo,
         IClienteMacchinaRepository  macchineRepo,
@@ -91,6 +95,9 @@ public class ClienteDettaglioViewModel : ViewModelBase
         AprirDisegnoCommand = new RelayCommand(
             p => AprirDisegno((ClientePiastra)p!),
             p => p is ClientePiastra cp && !string.IsNullOrWhiteSpace(cp.Piastra?.Disegno?.PercorsoFile));
+
+        ToggleStatoPiastraCommand = new RelayCommand(
+            async p => await ToggleStatoPiastraAsync((ClientePiastra)p!));
     }
 
     // --- Proprietà ---
@@ -184,6 +191,13 @@ public class ClienteDettaglioViewModel : ViewModelBase
     public ICommand AnnullaAggiungiPiastraCommand   { get; }
     public ICommand RimuoviPiastraCommand           { get; }
     public ICommand AprirDisegnoCommand             { get; }
+    public ICommand ToggleStatoPiastraCommand       { get; }
+
+    public bool MostraStoriche
+    {
+        get => _mostraStoriche;
+        set { if (SetField(ref _mostraStoriche, value)) AggiornaPiastre(); }
+    }
 
     // --- Caricamento dati ---
 
@@ -209,8 +223,16 @@ public class ClienteDettaglioViewModel : ViewModelBase
 
     private async Task CaricaPiastreAsync()
     {
-        Piastre.Clear();
+        _tuttePiastre.Clear();
         foreach (var p in await _piastreRepo.GetByClienteAsync(_idCliente))
+            _tuttePiastre.Add(p);
+        AggiornaPiastre();
+    }
+
+    private void AggiornaPiastre()
+    {
+        Piastre.Clear();
+        foreach (var p in _tuttePiastre.Where(p => _mostraStoriche || p.Stato != StatoClientePiastra.Obsoleta))
             Piastre.Add(p);
     }
 
@@ -337,7 +359,18 @@ public class ClienteDettaglioViewModel : ViewModelBase
     private async Task RimuoviPiastraAsync(ClientePiastra piastra)
     {
         await _piastreRepo.DeleteAsync(piastra.IdClientePiastra);
-        Piastre.Remove(piastra);
+        _tuttePiastre.Remove(piastra);
+        AggiornaPiastre();
+    }
+
+    private async Task ToggleStatoPiastraAsync(ClientePiastra cp)
+    {
+        var nuovoStato = cp.Stato == StatoClientePiastra.Attiva
+            ? StatoClientePiastra.Obsoleta
+            : StatoClientePiastra.Attiva;
+        cp.Stato = nuovoStato;
+        await _piastreRepo.SetStatoAsync(cp.IdClientePiastra, nuovoStato);
+        AggiornaPiastre();
     }
 
     private void AprirDisegno(ClientePiastra cp)

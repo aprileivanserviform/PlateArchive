@@ -2,40 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <UserControl.Resources>
-        <Style x:Key="ActionButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#1E2A3B"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="16,8"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#263340"/>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Background" Value="#BDBDBD"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="SearchButtonStyle" TargetType="Button" BasedOn="{StaticResource ActionButtonStyle}">
-            <Setter Property="Padding" Value="12,6"/>
-            <Setter Property="Background" Value="#37474F"/>
-        </Style>
-    </UserControl.Resources>
-
-    <Grid Background="#F0F2F5">
+    <Grid Background="{DynamicResource Brush.Background}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -43,11 +10,15 @@
         </Grid.RowDefinitions>
 
         <!-- Ricerca rapida -->
-        <Border Grid.Row="0" Background="White" Padding="24,16"
-                BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+        <Border Grid.Row="0"
+                Background="{DynamicResource Brush.Surface}"
+                Padding="24,16"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,0,0,1">
             <StackPanel>
-                <TextBlock Text="Ricerca rapida" FontSize="13" FontWeight="SemiBold"
-                           Foreground="#424242" Margin="0,0,0,12"/>
+                <TextBlock Text="Ricerca rapida"
+                           Style="{StaticResource TextBlock.Subtitle}"
+                           Margin="0,0,0,12"/>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -59,13 +30,12 @@
 
                     <!-- Cliente -->
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="Cliente" FontSize="11" Foreground="#757575" Margin="0,0,0,4"/>
+                        <TextBlock Text="Cliente" Style="{StaticResource FieldLabel}"/>
                         <DockPanel>
                             <Button DockPanel.Dock="Right" Content="Cerca" Margin="8,0,0,0"
                                     Command="{Binding RicercaClienteCommand}"
-                                    Style="{StaticResource SearchButtonStyle}"/>
-                            <TextBox Text="{Binding RicercaCliente, UpdateSourceTrigger=PropertyChanged}"
-                                     Padding="8,6" BorderBrush="#BDBDBD">
+                                    Style="{StaticResource Button.Secondary}"/>
+                            <TextBox Text="{Binding RicercaCliente, UpdateSourceTrigger=PropertyChanged}">
                                 <TextBox.InputBindings>
                                     <KeyBinding Key="Return" Command="{Binding RicercaClienteCommand}"/>
                                 </TextBox.InputBindings>
@@ -75,13 +45,12 @@
 
                     <!-- Piastra -->
                     <StackPanel Grid.Column="2">
-                        <TextBlock Text="Piastra / Codice articolo" FontSize="11" Foreground="#757575" Margin="0,0,0,4"/>
+                        <TextBlock Text="Piastra / Codice articolo" Style="{StaticResource FieldLabel}"/>
                         <DockPanel>
                             <Button DockPanel.Dock="Right" Content="Cerca" Margin="8,0,0,0"
                                     Command="{Binding RicercaPiastraCommand}"
-                                    Style="{StaticResource SearchButtonStyle}"/>
-                            <TextBox Text="{Binding RicercaPiastra, UpdateSourceTrigger=PropertyChanged}"
-                                     Padding="8,6" BorderBrush="#BDBDBD">
+                                    Style="{StaticResource Button.Secondary}"/>
+                            <TextBox Text="{Binding RicercaPiastra, UpdateSourceTrigger=PropertyChanged}">
                                 <TextBox.InputBindings>
                                     <KeyBinding Key="Return" Command="{Binding RicercaPiastraCommand}"/>
                                 </TextBox.InputBindings>
@@ -91,13 +60,12 @@
 
                     <!-- Macchina -->
                     <StackPanel Grid.Column="4">
-                        <TextBlock Text="Macchina" FontSize="11" Foreground="#757575" Margin="0,0,0,4"/>
+                        <TextBlock Text="Macchina" Style="{StaticResource FieldLabel}"/>
                         <DockPanel>
                             <Button DockPanel.Dock="Right" Content="Cerca" Margin="8,0,0,0"
                                     Command="{Binding RicercaMacchinaCommand}"
-                                    Style="{StaticResource SearchButtonStyle}"/>
-                            <TextBox Text="{Binding RicercaMacchina, UpdateSourceTrigger=PropertyChanged}"
-                                     Padding="8,6" BorderBrush="#BDBDBD">
+                                    Style="{StaticResource Button.Secondary}"/>
+                            <TextBox Text="{Binding RicercaMacchina, UpdateSourceTrigger=PropertyChanged}">
                                 <TextBox.InputBindings>
                                     <KeyBinding Key="Return" Command="{Binding RicercaMacchinaCommand}"/>
                                 </TextBox.InputBindings>
@@ -117,21 +85,21 @@
             </Grid.ColumnDefinitions>
 
             <!-- Ultime piastre inserite -->
-            <Border Grid.Column="0" Background="White"
-                    BorderBrush="#E0E0E0" BorderThickness="1">
+            <Border Grid.Column="0"
+                    Background="{DynamicResource Brush.Surface}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="1">
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Padding="16,12"
-                            BorderBrush="#E0E0E0" BorderThickness="0,0,0,1" Background="White">
+                            BorderBrush="{DynamicResource Brush.Border}"
+                            BorderThickness="0,0,0,1"
+                            Background="{DynamicResource Brush.SurfaceVariant}">
                         <TextBlock Text="Ultime piastre inserite"
-                                   FontWeight="SemiBold" FontSize="13" Foreground="#212121"/>
+                                   Style="{StaticResource TextBlock.Subtitle}"/>
                     </Border>
                     <DataGrid ItemsSource="{Binding UltimePiastre}"
-                              AutoGenerateColumns="False" CanUserAddRows="False"
-                              IsReadOnly="True" HeadersVisibility="Column"
-                              SelectionMode="Single" GridLinesVisibility="Horizontal"
-                              Background="White" RowBackground="White"
-                              AlternatingRowBackground="#FAFAFA" BorderThickness="0"
-                              RowHeight="32" ColumnHeaderHeight="32">
+                              CanUserAddRows="False" IsReadOnly="True"
+                              RowHeight="34" ColumnHeaderHeight="34">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Codice"
                                                Binding="{Binding CodicePiastra}"
@@ -150,20 +118,21 @@
             </Border>
 
             <!-- Disegni da verificare -->
-            <Border Grid.Column="2" Background="White"
-                    BorderBrush="#E0E0E0" BorderThickness="1">
+            <Border Grid.Column="2"
+                    Background="{DynamicResource Brush.Surface}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="1">
                 <DockPanel>
                     <Border DockPanel.Dock="Top" Padding="16,12"
-                            BorderBrush="#E0E0E0" BorderThickness="0,0,0,1" Background="White">
+                            BorderBrush="{DynamicResource Brush.Border}"
+                            BorderThickness="0,0,0,1"
+                            Background="{DynamicResource Brush.SurfaceVariant}">
                         <TextBlock Text="Disegni da verificare"
-                                   FontWeight="SemiBold" FontSize="13" Foreground="#212121"/>
+                                   Style="{StaticResource TextBlock.Subtitle}"/>
                     </Border>
                     <DataGrid ItemsSource="{Binding DisegniDaVerificare}"
-                              AutoGenerateColumns="False" CanUserAddRows="False"
-                              IsReadOnly="True" HeadersVisibility="Column"
-                              Background="White" RowBackground="White"
-                              AlternatingRowBackground="#FAFAFA" BorderThickness="0"
-                              RowHeight="32" ColumnHeaderHeight="32">
+                              CanUserAddRows="False" IsReadOnly="True"
+                              RowHeight="34" ColumnHeaderHeight="34">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Piastra"
                                                Binding="{Binding Piastra.CodicePiastra}"
@@ -181,20 +150,22 @@
         </Grid>
 
         <!-- Azioni rapide -->
-        <Border Grid.Row="2" Background="White" Padding="24,14"
-                BorderBrush="#E0E0E0" BorderThickness="0,1,0,0" Margin="0,20,0,0">
+        <Border Grid.Row="2"
+                Background="{DynamicResource Brush.Surface}"
+                Padding="24,14"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,1,0,0"
+                Margin="0,20,0,0">
             <StackPanel Orientation="Horizontal">
                 <Button Content="+ Nuova Piastra"
                         Command="{Binding NuovaPiastraCommand}"
-                        Style="{StaticResource ActionButtonStyle}"
-                        Margin="0,0,12,0"/>
+                        Margin="0,0,10,0"/>
                 <Button Content="+ Nuova Macchina"
                         Command="{Binding NuovaMacchinaCommand}"
-                        Style="{StaticResource ActionButtonStyle}"
-                        Margin="0,0,12,0"/>
+                        Margin="0,0,10,0"/>
                 <Button Content="Sincronizza Clienti (DB2)"
                         Command="{Binding SincronizzaClientiCommand}"
-                        Style="{StaticResource ActionButtonStyle}"/>
+                        Style="{StaticResource Button.Secondary}"/>
             </StackPanel>
         </Border>
     </Grid>

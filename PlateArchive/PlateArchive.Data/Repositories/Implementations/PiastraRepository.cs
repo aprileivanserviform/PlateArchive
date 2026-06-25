@@ -6,19 +6,32 @@ namespace PlateArchive.Data.Repositories.Implementations;
 
 public class PiastraRepository(PlateArchiveDbContext db) : IPiastraRepository
 {
+    // Le query usano il HasQueryFilter (IsEliminata == false) in automatico.
+
     public async Task<Piastra?> GetByIdAsync(int id) =>
-        await db.Piastre.Include(p => p.Disegno).FirstOrDefaultAsync(p => p.IdPiastra == id);
+        await db.Piastre
+            .Include(p => p.Categoria)
+            .Include(p => p.Disegno)
+            .FirstOrDefaultAsync(p => p.IdPiastra == id);
 
     public async Task<IEnumerable<Piastra>> GetAllAsync() =>
-        await db.Piastre.Include(p => p.Disegno).OrderBy(p => p.CodicePiastra).ToListAsync();
+        await db.Piastre
+            .Include(p => p.Categoria)
+            .Include(p => p.Disegno)
+            .OrderBy(p => p.CodicePiastra)
+            .ToListAsync();
 
     public async Task<Piastra?> GetByCodicePiastraAsync(string codice) =>
-        await db.Piastre.Include(p => p.Disegno).FirstOrDefaultAsync(p => p.CodicePiastra == codice);
+        await db.Piastre
+            .Include(p => p.Categoria)
+            .Include(p => p.Disegno)
+            .FirstOrDefaultAsync(p => p.CodicePiastra == codice);
 
     public async Task<IEnumerable<Piastra>> SearchAsync(string query)
     {
         var q = query.ToLower();
         return await db.Piastre
+            .Include(p => p.Categoria)
             .Include(p => p.Disegno)
             .Where(p => p.CodicePiastra.ToLower().Contains(q)
                      || (p.CodiceArticoloGestionale != null && p.CodiceArticoloGestionale.ToLower().Contains(q))
@@ -33,9 +46,21 @@ public class PiastraRepository(PlateArchiveDbContext db) : IPiastraRepository
             .Take(count)
             .ToListAsync();
 
+    public async Task<bool> HasClientiAssociatiAsync(int idPiastra) =>
+        await db.ClientiPiastre.AnyAsync(cp => cp.IdPiastra == idPiastra);
+
+    public async Task EliminaLogicamenteAsync(int idPiastra)
+    {
+        var piastra = await db.Piastre.FirstOrDefaultAsync(p => p.IdPiastra == idPiastra);
+        if (piastra is null) return;
+        piastra.IsEliminata        = true;
+        piastra.DataUltimaModifica = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+    }
+
     public async Task AddAsync(Piastra entity)
     {
-        entity.DataCreazione = DateTime.UtcNow;
+        entity.DataCreazione      = DateTime.UtcNow;
         entity.DataUltimaModifica = DateTime.UtcNow;
         db.Piastre.Add(entity);
         await db.SaveChangesAsync();
@@ -50,7 +75,9 @@ public class PiastraRepository(PlateArchiveDbContext db) : IPiastraRepository
 
     public async Task DeleteAsync(int id)
     {
-        var entity = await GetByIdAsync(id);
+        // Eliminazione fisica — usare EliminaLogicamenteAsync per il flusso normale
+        var entity = await db.Piastre.IgnoreQueryFilters()
+                                     .FirstOrDefaultAsync(p => p.IdPiastra == id);
         if (entity is not null)
         {
             db.Piastre.Remove(entity);

@@ -25,8 +25,10 @@ public partial class App : Application
         var services = new ServiceCollection();
 
         // Database
+        var connStr = config.GetConnectionString("PlateArchiveDB")
+            ?? throw new InvalidOperationException("Stringa di connessione 'PlateArchiveDB' non trovata in appsettings.json");
         services.AddDbContext<PlateArchiveDbContext>(opt =>
-            opt.UseSqlite("Data Source=platearchive.db"));
+            opt.UseSqlServer(connStr));
 
         // Repository
         services.AddScoped<IClienteRepository, ClienteRepository>();
@@ -36,6 +38,7 @@ public partial class App : Application
         services.AddScoped<ICompatibilitaRepository, CompatibilitaRepository>();
         services.AddScoped<IClienteMacchinaRepository, ClienteMacchinaRepository>();
         services.AddScoped<IClientePiastraRepository, ClientePiastraRepository>();
+        services.AddScoped<ICategoriaPiastraRepository, CategoriaPiastraRepository>();
 
         // Navigation e servizi
         services.AddSingleton<NavigationService>();
@@ -44,14 +47,17 @@ public partial class App : Application
         services.AddSingleton<IFileArchivioService>(new FileArchivioService(cartellaCondivisa));
 
         var db2ConnStr = config["Db2:ConnectionString"] ?? string.Empty;
-        var db2Query   = config["Db2:QueryClienti"]     ?? "SELECT CODCLI, RAGSOC, PIVA FROM THIP.CLIENTI_VEN";
+        var db2Query   = config["Db2:QueryClienti"]     ?? "SELECT cv.ID_CLIENTE, bb.CLIRASOC FROM THIP.CLIENTI_VEN cv INNER JOIN FINANCE.BBCLIPT bb ON cv.ID_AZIENDA = bb.T01CD AND cv.ID_CLIENTE = bb.CLICD WHERE cv.STATO = 'V' AND cv.ID_AZIENDA = '001'";
         services.AddTransient<ISincronizzazioneGestionaleService>(sp =>
             new SincronizzazioneGestionaleService(
                 db2ConnStr,
                 db2Query,
                 sp.GetRequiredService<IClienteRepository>()));
 
-        // ViewModels (Transient: nuova istanza a ogni navigazione via scope)
+        // Stato sincronizzazione (singleton: visibile in tutta l'app)
+        services.AddSingleton<ISyncStatusService, SyncStatusService>();
+
+        // ViewModels
         services.AddTransient<DashboardViewModel>();
         services.AddTransient<ClientiViewModel>();
         services.AddTransient<ClienteDettaglioViewModel>();
@@ -65,20 +71,34 @@ public partial class App : Application
 
         var provider = services.BuildServiceProvider();
 
-        // Seed dati di esempio (solo se il DB è vuoto)
-        using (var scope = provider.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<PlateArchiveDbContext>();
-            db.Database.EnsureCreated();
-            try { PlateArchive.Data.DbSeeder.SeedAsync(db).GetAwaiter().GetResult(); }
-            catch { /* seeder non critico: l'app parte anche senza dati seed */ }
-        }
-
-        // Navigazione iniziale alla Dashboard
         var navigation = provider.GetRequiredService<NavigationService>();
         navigation.Navigate<DashboardViewModel>();
 
         var mainWindow = provider.GetRequiredService<MainWindow>();
         mainWindow.Show();
+
+        // Sincronizzazione clienti in background — non blocca l'avvio
+        AvviaSyncInBackground(provider);
+    }
+
+    private static void AvviaSyncInBackground(IServiceProvider provider)
+    {
+        var statusService = provider.GetRequiredService<ISyncStatusService>();
+        statusService.SetRunning();
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                using var scope = provider.CreateScope();
+                var sync   = scope.ServiceProvider.GetRequiredService<ISincronizzazioneGestionaleService>();
+                var result = await sync.SincronizzaClientiAsync();
+                statusService.SetCompleted(result);
+            }
+            catch (Exception ex)
+            {
+                statusService.SetCompleted(new SincronizzazioneResult(0, 0, 0, ex.Message));
+            }
+        });
     }
 }

@@ -16,10 +16,10 @@ public static class DbSeeder
         // ── Clienti ──────────────────────────────────────────────
         var clienti = new[]
         {
-            new Cliente { CodiceClienteGestionale = "CLI-001", RagioneSociale = "Rossi Imballaggi S.r.l.", PartitaIVA = "01234567890", StatoCliente = StatoCliente.Attivo },
-            new Cliente { CodiceClienteGestionale = "CLI-002", RagioneSociale = "Verdi Macchine S.p.A.",   PartitaIVA = "09876543210", StatoCliente = StatoCliente.Attivo },
-            new Cliente { CodiceClienteGestionale = "CLI-003", RagioneSociale = "Bianchi Pack S.r.l.",     PartitaIVA = "05555555550", StatoCliente = StatoCliente.Attivo },
-            new Cliente { CodiceClienteGestionale = "CLI-004", RagioneSociale = "Neri Automazione S.p.A.", PartitaIVA = "07777777770", StatoCliente = StatoCliente.Storico },
+            new Cliente { CodiceClienteGestionale = "CLI-001", RagioneSociale = "Rossi Imballaggi S.r.l." },
+            new Cliente { CodiceClienteGestionale = "CLI-002", RagioneSociale = "Verdi Macchine S.p.A." },
+            new Cliente { CodiceClienteGestionale = "CLI-003", RagioneSociale = "Bianchi Pack S.r.l." },
+            new Cliente { CodiceClienteGestionale = "CLI-004", RagioneSociale = "Neri Automazione S.p.A." },
         };
         db.Clienti.AddRange(clienti);
 

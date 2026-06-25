@@ -4,29 +4,37 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         mc:Ignorable="d"
-        Title="PlateArchive" Height="680" Width="1100"
-        WindowStartupLocation="CenterScreen">
+        Title="PlateArchive" Height="720" Width="1160"
+        WindowStartupLocation="CenterScreen"
+        Style="{StaticResource Window.Base}">
 
     <Window.Resources>
         <Style x:Key="NavButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#90A4AE"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="20,13"/>
+            <Setter Property="Background"              Value="Transparent"/>
+            <Setter Property="Foreground"              Value="{DynamicResource Brush.TextSecondary}"/>
+            <Setter Property="BorderThickness"         Value="0"/>
+            <Setter Property="Padding"                 Value="16,12"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize"                Value="{StaticResource FontSize.Body}"/>
+            <Setter Property="FontFamily"              Value="{StaticResource FontFamily.Base}"/>
+            <Setter Property="Cursor"                  Value="Hand"/>
+            <Setter Property="SnapsToDevicePixels"     Value="True"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter/>
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}"
+                                CornerRadius="{StaticResource Radius.M}">
+                            <ContentPresenter VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#263340"/>
-                                <Setter Property="Foreground" Value="White"/>
+                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource Brush.SurfaceHover}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Brush.TextPrimary}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="{DynamicResource Brush.ControlPressed}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -35,28 +43,75 @@
         </Style>
     </Window.Resources>
 
-    <Grid>
+    <DockPanel>
+
+        <!-- ── Status bar sincronizzazione (bottom) ──────────────── -->
+        <Border DockPanel.Dock="Bottom"
+                Background="{DynamicResource Brush.Surface}"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,1,0,0"
+                Padding="16,5"
+                Visibility="{Binding SyncStatusVisible, Converter={StaticResource BoolToVis}}">
+            <StackPanel Orientation="Horizontal">
+                <!-- Indicatore rotante durante la sync -->
+                <TextBlock Text="⟳ "
+                           FontSize="12"
+                           Foreground="{DynamicResource Brush.Primary}"
+                           VerticalAlignment="Center"
+                           Visibility="{Binding IsSyncing, Converter={StaticResource BoolToVis}}"/>
+                <TextBlock Text="{Binding SyncStatusText}"
+                           FontSize="{StaticResource FontSize.Caption}"
+                           VerticalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SyncHasError}" Value="True">
+                                    <Setter Property="Foreground" Value="{DynamicResource Brush.Error}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <!-- ── Layout principale ─────────────────────────────────── -->
+        <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="210"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
         <!-- Sidebar -->
-        <Border Grid.Column="0" Background="#1E2A3B">
+        <Border Grid.Column="0"
+                Background="{DynamicResource Brush.Surface}"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,0,1,0">
             <DockPanel>
                 <!-- Logo / Titolo app -->
-                <Border DockPanel.Dock="Top" Background="#17202D" Padding="20,18">
-                    <TextBlock Text="PlateArchive"
-                               Foreground="White"
-                               FontSize="17"
-                               FontWeight="SemiBold"/>
+                <Border DockPanel.Dock="Top"
+                        Background="{DynamicResource Brush.PrimaryLighter}"
+                        Padding="20,18">
+                    <StackPanel>
+                        <TextBlock Text="PlateArchive"
+                                   Foreground="{DynamicResource Brush.Primary}"
+                                   FontSize="{StaticResource FontSize.Title}"
+                                   FontWeight="{StaticResource FontWeight.Bold}"
+                                   FontFamily="{StaticResource FontFamily.Base}"/>
+                        <TextBlock Text="Gestione piastre"
+                                   Foreground="{DynamicResource Brush.PrimaryLight}"
+                                   FontSize="{StaticResource FontSize.Caption}"
+                                   FontFamily="{StaticResource FontFamily.Base}"
+                                   Margin="0,2,0,0"/>
+                    </StackPanel>
                 </Border>
 
                 <!-- Separatore -->
-                <Rectangle DockPanel.Dock="Top" Height="1" Fill="#263340"/>
+                <Separator DockPanel.Dock="Top"/>
 
                 <!-- Voci di navigazione -->
-                <StackPanel DockPanel.Dock="Top" Margin="0,8">
+                <StackPanel DockPanel.Dock="Top" Margin="8,8">
                     <Button Content="Dashboard"
                             Command="{Binding NavigateToDashboardCommand}"
                             Style="{StaticResource NavButtonStyle}"/>
@@ -76,9 +131,11 @@
             </DockPanel>
         </Border>
 
-        <!-- Area contenuto: il ContentControl usa i DataTemplate di App.xaml -->
+        <!-- Area contenuto -->
         <ContentControl Grid.Column="1"
                         Content="{Binding CurrentViewModel}"
-                        Background="White"/>
-    </Grid>
+                        Background="{DynamicResource Brush.Background}"/>
+        </Grid>
+
+    </DockPanel>
 </Window>

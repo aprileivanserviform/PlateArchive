@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
-using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
 using PlateArchive.Data.Repositories.Interfaces;
 using PlateArchive.Services;
@@ -12,11 +11,10 @@ namespace PlateArchive.Wpf.ViewModels;
 public class ClientiViewModel : ViewModelBase
 {
     private readonly IClienteRepository _repo;
-    private readonly NavigationService _navigation;
+    private readonly NavigationService  _navigation;
     private readonly ISincronizzazioneGestionaleService _syncService;
     private readonly ObservableCollection<Cliente> _tutti = [];
-    private string _filtroRicerca           = string.Empty;
-    private string _filtroStatoSelezionato  = "Tutti";
+    private string _filtroRicerca  = string.Empty;
     private bool   _isSincronizzando;
     private string? _esitoSincronizzazione;
     private bool   _esitoIsErrore;
@@ -47,14 +45,6 @@ public class ClientiViewModel : ViewModelBase
         get => _filtroRicerca;
         set { if (SetField(ref _filtroRicerca, value)) AggiornaFiltro(); }
     }
-
-    public string FiltroStatoSelezionato
-    {
-        get => _filtroStatoSelezionato;
-        set { if (SetField(ref _filtroStatoSelezionato, value)) AggiornaFiltro(); }
-    }
-
-    public IEnumerable<string> StatiFiltro { get; } = ["Tutti", "Attivo", "Disattivato", "Storico"];
 
     public ObservableCollection<Cliente> ClientiFiltrati { get; } = [];
 
@@ -88,7 +78,7 @@ public class ClientiViewModel : ViewModelBase
     public ICommand AprirDettaglioCommand { get; }
     public ICommand SincronizzaCommand    { get; }
 
-    private async Task LoadAsync()
+    internal async Task LoadAsync()
     {
         _tutti.Clear();
         var clienti = await _repo.GetAllAsync();
@@ -113,22 +103,12 @@ public class ClientiViewModel : ViewModelBase
 
     private void AggiornaFiltro()
     {
-        StatoCliente? statoFiltro = FiltroStatoSelezionato switch
-        {
-            "Attivo"      => StatoCliente.Attivo,
-            "Disattivato" => StatoCliente.Disattivato,
-            "Storico"     => StatoCliente.Storico,
-            _             => null
-        };
-
         ClientiFiltrati.Clear();
-        var f = FiltroRicerca.Trim().ToLower();
+        var f = _filtroRicerca.Trim().ToLower();
         foreach (var c in _tutti.Where(c =>
-            (statoFiltro is null || c.StatoCliente == statoFiltro)
-            && (string.IsNullOrEmpty(f)
-                || c.CodiceClienteGestionale.ToLower().Contains(f)
-                || c.RagioneSociale.ToLower().Contains(f)
-                || (c.PartitaIVA?.ToLower().Contains(f) ?? false))))
+            string.IsNullOrEmpty(f)
+            || c.CodiceClienteGestionale.ToLower().Contains(f)
+            || c.RagioneSociale.ToLower().Contains(f)))
         {
             ClientiFiltrati.Add(c);
         }

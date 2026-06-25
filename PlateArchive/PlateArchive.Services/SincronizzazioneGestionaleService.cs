@@ -1,14 +1,9 @@
 using System.Data.Odbc;
-using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
 using PlateArchive.Data.Repositories.Interfaces;
 
 namespace PlateArchive.Services;
 
-/// <summary>
-/// Sincronizza i clienti da DB2 (PANTH01) verso il database locale via ODBC.
-/// La query deve restituire le colonne in ordine: codice, ragione_sociale, p_iva.
-/// </summary>
 public class SincronizzazioneGestionaleService(
     string connectionString,
     string queryClienti,
@@ -39,8 +34,6 @@ public class SincronizzazioneGestionaleService(
                 if (string.IsNullOrEmpty(codice)) { invariati++; continue; }
 
                 var ragSoc = reader.IsDBNull(1) ? codice : reader.GetString(1).Trim();
-                var pIva   = reader.IsDBNull(2) ? null   : reader.GetString(2).Trim();
-                if (string.IsNullOrEmpty(pIva)) pIva = null;
 
                 var esistente = await clienteRepo.GetByCodiceGestionaleAsync(codice);
 
@@ -48,29 +41,20 @@ public class SincronizzazioneGestionaleService(
                 {
                     await clienteRepo.AddAsync(new Cliente
                     {
-                        CodiceClienteGestionale  = codice,
-                        RagioneSociale           = ragSoc,
-                        PartitaIVA               = pIva,
-                        StatoCliente             = StatoCliente.Attivo,
-                        DataUltimaSincronizzazione = DateTime.UtcNow
+                        CodiceClienteGestionale = codice,
+                        RagioneSociale          = ragSoc,
                     });
                     inseriti++;
                 }
+                else if (esistente.RagioneSociale != ragSoc)
+                {
+                    esistente.RagioneSociale = ragSoc;
+                    await clienteRepo.UpdateAsync(esistente);
+                    aggiornati++;
+                }
                 else
                 {
-                    var cambiato = esistente.RagioneSociale != ragSoc || esistente.PartitaIVA != pIva;
-                    if (cambiato)
-                    {
-                        esistente.RagioneSociale            = ragSoc;
-                        esistente.PartitaIVA                = pIva;
-                        esistente.DataUltimaSincronizzazione = DateTime.UtcNow;
-                        await clienteRepo.UpdateAsync(esistente);
-                        aggiornati++;
-                    }
-                    else
-                    {
-                        invariati++;
-                    }
+                    invariati++;
                 }
             }
 
