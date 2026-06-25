@@ -25,6 +25,10 @@
                                   IsChecked="{Binding SoloAttive}"
                                   VerticalAlignment="Center"
                                   Margin="16,0,0,0"/>
+                        <ComboBox DockPanel.Dock="Right"
+                                  ItemsSource="{Binding FamiglieFiltro}"
+                                  SelectedItem="{Binding FiltroFamiglia}"
+                                  Width="130" Margin="12,0,0,0"/>
                         <TextBox Text="{Binding FiltroRicerca, UpdateSourceTrigger=PropertyChanged}"/>
                     </DockPanel>
                 </StackPanel>
@@ -62,11 +66,11 @@
                                            Binding="{Binding NomeMacchina}"
                                            Width="*"/>
                         <DataGridTextColumn Header="Famiglia"
-                                           Binding="{Binding Famiglia}"
-                                           Width="100"/>
-                        <DataGridTextColumn Header="Formato"
-                                           Binding="{Binding Formato}"
-                                           Width="70"/>
+                                           Binding="{Binding Famiglia.NomeFamiglia}"
+                                           Width="110"/>
+                        <DataGridTextColumn Header="Produttore"
+                                           Binding="{Binding Produttore.NomeProduttore}"
+                                           Width="110"/>
                         <DataGridCheckBoxColumn Header="Att."
                                                Binding="{Binding Attiva}"
                                                Width="45"/>
@@ -111,19 +115,38 @@
                                  Style="{StaticResource FieldBox}"/>
 
                         <TextBlock Text="Famiglia" Style="{StaticResource FieldLabel}"/>
-                        <TextBox Text="{Binding FormFamiglia, UpdateSourceTrigger=PropertyChanged}"
-                                 Style="{StaticResource FieldBox}"/>
+                        <ComboBox ItemsSource="{Binding FamiglieMacchine}"
+                                  SelectedItem="{Binding FormFamigliaSelezionata}"
+                                  DisplayMemberPath="NomeFamiglia"
+                                  Style="{StaticResource FieldBox}"/>
 
-                        <TextBlock Text="Formato" Style="{StaticResource FieldLabel}"/>
-                        <TextBox Text="{Binding FormFormato, UpdateSourceTrigger=PropertyChanged}"
-                                 Style="{StaticResource FieldBox}"/>
+                        <TextBlock Text="Produttore" Style="{StaticResource FieldLabel}"/>
+                        <ComboBox ItemsSource="{Binding ProduttoriMacchine}"
+                                  SelectedItem="{Binding FormProduttoreSelezionato}"
+                                  DisplayMemberPath="NomeProduttore"
+                                  Style="{StaticResource FieldBox}"/>
+
+                        <!-- Misure -->
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Larghezza (mm)" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding FormLarghezza, UpdateSourceTrigger=PropertyChanged}"
+                                         Style="{StaticResource FieldBox}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Altezza (mm)" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding FormAltezza, UpdateSourceTrigger=PropertyChanged}"
+                                         Style="{StaticResource FieldBox}"/>
+                            </StackPanel>
+                        </Grid>
 
                         <TextBlock Text="Versione" Style="{StaticResource FieldLabel}"/>
                         <TextBox Text="{Binding FormVersione, UpdateSourceTrigger=PropertyChanged}"
-                                 Style="{StaticResource FieldBox}"/>
-
-                        <TextBlock Text="Produttore" Style="{StaticResource FieldLabel}"/>
-                        <TextBox Text="{Binding FormProduttore, UpdateSourceTrigger=PropertyChanged}"
                                  Style="{StaticResource FieldBox}"/>
 
                         <TextBlock Text="Note" Style="{StaticResource FieldLabel}"/>
@@ -185,19 +208,29 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Text="Famiglia" Style="{StaticResource TextBlock.Caption}"/>
-                                    <TextBlock Text="{Binding MacchinaSelezionata.Famiglia, FallbackValue='—'}"
+                                    <TextBlock Text="{Binding MacchinaSelezionata.Famiglia.NomeFamiglia, FallbackValue='—'}"
                                                Margin="0,0,0,8"/>
-                                    <TextBlock Text="Formato" Style="{StaticResource TextBlock.Caption}"/>
-                                    <TextBlock Text="{Binding MacchinaSelezionata.Formato, FallbackValue='—'}"/>
+                                    <TextBlock Text="Larghezza (mm)" Style="{StaticResource TextBlock.Caption}"/>
+                                    <TextBlock Text="{Binding MacchinaSelezionata.LarghezzaMm, FallbackValue='—'}"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1">
-                                    <TextBlock Text="Versione" Style="{StaticResource TextBlock.Caption}"/>
-                                    <TextBlock Text="{Binding MacchinaSelezionata.Versione, FallbackValue='—'}"
-                                               Margin="0,0,0,8"/>
                                     <TextBlock Text="Produttore" Style="{StaticResource TextBlock.Caption}"/>
-                                    <TextBlock Text="{Binding MacchinaSelezionata.Produttore, FallbackValue='—'}"/>
+                                    <TextBlock Text="{Binding MacchinaSelezionata.Produttore.NomeProduttore, FallbackValue='—'}"
+                                               Margin="0,0,0,8"/>
+                                    <TextBlock Text="Altezza (mm)" Style="{StaticResource TextBlock.Caption}"/>
+                                    <TextBlock Text="{Binding MacchinaSelezionata.AltezzaMm, FallbackValue='—'}"/>
                                 </StackPanel>
                             </Grid>
+                        </Border>
+
+                        <!-- Versione -->
+                        <Border DockPanel.Dock="Top" Margin="0,0,0,16"
+                                Style="{StaticResource Card.Subtle}"
+                                Padding="12,10">
+                            <StackPanel>
+                                <TextBlock Text="Versione" Style="{StaticResource TextBlock.Caption}"/>
+                                <TextBlock Text="{Binding MacchinaSelezionata.Versione, FallbackValue='—'}"/>
+                            </StackPanel>
                         </Border>
 
                         <!-- Piastre compatibili -->

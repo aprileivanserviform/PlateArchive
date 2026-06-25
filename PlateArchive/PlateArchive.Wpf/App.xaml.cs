@@ -39,6 +39,8 @@ public partial class App : Application
         services.AddScoped<IClienteMacchinaRepository, ClienteMacchinaRepository>();
         services.AddScoped<IClientePiastraRepository, ClientePiastraRepository>();
         services.AddScoped<ICategoriaPiastraRepository, CategoriaPiastraRepository>();
+        services.AddScoped<IFamigliaMacchinaRepository, FamigliaMacchinaRepository>();
+        services.AddScoped<IProduttoreMacchinaRepository, ProduttoreMacchinaRepository>();
 
         // Navigation e servizi
         services.AddSingleton<NavigationService>();

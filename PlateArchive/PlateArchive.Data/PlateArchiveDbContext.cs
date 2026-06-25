@@ -5,19 +5,23 @@ namespace PlateArchive.Data;
 
 public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> options) : DbContext(options)
 {
-    public DbSet<Cliente>                    Clienti                  => Set<Cliente>();
-    public DbSet<MacchinaStandard>           MacchineStandard         => Set<MacchinaStandard>();
-    public DbSet<CategoriaPiastra>           CategoriePiastre         => Set<CategoriaPiastra>();
-    public DbSet<Piastra>                    Piastre                  => Set<Piastra>();
-    public DbSet<Disegno>                    Disegni                  => Set<Disegno>();
+    public DbSet<Cliente>                    Clienti                    => Set<Cliente>();
+    public DbSet<MacchinaStandard>           MacchineStandard           => Set<MacchinaStandard>();
+    public DbSet<FamigliaMacchina>           FamiglieMacchine           => Set<FamigliaMacchina>();
+    public DbSet<ProduttoreMacchina>         ProduttoriMacchine         => Set<ProduttoreMacchina>();
+    public DbSet<CategoriaPiastra>           CategoriePiastre           => Set<CategoriaPiastra>();
+    public DbSet<Piastra>                    Piastre                    => Set<Piastra>();
+    public DbSet<Disegno>                    Disegni                    => Set<Disegno>();
     public DbSet<PiastraMacchinaCompatibile> PiastreMacchineCompatibili => Set<PiastraMacchinaCompatibile>();
-    public DbSet<ClienteMacchina>            ClientiMacchine          => Set<ClienteMacchina>();
-    public DbSet<ClientePiastra>             ClientiPiastre           => Set<ClientePiastra>();
+    public DbSet<ClienteMacchina>            ClientiMacchine            => Set<ClienteMacchina>();
+    public DbSet<ClientePiastra>             ClientiPiastre             => Set<ClientePiastra>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
         mb.Entity<Cliente>().HasKey(c => c.IdCliente);
         mb.Entity<MacchinaStandard>().HasKey(m => m.IdMacchinaStandard);
+        mb.Entity<FamigliaMacchina>().HasKey(f => f.IdFamiglia);
+        mb.Entity<ProduttoreMacchina>().HasKey(p => p.IdProduttore);
         mb.Entity<CategoriaPiastra>().HasKey(c => c.IdCategoriaPiastra);
         mb.Entity<CategoriaPiastra>().HasIndex(c => c.Codice).IsUnique();
         mb.Entity<Piastra>().HasKey(p => p.IdPiastra);
@@ -26,11 +30,31 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
         mb.Entity<ClienteMacchina>().HasKey(cm => cm.IdClienteMacchina);
         mb.Entity<ClientePiastra>().HasKey(cp => cp.IdClientePiastra);
 
+        // Soft delete: query EF escludono le famiglie e produttori eliminati
+        mb.Entity<FamigliaMacchina>().HasQueryFilter(f => !f.IsEliminata);
+        mb.Entity<ProduttoreMacchina>().HasQueryFilter(p => !p.IsEliminata);
+
         mb.Entity<Cliente>()
             .HasIndex(c => c.CodiceClienteGestionale).IsUnique();
 
         mb.Entity<MacchinaStandard>()
             .HasIndex(m => m.CodiceMacchina).IsUnique();
+
+        // FK MacchinaStandard → FamiglieMacchine (opzionale; SET NULL se eliminata)
+        mb.Entity<MacchinaStandard>()
+            .HasOne(m => m.Famiglia)
+            .WithMany(f => f.Macchine)
+            .HasForeignKey(m => m.IdFamiglia)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // FK MacchinaStandard → ProduttoriMacchine (opzionale; SET NULL se eliminato)
+        mb.Entity<MacchinaStandard>()
+            .HasOne(m => m.Produttore)
+            .WithMany(p => p.Macchine)
+            .HasForeignKey(m => m.IdProduttore)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
 
         mb.Entity<Piastra>()
             .HasIndex(p => p.CodicePiastra).IsUnique();
