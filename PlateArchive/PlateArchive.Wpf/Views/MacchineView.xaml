@@ -166,16 +166,16 @@
                 </Border>
 
                 <!-- ── Dettaglio macchina selezionata ──────────── -->
-                <Border Visibility="{Binding IsDetailVisible, Converter={StaticResource BoolToVis}}"
-                        Background="{DynamicResource Brush.Surface}"
-                        BorderBrush="{DynamicResource Brush.Border}"
-                        BorderThickness="1"
-                        CornerRadius="{StaticResource Radius.M}"
-                        Padding="20">
-                    <DockPanel>
-                        <!-- Header dettaglio -->
-                        <Border DockPanel.Dock="Top" Margin="0,0,0,16">
-                            <DockPanel>
+                <ScrollViewer Visibility="{Binding IsDetailVisible, Converter={StaticResource BoolToVis}}"
+                              VerticalScrollBarVisibility="Auto">
+                    <Border Background="{DynamicResource Brush.Surface}"
+                            BorderBrush="{DynamicResource Brush.Border}"
+                            BorderThickness="1"
+                            CornerRadius="{StaticResource Radius.M}"
+                            Padding="20">
+                        <StackPanel>
+                            <!-- Header dettaglio -->
+                            <DockPanel Margin="0,0,0,16">
                                 <StackPanel DockPanel.Dock="Left">
                                     <TextBlock Text="{Binding MacchinaSelezionata.NomeMacchina}"
                                                Style="{StaticResource TextBlock.BodyLarge}"
@@ -195,89 +195,143 @@
                                             Style="{StaticResource Button.Ghost}"/>
                                 </StackPanel>
                             </DockPanel>
-                        </Border>
 
-                        <!-- Info base -->
-                        <Border DockPanel.Dock="Top" Margin="0,0,0,16"
-                                Style="{StaticResource Card.Subtle}"
-                                Padding="12,10">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Formato" Style="{StaticResource TextBlock.Caption}"/>
-                                    <TextBlock Text="{Binding MacchinaSelezionata.Formato.NomeFormato, FallbackValue='—'}"
-                                               Margin="0,0,0,8"/>
-                                    <TextBlock Text="Larghezza (mm)" Style="{StaticResource TextBlock.Caption}"/>
-                                    <TextBlock Text="{Binding MacchinaSelezionata.LarghezzaMm, FallbackValue='—'}"/>
+                            <!-- Info base -->
+                            <Border Margin="0,0,0,16"
+                                    Style="{StaticResource Card.Subtle}"
+                                    Padding="12,10">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Formato" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock Text="{Binding MacchinaSelezionata.Formato.NomeFormato, FallbackValue='—'}"
+                                                   Margin="0,0,0,8"/>
+                                        <TextBlock Text="Larghezza (mm)" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock Text="{Binding MacchinaSelezionata.LarghezzaMm, FallbackValue='—'}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Produttore" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock Text="{Binding MacchinaSelezionata.Produttore.NomeProduttore, FallbackValue='—'}"
+                                                   Margin="0,0,0,8"/>
+                                        <TextBlock Text="Altezza (mm)" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock Text="{Binding MacchinaSelezionata.AltezzaMm, FallbackValue='—'}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <!-- Versione -->
+                            <Border Margin="0,0,0,16"
+                                    Style="{StaticResource Card.Subtle}"
+                                    Padding="12,10">
+                                <StackPanel>
+                                    <TextBlock Text="Versione" Style="{StaticResource TextBlock.Caption}"/>
+                                    <TextBlock Text="{Binding MacchinaSelezionata.Versione, FallbackValue='—'}"/>
                                 </StackPanel>
-                                <StackPanel Grid.Column="1">
-                                    <TextBlock Text="Produttore" Style="{StaticResource TextBlock.Caption}"/>
-                                    <TextBlock Text="{Binding MacchinaSelezionata.Produttore.NomeProduttore, FallbackValue='—'}"
-                                               Margin="0,0,0,8"/>
-                                    <TextBlock Text="Altezza (mm)" Style="{StaticResource TextBlock.Caption}"/>
-                                    <TextBlock Text="{Binding MacchinaSelezionata.AltezzaMm, FallbackValue='—'}"/>
+                            </Border>
+
+                            <!-- Piastre compatibili -->
+                            <DockPanel Margin="0,0,0,6">
+                                <Button DockPanel.Dock="Right"
+                                        Content="+ Aggiungi"
+                                        Command="{Binding AggiungiPiastraCommand}"
+                                        Style="{StaticResource Button.Ghost}"
+                                        Padding="8,4"/>
+                                <TextBlock Text="Piastre compatibili"
+                                           Style="{StaticResource SectionTitle}"
+                                           VerticalAlignment="Center" Margin="0"/>
+                            </DockPanel>
+
+                            <!-- Inline: aggiungi piastra compatibile -->
+                            <Border Visibility="{Binding IsAggiungiPiastraVisible, Converter={StaticResource BoolToVis}}"
+                                    Style="{StaticResource Card.Accent}"
+                                    Padding="12,10" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="Seleziona piastra:"
+                                               FontSize="{StaticResource FontSize.Caption}"
+                                               Foreground="{DynamicResource Brush.Primary}"
+                                               Margin="0,0,0,6"/>
+                                    <ComboBox ItemsSource="{Binding PiastreDisponibili}"
+                                              SelectedItem="{Binding PiastraCompatibileDaAggiungere}"
+                                              Margin="0,0,0,8">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding CodicePiastra}"
+                                                               FontWeight="SemiBold"/>
+                                                    <TextBlock Text=" — "/>
+                                                    <TextBlock Text="{Binding Descrizione}"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               MaxWidth="160"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Content="Conferma"
+                                                Command="{Binding ConfermaAggiungiPiastraCommand}"
+                                                Margin="0,0,8,0"/>
+                                        <Button Content="Annulla"
+                                                Command="{Binding AnnullaAggiungiPiastraCommand}"
+                                                Style="{StaticResource Button.Secondary}"/>
+                                    </StackPanel>
                                 </StackPanel>
-                            </Grid>
-                        </Border>
+                            </Border>
 
-                        <!-- Versione -->
-                        <Border DockPanel.Dock="Top" Margin="0,0,0,16"
-                                Style="{StaticResource Card.Subtle}"
-                                Padding="12,10">
-                            <StackPanel>
-                                <TextBlock Text="Versione" Style="{StaticResource TextBlock.Caption}"/>
-                                <TextBlock Text="{Binding MacchinaSelezionata.Versione, FallbackValue='—'}"/>
-                            </StackPanel>
-                        </Border>
+                            <!-- DataGrid piastre compatibili -->
+                            <Border BorderBrush="{DynamicResource Brush.Border}"
+                                    BorderThickness="1"
+                                    Margin="0,0,0,16" MaxHeight="180">
+                                <DataGrid ItemsSource="{Binding PiastreCompatibili}"
+                                          CanUserAddRows="False" IsReadOnly="True"
+                                          RowHeight="30" ColumnHeaderHeight="30">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Codice"
+                                                           Binding="{Binding Piastra.CodicePiastra}"
+                                                           Width="100"/>
+                                        <DataGridTextColumn Header="Descrizione"
+                                                           Binding="{Binding Piastra.Descrizione}"
+                                                           Width="*"/>
+                                        <DataGridTemplateColumn Header="" Width="60">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Button Content="Rimuovi"
+                                                            Padding="6,3"
+                                                            Style="{StaticResource DangerBtn}"
+                                                            Command="{Binding DataContext.RimuoviCompatibilitaCommand,
+                                                                      RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                            CommandParameter="{Binding}"/>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Border>
 
-                        <!-- Piastre compatibili -->
-                        <TextBlock DockPanel.Dock="Top"
-                                   Text="Piastre compatibili"
-                                   Style="{StaticResource SectionTitle}"/>
-                        <Border DockPanel.Dock="Top"
-                                BorderBrush="{DynamicResource Brush.Border}"
-                                BorderThickness="1"
-                                Margin="0,0,0,16" MaxHeight="180">
-                            <DataGrid ItemsSource="{Binding PiastreCompatibili}"
-                                      CanUserAddRows="False" IsReadOnly="True"
-                                      RowHeight="30" ColumnHeaderHeight="30">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="Codice"
-                                                       Binding="{Binding Piastra.CodicePiastra}"
-                                                       Width="120"/>
-                                    <DataGridTextColumn Header="Descrizione"
-                                                       Binding="{Binding Piastra.Descrizione}"
-                                                       Width="*"/>
-                                </DataGrid.Columns>
-                            </DataGrid>
-                        </Border>
-
-                        <!-- Clienti associati -->
-                        <TextBlock DockPanel.Dock="Top"
-                                   Text="Clienti che la possiedono"
-                                   Style="{StaticResource SectionTitle}"/>
-                        <Border DockPanel.Dock="Top"
-                                BorderBrush="{DynamicResource Brush.Border}"
-                                BorderThickness="1"
-                                MaxHeight="150">
-                            <DataGrid ItemsSource="{Binding ClientiAssociati}"
-                                      CanUserAddRows="False" IsReadOnly="True"
-                                      RowHeight="30" ColumnHeaderHeight="30">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="Ragione Sociale"
-                                                       Binding="{Binding Cliente.RagioneSociale}"
-                                                       Width="*"/>
-                                    <DataGridTextColumn Header="Matricola"
-                                                       Binding="{Binding Matricola}"
-                                                       Width="90"/>
-                                </DataGrid.Columns>
-                            </DataGrid>
-                        </Border>
-                    </DockPanel>
-                </Border>
+                            <!-- Clienti associati -->
+                            <TextBlock Text="Clienti che la possiedono"
+                                       Style="{StaticResource SectionTitle}"/>
+                            <Border BorderBrush="{DynamicResource Brush.Border}"
+                                    BorderThickness="1"
+                                    MaxHeight="150">
+                                <DataGrid ItemsSource="{Binding ClientiAssociati}"
+                                          CanUserAddRows="False" IsReadOnly="True"
+                                          RowHeight="30" ColumnHeaderHeight="30">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Ragione Sociale"
+                                                           Binding="{Binding Cliente.RagioneSociale}"
+                                                           Width="*"/>
+                                        <DataGridTextColumn Header="Matricola"
+                                                           Binding="{Binding Matricola}"
+                                                           Width="90"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </ScrollViewer>
 
             </Grid>
         </Grid>

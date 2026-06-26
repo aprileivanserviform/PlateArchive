@@ -66,6 +66,7 @@ public partial class App : Application
         services.AddTransient<PiastreViewModel>();
         services.AddTransient<MacchineViewModel>();
         services.AddTransient<DisegniViewModel>();
+        services.AddTransient<FormatiMacchinaViewModel>();
 
         // MainWindow e suo ViewModel (Singleton: vivono per tutta la sessione)
         services.AddSingleton<MainWindowViewModel>();

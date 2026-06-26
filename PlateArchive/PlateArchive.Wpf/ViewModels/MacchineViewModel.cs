@@ -14,6 +14,7 @@ public class MacchineViewModel : ViewModelBase
     private readonly IClienteMacchinaRepository      _clientiMacchineRepo;
     private readonly IFormatoMacchinaRepository      _formatiRepo;
     private readonly IProduttoreMacchinaRepository   _produttoriRepo;
+    private readonly IPiastraRepository              _piastreRepo;
 
     private readonly ObservableCollection<MacchinaStandard> _tutti = [];
 
@@ -24,6 +25,8 @@ public class MacchineViewModel : ViewModelBase
     private bool    _isFormVisible;
     private bool    _isModifica;
     private int     _idMacchinaInModifica;
+    private bool    _isAggiungiPiastraVisible;
+    private Piastra? _piastraCompatibileDaAggiungere;
 
     // Campi form
     private string              _formCodiceMacchina      = string.Empty;
@@ -43,19 +46,26 @@ public class MacchineViewModel : ViewModelBase
         ICompatibilitaRepository      compatRepo,
         IClienteMacchinaRepository    clientiMacchineRepo,
         IFormatoMacchinaRepository    formatiRepo,
-        IProduttoreMacchinaRepository produttoriRepo)
+        IProduttoreMacchinaRepository produttoriRepo,
+        IPiastraRepository            piastreRepo)
     {
         _macchineRepo        = macchineRepo;
         _compatRepo          = compatRepo;
         _clientiMacchineRepo = clientiMacchineRepo;
         _formatiRepo         = formatiRepo;
         _produttoriRepo      = produttoriRepo;
+        _piastreRepo         = piastreRepo;
 
         NuovaCommand        = new RelayCommand(_ => ApriFormNuova());
         ModificaCommand     = new RelayCommand(_ => ApriFormModifica(),  _ => MacchinaSelezionata is not null);
         SalvaCommand        = new RelayCommand(async _ => await SalvaAsync());
         AnnullaFormCommand  = new RelayCommand(_ => ChiudiForm());
         ToggleAttivaCommand = new RelayCommand(async _ => await ToggleAttivaAsync(), _ => MacchinaSelezionata is not null);
+
+        AggiungiPiastraCommand        = new RelayCommand(async _ => await ApriAggiungiPiastraAsync(), _ => MacchinaSelezionata is not null);
+        ConfermaAggiungiPiastraCommand = new RelayCommand(async _ => await ConfermaAggiungiPiastraAsync(), _ => PiastraCompatibileDaAggiungere is not null);
+        AnnullaAggiungiPiastraCommand  = new RelayCommand(_ => AnnullaAggiungiPiastra());
+        RimuoviCompatibilitaCommand    = new RelayCommand(async o => await RimuoviCompatibilitaAsync(o));
 
         _ = LoadAsync();
     }
@@ -99,6 +109,7 @@ public class MacchineViewModel : ViewModelBase
             {
                 OnPropertyChanged(nameof(IsDetailVisible));
                 OnPropertyChanged(nameof(ToggleAttivaLabel));
+                if (IsAggiungiPiastraVisible) AnnullaAggiungiPiastra();
                 if (IsFormVisible && IsModifica && value is not null)
                     ApriFormModifica();
                 _ = LoadDettaglioAsync();
@@ -110,6 +121,19 @@ public class MacchineViewModel : ViewModelBase
 
     public ObservableCollection<PiastraMacchinaCompatibile> PiastreCompatibili { get; } = [];
     public ObservableCollection<ClienteMacchina>            ClientiAssociati   { get; } = [];
+    public ObservableCollection<Piastra>                    PiastreDisponibili { get; } = [];
+
+    public bool IsAggiungiPiastraVisible
+    {
+        get => _isAggiungiPiastraVisible;
+        set => SetField(ref _isAggiungiPiastraVisible, value);
+    }
+
+    public Piastra? PiastraCompatibileDaAggiungere
+    {
+        get => _piastraCompatibileDaAggiungere;
+        set => SetField(ref _piastraCompatibileDaAggiungere, value);
+    }
 
     // ─── Proprietà form ──────────────────────────────────────────
 
@@ -191,11 +215,15 @@ public class MacchineViewModel : ViewModelBase
 
     // ─── Comandi ─────────────────────────────────────────────────
 
-    public ICommand NuovaCommand        { get; }
-    public ICommand ModificaCommand     { get; }
-    public ICommand SalvaCommand        { get; }
-    public ICommand AnnullaFormCommand  { get; }
-    public ICommand ToggleAttivaCommand { get; }
+    public ICommand NuovaCommand                   { get; }
+    public ICommand ModificaCommand                { get; }
+    public ICommand SalvaCommand                   { get; }
+    public ICommand AnnullaFormCommand             { get; }
+    public ICommand ToggleAttivaCommand            { get; }
+    public ICommand AggiungiPiastraCommand         { get; }
+    public ICommand ConfermaAggiungiPiastraCommand { get; }
+    public ICommand AnnullaAggiungiPiastraCommand  { get; }
+    public ICommand RimuoviCompatibilitaCommand    { get; }
 
     // ─── Caricamento ─────────────────────────────────────────────
 
@@ -368,6 +396,52 @@ public class MacchineViewModel : ViewModelBase
         OnPropertyChanged(nameof(MacchinaSelezionata));
         OnPropertyChanged(nameof(ToggleAttivaLabel));
         AggiornaFiltro();
+    }
+
+    // ─── Aggiungi piastra compatibile ─────────────────────────
+
+    private async Task ApriAggiungiPiastraAsync()
+    {
+        var tutte = await _piastreRepo.GetAllAsync();
+        var idGiaCompat = PiastreCompatibili.Select(c => c.IdPiastra).ToHashSet();
+        var idFormato   = MacchinaSelezionata?.IdFormato;
+
+        PiastreDisponibili.Clear();
+        foreach (var p in tutte.Where(p =>
+            !idGiaCompat.Contains(p.IdPiastra)
+            && (idFormato is null || p.IdFormato == idFormato)))
+        {
+            PiastreDisponibili.Add(p);
+        }
+        PiastraCompatibileDaAggiungere = null;
+        IsAggiungiPiastraVisible       = true;
+    }
+
+    private async Task ConfermaAggiungiPiastraAsync()
+    {
+        if (MacchinaSelezionata is null || PiastraCompatibileDaAggiungere is null) return;
+        var nuova = new PiastraMacchinaCompatibile
+        {
+            IdPiastra          = PiastraCompatibileDaAggiungere.IdPiastra,
+            IdMacchinaStandard = MacchinaSelezionata.IdMacchinaStandard,
+            Attiva             = true
+        };
+        await _compatRepo.AddAsync(nuova);
+        AnnullaAggiungiPiastra();
+        await LoadDettaglioAsync();
+    }
+
+    private void AnnullaAggiungiPiastra()
+    {
+        IsAggiungiPiastraVisible       = false;
+        PiastraCompatibileDaAggiungere = null;
+    }
+
+    private async Task RimuoviCompatibilitaAsync(object? param)
+    {
+        if (param is not PiastraMacchinaCompatibile c) return;
+        await _compatRepo.DeleteAsync(c.IdCompatibilita);
+        PiastreCompatibili.Remove(c);
     }
 
     private static decimal? ParseDecimal(string s) =>
