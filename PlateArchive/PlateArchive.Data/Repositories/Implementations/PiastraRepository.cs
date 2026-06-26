@@ -11,12 +11,14 @@ public class PiastraRepository(PlateArchiveDbContext db) : IPiastraRepository
     public async Task<Piastra?> GetByIdAsync(int id) =>
         await db.Piastre
             .Include(p => p.Categoria)
+            .Include(p => p.Formato)
             .Include(p => p.Disegno)
             .FirstOrDefaultAsync(p => p.IdPiastra == id);
 
     public async Task<IEnumerable<Piastra>> GetAllAsync() =>
         await db.Piastre
             .Include(p => p.Categoria)
+            .Include(p => p.Formato)
             .Include(p => p.Disegno)
             .OrderBy(p => p.CodicePiastra)
             .ToListAsync();
@@ -24,6 +26,7 @@ public class PiastraRepository(PlateArchiveDbContext db) : IPiastraRepository
     public async Task<Piastra?> GetByCodicePiastraAsync(string codice) =>
         await db.Piastre
             .Include(p => p.Categoria)
+            .Include(p => p.Formato)
             .Include(p => p.Disegno)
             .FirstOrDefaultAsync(p => p.CodicePiastra == codice);
 
@@ -32,6 +35,7 @@ public class PiastraRepository(PlateArchiveDbContext db) : IPiastraRepository
         var q = query.ToLower();
         return await db.Piastre
             .Include(p => p.Categoria)
+            .Include(p => p.Formato)
             .Include(p => p.Disegno)
             .Where(p => p.CodicePiastra.ToLower().Contains(q)
                      || (p.CodiceArticoloGestionale != null && p.CodiceArticoloGestionale.ToLower().Contains(q))
@@ -75,7 +79,6 @@ public class PiastraRepository(PlateArchiveDbContext db) : IPiastraRepository
 
     public async Task DeleteAsync(int id)
     {
-        // Eliminazione fisica — usare EliminaLogicamenteAsync per il flusso normale
         var entity = await db.Piastre.IgnoreQueryFilters()
                                      .FirstOrDefaultAsync(p => p.IdPiastra == id);
         if (entity is not null)

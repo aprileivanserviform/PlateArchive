@@ -26,8 +26,8 @@
                                   VerticalAlignment="Center"
                                   Margin="16,0,0,0"/>
                         <ComboBox DockPanel.Dock="Right"
-                                  ItemsSource="{Binding FamiglieFiltro}"
-                                  SelectedItem="{Binding FiltroFamiglia}"
+                                  ItemsSource="{Binding FormatiFiltro}"
+                                  SelectedItem="{Binding FiltroFormato}"
                                   Width="130" Margin="12,0,0,0"/>
                         <TextBox Text="{Binding FiltroRicerca, UpdateSourceTrigger=PropertyChanged}"/>
                     </DockPanel>
@@ -65,8 +65,8 @@
                         <DataGridTextColumn Header="Nome"
                                            Binding="{Binding NomeMacchina}"
                                            Width="*"/>
-                        <DataGridTextColumn Header="Famiglia"
-                                           Binding="{Binding Famiglia.NomeFamiglia}"
+                        <DataGridTextColumn Header="Formato"
+                                           Binding="{Binding Formato.NomeFormato}"
                                            Width="110"/>
                         <DataGridTextColumn Header="Produttore"
                                            Binding="{Binding Produttore.NomeProduttore}"
@@ -114,17 +114,17 @@
                         <TextBox Text="{Binding FormNomeMacchina, UpdateSourceTrigger=PropertyChanged}"
                                  Style="{StaticResource FieldBox}"/>
 
-                        <TextBlock Text="Famiglia" Style="{StaticResource FieldLabel}"/>
-                        <ComboBox ItemsSource="{Binding FamiglieMacchine}"
-                                  SelectedItem="{Binding FormFamigliaSelezionata}"
-                                  DisplayMemberPath="NomeFamiglia"
-                                  Style="{StaticResource FieldBox}"/>
+                        <TextBlock Text="Formato" Style="{StaticResource FieldLabel}"/>
+                        <ComboBox ItemsSource="{Binding FormatiMacchine}"
+                                  SelectedItem="{Binding FormFormatoSelezionato}"
+                                  DisplayMemberPath="NomeFormato"
+                                  Margin="0,0,0,8"/>
 
                         <TextBlock Text="Produttore" Style="{StaticResource FieldLabel}"/>
                         <ComboBox ItemsSource="{Binding ProduttoriMacchine}"
                                   SelectedItem="{Binding FormProduttoreSelezionato}"
                                   DisplayMemberPath="NomeProduttore"
-                                  Style="{StaticResource FieldBox}"/>
+                                  Margin="0,0,0,8"/>
 
                         <!-- Misure -->
                         <Grid Margin="0,0,0,8">
@@ -207,8 +207,8 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Famiglia" Style="{StaticResource TextBlock.Caption}"/>
-                                    <TextBlock Text="{Binding MacchinaSelezionata.Famiglia.NomeFamiglia, FallbackValue='—'}"
+                                    <TextBlock Text="Formato" Style="{StaticResource TextBlock.Caption}"/>
+                                    <TextBlock Text="{Binding MacchinaSelezionata.Formato.NomeFormato, FallbackValue='—'}"
                                                Margin="0,0,0,8"/>
                                     <TextBlock Text="Larghezza (mm)" Style="{StaticResource TextBlock.Caption}"/>
                                     <TextBlock Text="{Binding MacchinaSelezionata.LarghezzaMm, FallbackValue='—'}"/>

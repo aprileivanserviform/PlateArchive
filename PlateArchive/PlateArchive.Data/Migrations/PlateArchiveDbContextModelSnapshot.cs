@@ -200,30 +200,30 @@ namespace PlateArchive.Data.Migrations
                     b.ToTable("Disegni");
                 });
 
-            modelBuilder.Entity("PlateArchive.Core.Models.FamigliaMacchina", b =>
+            modelBuilder.Entity("PlateArchive.Core.Models.FormatoMacchina", b =>
                 {
-                    b.Property<int>("IdFamiglia")
+                    b.Property<int>("IdFormato")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdFamiglia"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdFormato"));
 
                     b.Property<bool>("IsEliminata")
                         .HasColumnType("bit");
 
-                    b.Property<string>("NomeFamiglia")
+                    b.Property<string>("NomeFormato")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Note")
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("IdFamiglia");
+                    b.HasKey("IdFormato");
 
-                    b.HasIndex("NomeFamiglia")
+                    b.HasIndex("NomeFormato")
                         .IsUnique();
 
-                    b.ToTable("FamiglieMacchine");
+                    b.ToTable("FormatiMacchine");
                 });
 
             modelBuilder.Entity("PlateArchive.Core.Models.MacchinaStandard", b =>
@@ -244,7 +244,7 @@ namespace PlateArchive.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int?>("IdFamiglia")
+                    b.Property<int?>("IdFormato")
                         .HasColumnType("int");
 
                     b.Property<int?>("IdProduttore")
@@ -268,7 +268,7 @@ namespace PlateArchive.Data.Migrations
                     b.HasIndex("CodiceMacchina")
                         .IsUnique();
 
-                    b.HasIndex("IdFamiglia");
+                    b.HasIndex("IdFormato");
 
                     b.HasIndex("IdProduttore");
 
@@ -308,6 +308,9 @@ namespace PlateArchive.Data.Migrations
                     b.Property<int?>("IdCategoriaPiastra")
                         .HasColumnType("int");
 
+                    b.Property<int?>("IdFormato")
+                        .HasColumnType("int");
+
                     b.Property<bool>("IsEliminata")
                         .HasColumnType("bit");
 
@@ -336,6 +339,8 @@ namespace PlateArchive.Data.Migrations
                         .IsUnique();
 
                     b.HasIndex("IdCategoriaPiastra");
+
+                    b.HasIndex("IdFormato");
 
                     b.ToTable("Piastre");
                 });
@@ -464,9 +469,9 @@ namespace PlateArchive.Data.Migrations
 
             modelBuilder.Entity("PlateArchive.Core.Models.MacchinaStandard", b =>
                 {
-                    b.HasOne("PlateArchive.Core.Models.FamigliaMacchina", "Famiglia")
+                    b.HasOne("PlateArchive.Core.Models.FormatoMacchina", "Formato")
                         .WithMany("Macchine")
-                        .HasForeignKey("IdFamiglia")
+                        .HasForeignKey("IdFormato")
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("PlateArchive.Core.Models.ProduttoreMacchina", "Produttore")
@@ -474,7 +479,7 @@ namespace PlateArchive.Data.Migrations
                         .HasForeignKey("IdProduttore")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.Navigation("Famiglia");
+                    b.Navigation("Formato");
                     b.Navigation("Produttore");
                 });
 
@@ -485,7 +490,13 @@ namespace PlateArchive.Data.Migrations
                         .HasForeignKey("IdCategoriaPiastra")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("PlateArchive.Core.Models.FormatoMacchina", "Formato")
+                        .WithMany("Piastre")
+                        .HasForeignKey("IdFormato")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Categoria");
+                    b.Navigation("Formato");
                 });
 
             modelBuilder.Entity("PlateArchive.Core.Models.PiastraMacchinaCompatibile", b =>
@@ -512,9 +523,10 @@ namespace PlateArchive.Data.Migrations
                     b.Navigation("Piastre");
                 });
 
-            modelBuilder.Entity("PlateArchive.Core.Models.FamigliaMacchina", b =>
+            modelBuilder.Entity("PlateArchive.Core.Models.FormatoMacchina", b =>
                 {
                     b.Navigation("Macchine");
+                    b.Navigation("Piastre");
                 });
 
             modelBuilder.Entity("PlateArchive.Core.Models.MacchinaStandard", b =>
@@ -528,6 +540,7 @@ namespace PlateArchive.Data.Migrations
                     b.Navigation("Categoria");
                     b.Navigation("ClientiAssociati");
                     b.Navigation("Disegno");
+                    b.Navigation("Formato");
                     b.Navigation("MacchineCompatibili");
                 });
 

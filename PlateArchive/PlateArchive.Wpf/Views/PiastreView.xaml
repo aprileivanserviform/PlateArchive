@@ -26,6 +26,11 @@
                                   Width="110" Margin="10,0,0,0"
                                   VerticalAlignment="Center"/>
                         <ComboBox DockPanel.Dock="Right"
+                                  ItemsSource="{Binding FormatiFiltro}"
+                                  SelectedItem="{Binding FiltroFormatoSelezionato}"
+                                  Width="80" Margin="10,0,0,0"
+                                  VerticalAlignment="Center"/>
+                        <ComboBox DockPanel.Dock="Right"
                                   ItemsSource="{Binding CategorieFiltro}"
                                   SelectedItem="{Binding FiltroCategoriaSelezionato}"
                                   Width="100" Margin="10,0,0,0"
@@ -77,10 +82,13 @@
                                                Width="*"/>
                             <DataGridTextColumn Header="Categoria"
                                                Binding="{Binding Categoria.Descrizione}"
-                                               Width="80"/>
+                                               Width="75"/>
+                            <DataGridTextColumn Header="Formato"
+                                               Binding="{Binding Formato.NomeFormato}"
+                                               Width="65"/>
                             <DataGridTextColumn Header="Stato"
                                                Binding="{Binding Stato}"
-                                               Width="90"/>
+                                               Width="80"/>
                         </DataGrid.Columns>
                     </DataGrid>
 
@@ -144,6 +152,12 @@
                         <TextBlock Text="Stato" Style="{StaticResource FieldLabel}"/>
                         <ComboBox ItemsSource="{Binding StatiPiastra}"
                                   SelectedItem="{Binding FormStato}"
+                                  Margin="0,0,0,10"/>
+
+                        <TextBlock Text="Formato macchina" Style="{StaticResource FieldLabel}"/>
+                        <ComboBox ItemsSource="{Binding FormatiMacchine}"
+                                  SelectedItem="{Binding FormFormatoSelezionato}"
+                                  DisplayMemberPath="NomeFormato"
                                   Margin="0,0,0,10"/>
 
                         <!-- Categoria e Peso -->
@@ -300,6 +314,8 @@
                                     <StackPanel Grid.Column="0">
                                         <TextBlock Text="Stato" Style="{StaticResource TextBlock.Caption}"/>
                                         <TextBlock Text="{Binding PiastraSelezionata.Stato}" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Formato" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock Text="{Binding PiastraSelezionata.Formato.NomeFormato, FallbackValue='—'}" Margin="0,0,0,8"/>
                                         <TextBlock Text="Categoria" Style="{StaticResource TextBlock.Caption}"/>
                                         <TextBlock Text="{Binding PiastraSelezionata.Categoria.Descrizione, FallbackValue='—'}" Margin="0,0,0,8"/>
                                         <TextBlock Text="Art. gestionale" Style="{StaticResource TextBlock.Caption}"/>

@@ -8,20 +8,20 @@ public class MacchinaStandardRepository(PlateArchiveDbContext db) : IMacchinaSta
 {
     public async Task<MacchinaStandard?> GetByIdAsync(int id) =>
         await db.MacchineStandard
-            .Include(m => m.Famiglia)
+            .Include(m => m.Formato)
             .Include(m => m.Produttore)
             .FirstOrDefaultAsync(m => m.IdMacchinaStandard == id);
 
     public async Task<IEnumerable<MacchinaStandard>> GetAllAsync() =>
         await db.MacchineStandard
-            .Include(m => m.Famiglia)
+            .Include(m => m.Formato)
             .Include(m => m.Produttore)
             .OrderBy(m => m.NomeMacchina)
             .ToListAsync();
 
     public async Task<MacchinaStandard?> GetByCodiceMacchinaAsync(string codice) =>
         await db.MacchineStandard
-            .Include(m => m.Famiglia)
+            .Include(m => m.Formato)
             .Include(m => m.Produttore)
             .FirstOrDefaultAsync(m => m.CodiceMacchina == codice);
 
@@ -29,18 +29,18 @@ public class MacchinaStandardRepository(PlateArchiveDbContext db) : IMacchinaSta
     {
         var q = query.ToLower();
         return await db.MacchineStandard
-            .Include(m => m.Famiglia)
+            .Include(m => m.Formato)
             .Include(m => m.Produttore)
             .Where(m => m.NomeMacchina.ToLower().Contains(q)
                      || m.CodiceMacchina.ToLower().Contains(q)
-                     || (m.Famiglia != null && m.Famiglia.NomeFamiglia.ToLower().Contains(q)))
+                     || (m.Formato != null && m.Formato.NomeFormato.ToLower().Contains(q)))
             .OrderBy(m => m.NomeMacchina)
             .ToListAsync();
     }
 
     public async Task<IEnumerable<MacchinaStandard>> GetAttiveAsync() =>
         await db.MacchineStandard
-            .Include(m => m.Famiglia)
+            .Include(m => m.Formato)
             .Include(m => m.Produttore)
             .Where(m => m.Attiva)
             .OrderBy(m => m.NomeMacchina)

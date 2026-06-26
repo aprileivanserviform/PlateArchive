@@ -12,14 +12,14 @@ public class MacchineViewModel : ViewModelBase
     private readonly IMacchinaStandardRepository     _macchineRepo;
     private readonly ICompatibilitaRepository        _compatRepo;
     private readonly IClienteMacchinaRepository      _clientiMacchineRepo;
-    private readonly IFamigliaMacchinaRepository     _famiglieRepo;
+    private readonly IFormatoMacchinaRepository      _formatiRepo;
     private readonly IProduttoreMacchinaRepository   _produttoriRepo;
 
     private readonly ObservableCollection<MacchinaStandard> _tutti = [];
 
     private string  _filtroRicerca  = string.Empty;
     private bool    _soloAttive     = true;
-    private string  _filtroFamiglia = "Tutte";
+    private string  _filtroFormato  = "Tutti";
     private MacchinaStandard? _macchinaSelezionata;
     private bool    _isFormVisible;
     private bool    _isModifica;
@@ -28,7 +28,7 @@ public class MacchineViewModel : ViewModelBase
     // Campi form
     private string              _formCodiceMacchina      = string.Empty;
     private string              _formNomeMacchina        = string.Empty;
-    private FamigliaMacchina?   _formFamigliaSelezionata;
+    private FormatoMacchina?    _formFormatoSelezionato;
     private ProduttoreMacchina? _formProduttoreSelezionato;
     private string              _formLarghezza           = string.Empty;
     private string              _formAltezza             = string.Empty;
@@ -42,13 +42,13 @@ public class MacchineViewModel : ViewModelBase
         IMacchinaStandardRepository   macchineRepo,
         ICompatibilitaRepository      compatRepo,
         IClienteMacchinaRepository    clientiMacchineRepo,
-        IFamigliaMacchinaRepository   famiglieRepo,
+        IFormatoMacchinaRepository    formatiRepo,
         IProduttoreMacchinaRepository produttoriRepo)
     {
         _macchineRepo        = macchineRepo;
         _compatRepo          = compatRepo;
         _clientiMacchineRepo = clientiMacchineRepo;
-        _famiglieRepo        = famiglieRepo;
+        _formatiRepo         = formatiRepo;
         _produttoriRepo      = produttoriRepo;
 
         NuovaCommand        = new RelayCommand(_ => ApriFormNuova());
@@ -62,11 +62,11 @@ public class MacchineViewModel : ViewModelBase
 
     // ─── Lookup ──────────────────────────────────────────────────
 
-    public ObservableCollection<FamigliaMacchina>   FamiglieMacchine   { get; } = [];
+    public ObservableCollection<FormatoMacchina>    FormatiMacchine    { get; } = [];
     public ObservableCollection<ProduttoreMacchina> ProduttoriMacchine { get; } = [];
 
-    public IEnumerable<string> FamiglieFiltro =>
-        Enumerable.Prepend(FamiglieMacchine.Select(f => f.NomeFamiglia), "Tutte");
+    public IEnumerable<string> FormatiFiltro =>
+        Enumerable.Prepend(FormatiMacchine.Select(f => f.NomeFormato), "Tutti");
 
     // ─── Proprietà lista ─────────────────────────────────────────
 
@@ -82,10 +82,10 @@ public class MacchineViewModel : ViewModelBase
         set { if (SetField(ref _soloAttive, value)) AggiornaFiltro(); }
     }
 
-    public string FiltroFamiglia
+    public string FiltroFormato
     {
-        get => _filtroFamiglia;
-        set { if (SetField(ref _filtroFamiglia, value)) AggiornaFiltro(); }
+        get => _filtroFormato;
+        set { if (SetField(ref _filtroFormato, value)) AggiornaFiltro(); }
     }
 
     public ObservableCollection<MacchinaStandard> MacchineFiltrate { get; } = [];
@@ -141,10 +141,10 @@ public class MacchineViewModel : ViewModelBase
         set => SetField(ref _formNomeMacchina, value);
     }
 
-    public FamigliaMacchina? FormFamigliaSelezionata
+    public FormatoMacchina? FormFormatoSelezionato
     {
-        get => _formFamigliaSelezionata;
-        set => SetField(ref _formFamigliaSelezionata, value);
+        get => _formFormatoSelezionato;
+        set => SetField(ref _formFormatoSelezionato, value);
     }
 
     public ProduttoreMacchina? FormProduttoreSelezionato
@@ -201,15 +201,15 @@ public class MacchineViewModel : ViewModelBase
 
     private async Task LoadAsync()
     {
-        var famiglie   = await _famiglieRepo.GetAllAsync();
+        var formati    = await _formatiRepo.GetAllAsync();
         var produttori = await _produttoriRepo.GetAllAsync();
         var macchine   = await _macchineRepo.GetAllAsync();
 
-        foreach (var f in famiglie)   FamiglieMacchine.Add(f);
+        foreach (var f in formati)    FormatiMacchine.Add(f);
         foreach (var p in produttori) ProduttoriMacchine.Add(p);
         foreach (var m in macchine)   _tutti.Add(m);
 
-        OnPropertyChanged(nameof(FamiglieFiltro));
+        OnPropertyChanged(nameof(FormatiFiltro));
         AggiornaFiltro();
     }
 
@@ -230,18 +230,18 @@ public class MacchineViewModel : ViewModelBase
     private void AggiornaFiltro()
     {
         MacchineFiltrate.Clear();
-        var famFiltro = FiltroFamiglia == "Tutte"
+        var formatoFiltro = FiltroFormato == "Tutti"
             ? null
-            : FamiglieMacchine.FirstOrDefault(f => f.NomeFamiglia == FiltroFamiglia);
+            : FormatiMacchine.FirstOrDefault(f => f.NomeFormato == FiltroFormato);
 
         var f = FiltroRicerca.Trim().ToLower();
         foreach (var m in _tutti.Where(m =>
             (!SoloAttive || m.Attiva)
-            && (famFiltro is null || m.IdFamiglia == famFiltro.IdFamiglia)
+            && (formatoFiltro is null || m.IdFormato == formatoFiltro.IdFormato)
             && (string.IsNullOrEmpty(f)
                 || m.CodiceMacchina.ToLower().Contains(f)
                 || m.NomeMacchina.ToLower().Contains(f)
-                || (m.Famiglia?.NomeFamiglia.ToLower().Contains(f) ?? false))))
+                || (m.Formato?.NomeFormato.ToLower().Contains(f) ?? false))))
         {
             MacchineFiltrate.Add(m);
         }
@@ -284,16 +284,16 @@ public class MacchineViewModel : ViewModelBase
     private void ApriFormModifica()
     {
         if (MacchinaSelezionata is null) return;
-        _idMacchinaInModifica     = MacchinaSelezionata.IdMacchinaStandard;
-        FormCodiceMacchina        = MacchinaSelezionata.CodiceMacchina;
-        FormNomeMacchina          = MacchinaSelezionata.NomeMacchina;
-        FormFamigliaSelezionata   = FamiglieMacchine.FirstOrDefault(f => f.IdFamiglia   == MacchinaSelezionata.IdFamiglia);
-        FormProduttoreSelezionato = ProduttoriMacchine.FirstOrDefault(p => p.IdProduttore == MacchinaSelezionata.IdProduttore);
-        FormLarghezza             = MacchinaSelezionata.LarghezzaMm?.ToString("F2") ?? string.Empty;
-        FormAltezza               = MacchinaSelezionata.AltezzaMm?.ToString("F2")   ?? string.Empty;
-        FormVersione              = MacchinaSelezionata.Versione ?? string.Empty;
-        FormNote                  = MacchinaSelezionata.Note    ?? string.Empty;
-        AvvisoDuplicato           = null;
+        _idMacchinaInModifica      = MacchinaSelezionata.IdMacchinaStandard;
+        FormCodiceMacchina         = MacchinaSelezionata.CodiceMacchina;
+        FormNomeMacchina           = MacchinaSelezionata.NomeMacchina;
+        FormFormatoSelezionato     = FormatiMacchine.FirstOrDefault(f => f.IdFormato    == MacchinaSelezionata.IdFormato);
+        FormProduttoreSelezionato  = ProduttoriMacchine.FirstOrDefault(p => p.IdProduttore == MacchinaSelezionata.IdProduttore);
+        FormLarghezza              = MacchinaSelezionata.LarghezzaMm?.ToString("F2") ?? string.Empty;
+        FormAltezza                = MacchinaSelezionata.AltezzaMm?.ToString("F2")   ?? string.Empty;
+        FormVersione               = MacchinaSelezionata.Versione ?? string.Empty;
+        FormNote                   = MacchinaSelezionata.Note    ?? string.Empty;
+        AvvisoDuplicato            = null;
         IsModifica    = true;
         IsFormVisible = true;
     }
@@ -308,7 +308,7 @@ public class MacchineViewModel : ViewModelBase
     {
         FormCodiceMacchina        = FormNomeMacchina = FormLarghezza =
         FormAltezza = FormVersione = FormNote        = string.Empty;
-        FormFamigliaSelezionata   = null;
+        FormFormatoSelezionato    = null;
         FormProduttoreSelezionato = null;
         AvvisoDuplicato           = null;
     }
@@ -324,15 +324,14 @@ public class MacchineViewModel : ViewModelBase
             if (m is null) return;
             m.CodiceMacchina = FormCodiceMacchina.Trim();
             m.NomeMacchina   = FormNomeMacchina.Trim();
-            m.IdFamiglia     = FormFamigliaSelezionata?.IdFamiglia;
+            m.IdFormato      = FormFormatoSelezionato?.IdFormato;
             m.IdProduttore   = FormProduttoreSelezionato?.IdProduttore;
             m.LarghezzaMm    = ParseDecimal(FormLarghezza);
             m.AltezzaMm      = ParseDecimal(FormAltezza);
             m.Versione       = N(FormVersione);
             m.Note           = N(FormNote);
-            // Aggiorna navigation property per refresh UI immediato
-            m.Famiglia   = FormFamigliaSelezionata;
-            m.Produttore = FormProduttoreSelezionato;
+            m.Formato        = FormFormatoSelezionato;
+            m.Produttore     = FormProduttoreSelezionato;
             await _macchineRepo.UpdateAsync(m);
             MacchinaSelezionata = m;
         }
@@ -342,7 +341,7 @@ public class MacchineViewModel : ViewModelBase
             {
                 CodiceMacchina = FormCodiceMacchina.Trim(),
                 NomeMacchina   = FormNomeMacchina.Trim(),
-                IdFamiglia     = FormFamigliaSelezionata?.IdFamiglia,
+                IdFormato      = FormFormatoSelezionato?.IdFormato,
                 IdProduttore   = FormProduttoreSelezionato?.IdProduttore,
                 LarghezzaMm    = ParseDecimal(FormLarghezza),
                 AltezzaMm      = ParseDecimal(FormAltezza),
@@ -351,7 +350,7 @@ public class MacchineViewModel : ViewModelBase
                 Attiva         = true
             };
             await _macchineRepo.AddAsync(nuova);
-            nuova.Famiglia   = FormFamigliaSelezionata;
+            nuova.Formato    = FormFormatoSelezionato;
             nuova.Produttore = FormProduttoreSelezionato;
             _tutti.Add(nuova);
             MacchinaSelezionata = nuova;

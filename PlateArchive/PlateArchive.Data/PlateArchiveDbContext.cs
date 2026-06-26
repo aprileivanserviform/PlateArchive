@@ -7,7 +7,7 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
 {
     public DbSet<Cliente>                    Clienti                    => Set<Cliente>();
     public DbSet<MacchinaStandard>           MacchineStandard           => Set<MacchinaStandard>();
-    public DbSet<FamigliaMacchina>           FamiglieMacchine           => Set<FamigliaMacchina>();
+    public DbSet<FormatoMacchina>            FormatiMacchine            => Set<FormatoMacchina>();
     public DbSet<ProduttoreMacchina>         ProduttoriMacchine         => Set<ProduttoreMacchina>();
     public DbSet<CategoriaPiastra>           CategoriePiastre           => Set<CategoriaPiastra>();
     public DbSet<Piastra>                    Piastre                    => Set<Piastra>();
@@ -20,7 +20,7 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
     {
         mb.Entity<Cliente>().HasKey(c => c.IdCliente);
         mb.Entity<MacchinaStandard>().HasKey(m => m.IdMacchinaStandard);
-        mb.Entity<FamigliaMacchina>().HasKey(f => f.IdFamiglia);
+        mb.Entity<FormatoMacchina>().HasKey(f => f.IdFormato);
         mb.Entity<ProduttoreMacchina>().HasKey(p => p.IdProduttore);
         mb.Entity<CategoriaPiastra>().HasKey(c => c.IdCategoriaPiastra);
         mb.Entity<CategoriaPiastra>().HasIndex(c => c.Codice).IsUnique();
@@ -30,9 +30,10 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
         mb.Entity<ClienteMacchina>().HasKey(cm => cm.IdClienteMacchina);
         mb.Entity<ClientePiastra>().HasKey(cp => cp.IdClientePiastra);
 
-        // Soft delete: query EF escludono le famiglie e produttori eliminati
-        mb.Entity<FamigliaMacchina>().HasQueryFilter(f => !f.IsEliminata);
+        // Soft delete
+        mb.Entity<FormatoMacchina>().HasQueryFilter(f => !f.IsEliminata);
         mb.Entity<ProduttoreMacchina>().HasQueryFilter(p => !p.IsEliminata);
+        mb.Entity<Piastra>().HasQueryFilter(p => !p.IsEliminata);
 
         mb.Entity<Cliente>()
             .HasIndex(c => c.CodiceClienteGestionale).IsUnique();
@@ -40,15 +41,15 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
         mb.Entity<MacchinaStandard>()
             .HasIndex(m => m.CodiceMacchina).IsUnique();
 
-        // FK MacchinaStandard → FamiglieMacchine (opzionale; SET NULL se eliminata)
+        // FK MacchinaStandard → FormatiMacchine (SET NULL)
         mb.Entity<MacchinaStandard>()
-            .HasOne(m => m.Famiglia)
+            .HasOne(m => m.Formato)
             .WithMany(f => f.Macchine)
-            .HasForeignKey(m => m.IdFamiglia)
+            .HasForeignKey(m => m.IdFormato)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.SetNull);
 
-        // FK MacchinaStandard → ProduttoriMacchine (opzionale; SET NULL se eliminato)
+        // FK MacchinaStandard → ProduttoriMacchine (SET NULL)
         mb.Entity<MacchinaStandard>()
             .HasOne(m => m.Produttore)
             .WithMany(p => p.Macchine)
@@ -64,14 +65,19 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
             .IsUnique()
             .HasFilter("[CodiceArticoloGestionale] IS NOT NULL");
 
-        // Soft delete: le query EF escludono automaticamente le piastre eliminate
-        mb.Entity<Piastra>().HasQueryFilter(p => !p.IsEliminata);
-
-        // FK Piastra → CategoriePiastre (opzionale; SET NULL se la categoria viene rimossa)
+        // FK Piastra → CategoriePiastre (SET NULL)
         mb.Entity<Piastra>()
             .HasOne(p => p.Categoria)
             .WithMany()
             .HasForeignKey(p => p.IdCategoriaPiastra)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // FK Piastra → FormatiMacchine (SET NULL)
+        mb.Entity<Piastra>()
+            .HasOne(p => p.Formato)
+            .WithMany(f => f.Piastre)
+            .HasForeignKey(p => p.IdFormato)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.SetNull);
 
@@ -84,7 +90,6 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
             .HasForeignKey<Disegno>(d => d.IdPiastra)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // ClienteMacchina: FK esplicite (Id{Entity} non corrisponde alla convenzione EF Core {Entity}Id)
         mb.Entity<ClienteMacchina>()
             .HasOne(cm => cm.Cliente)
             .WithMany(c => c.Macchine)
@@ -95,7 +100,6 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
             .WithMany(m => m.ClientiAssociati)
             .HasForeignKey(cm => cm.IdMacchinaStandard);
 
-        // PiastraMacchinaCompatibile: FK esplicite
         mb.Entity<PiastraMacchinaCompatibile>()
             .HasIndex(x => new { x.IdPiastra, x.IdMacchinaStandard }).IsUnique();
 
@@ -109,7 +113,6 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
             .WithMany(m => m.PiastreCompatibili)
             .HasForeignKey(x => x.IdMacchinaStandard);
 
-        // ClientePiastra: FK esplicite
         mb.Entity<ClientePiastra>()
             .HasIndex(x => new { x.IdCliente, x.IdPiastra }).IsUnique();
 

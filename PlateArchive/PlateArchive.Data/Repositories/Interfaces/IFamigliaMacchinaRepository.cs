@@ -2,11 +2,11 @@ using PlateArchive.Core.Models;
 
 namespace PlateArchive.Data.Repositories.Interfaces;
 
-public interface IFamigliaMacchinaRepository
+public interface IFormatoMacchinaRepository
 {
-    Task<IEnumerable<FamigliaMacchina>> GetAllAsync();
-    Task<bool>  HasMacchineAssociateAsync(int idFamiglia);
-    Task        EliminaLogicamenteAsync(int idFamiglia);
-    Task        AddAsync(FamigliaMacchina entity);
-    Task        UpdateAsync(FamigliaMacchina entity);
+    Task<IEnumerable<FormatoMacchina>> GetAllAsync();
+    Task<bool>  HasMacchineAssociateAsync(int idFormato);
+    Task        EliminaLogicamenteAsync(int idFormato);
+    Task        AddAsync(FormatoMacchina entity);
+    Task        UpdateAsync(FormatoMacchina entity);
 }

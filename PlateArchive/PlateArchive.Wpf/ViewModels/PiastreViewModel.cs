@@ -20,12 +20,14 @@ public class PiastreViewModel : ViewModelBase
     private readonly IDisegnoRepository          _disegniRepo;
     private readonly IFileArchivioService        _fileArchivio;
     private readonly ICategoriaPiastraRepository _categorieRepo;
+    private readonly IFormatoMacchinaRepository  _formatiRepo;
 
     private readonly ObservableCollection<Piastra> _tutti = [];
 
     private string    _filtroRicerca              = string.Empty;
     private string    _filtroStatoSelezionato     = "Tutti";
     private string    _filtroCategoriaSelezionato = "Tutti";
+    private string    _filtroFormatoSelezionato   = "Tutti";
     private Piastra?  _piastraSelezionata;
     private bool      _isFormVisible;
     private bool      _isModifica;
@@ -37,6 +39,7 @@ public class PiastreViewModel : ViewModelBase
     private string             _formDescrizione          = string.Empty;
     private StatoPiastra       _formStato                = StatoPiastra.Attiva;
     private CategoriaPiastra?  _formCategoriaSelezionata;
+    private FormatoMacchina?   _formFormatoSelezionato;
     private string             _formLarghezza            = string.Empty;
     private string             _formAltezza              = string.Empty;
     private string             _formSpessore             = string.Empty;
@@ -58,7 +61,8 @@ public class PiastreViewModel : ViewModelBase
         IMacchinaStandardRepository macchineRepo,
         IDisegnoRepository          disegniRepo,
         IFileArchivioService        fileArchivio,
-        ICategoriaPiastraRepository categorieRepo)
+        ICategoriaPiastraRepository categorieRepo,
+        IFormatoMacchinaRepository  formatiRepo)
     {
         _piastreRepo        = piastreRepo;
         _compatRepo         = compatRepo;
@@ -67,6 +71,7 @@ public class PiastreViewModel : ViewModelBase
         _disegniRepo        = disegniRepo;
         _fileArchivio       = fileArchivio;
         _categorieRepo      = categorieRepo;
+        _formatiRepo        = formatiRepo;
 
         NuovaCommand                    = new RelayCommand(_ => ApriFormNuova());
         ModificaCommand                 = new RelayCommand(_ => ApriFormModifica(),                          _ => PiastraSelezionata is not null);
@@ -81,6 +86,17 @@ public class PiastreViewModel : ViewModelBase
 
         _ = LoadAsync();
     }
+
+    // ─── Lookup ──────────────────────────────────────────────────
+
+    public ObservableCollection<CategoriaPiastra> CategoriePiastre { get; } = [];
+    public ObservableCollection<FormatoMacchina>  FormatiMacchine  { get; } = [];
+
+    public IEnumerable<string> CategorieFiltro =>
+        Enumerable.Prepend(CategoriePiastre.Select(c => c.Descrizione), "Tutti");
+
+    public IEnumerable<string> FormatiFiltro =>
+        Enumerable.Prepend(FormatiMacchine.Select(f => f.NomeFormato), "Tutti");
 
     // ─── Proprietà lista ─────────────────────────────────────────
 
@@ -102,15 +118,14 @@ public class PiastreViewModel : ViewModelBase
         set { if (SetField(ref _filtroCategoriaSelezionato, value)) AggiornaFiltro(); }
     }
 
+    public string FiltroFormatoSelezionato
+    {
+        get => _filtroFormatoSelezionato;
+        set { if (SetField(ref _filtroFormatoSelezionato, value)) AggiornaFiltro(); }
+    }
+
     public IEnumerable<string>       StatiFiltro  { get; } = ["Tutti", "Attiva", "Obsoleta", "Da verificare"];
     public IEnumerable<StatoPiastra> StatiPiastra { get; } = Enum.GetValues<StatoPiastra>();
-
-    // Categorie da DB — usate sia nel filtro che nel form
-    public ObservableCollection<CategoriaPiastra> CategoriePiastre { get; } = [];
-
-    // Filtro: "Tutti" + descrizioni caricate da DB
-    public IEnumerable<string> CategorieFiltro =>
-        Enumerable.Prepend(CategoriePiastre.Select(c => c.Descrizione), "Tutti");
 
     public ObservableCollection<Piastra> PiastreFiltrate { get; } = [];
 
@@ -214,6 +229,12 @@ public class PiastreViewModel : ViewModelBase
         set => SetField(ref _formCategoriaSelezionata, value);
     }
 
+    public FormatoMacchina? FormFormatoSelezionato
+    {
+        get => _formFormatoSelezionato;
+        set => SetField(ref _formFormatoSelezionato, value);
+    }
+
     public string FormLarghezza
     {
         get => _formLarghezza;
@@ -301,6 +322,10 @@ public class PiastreViewModel : ViewModelBase
         foreach (var c in categorie) CategoriePiastre.Add(c);
         OnPropertyChanged(nameof(CategorieFiltro));
 
+        var formati = await _formatiRepo.GetAllAsync();
+        foreach (var f in formati) FormatiMacchine.Add(f);
+        OnPropertyChanged(nameof(FormatiFiltro));
+
         var piastre = await _piastreRepo.GetAllAsync();
         foreach (var p in piastre) _tutti.Add(p);
         AggiornaFiltro();
@@ -335,12 +360,17 @@ public class PiastreViewModel : ViewModelBase
             ? null
             : CategoriePiastre.FirstOrDefault(c => c.Descrizione == FiltroCategoriaSelezionato);
 
+        var fmtFiltro = FiltroFormatoSelezionato == "Tutti"
+            ? null
+            : FormatiMacchine.FirstOrDefault(f => f.NomeFormato == FiltroFormatoSelezionato);
+
         var f = FiltroRicerca.Trim().ToLower();
 
         PiastreFiltrate.Clear();
         foreach (var p in _tutti.Where(p =>
             (statoFiltro is null || p.Stato == statoFiltro)
             && (catFiltro is null || p.IdCategoriaPiastra == catFiltro.IdCategoriaPiastra)
+            && (fmtFiltro is null || p.IdFormato == fmtFiltro.IdFormato)
             && (string.IsNullOrEmpty(f)
                 || p.CodicePiastra.ToLower().Contains(f)
                 || (p.CodiceArticoloGestionale?.ToLower().Contains(f) ?? false)
@@ -382,6 +412,7 @@ public class PiastreViewModel : ViewModelBase
         FormDescrizione          = PiastraSelezionata.Descrizione                ?? string.Empty;
         FormStato                = PiastraSelezionata.Stato;
         FormCategoriaSelezionata = CategoriePiastre.FirstOrDefault(c => c.IdCategoriaPiastra == PiastraSelezionata.IdCategoriaPiastra);
+        FormFormatoSelezionato   = FormatiMacchine.FirstOrDefault(f => f.IdFormato == PiastraSelezionata.IdFormato);
         FormLarghezza            = PiastraSelezionata.LarghezzaMm?.ToString("F1")  ?? string.Empty;
         FormAltezza              = PiastraSelezionata.AltezzaMm?.ToString("F1")    ?? string.Empty;
         FormSpessore             = PiastraSelezionata.SpessoreMm?.ToString("F2")   ?? string.Empty;
@@ -405,6 +436,7 @@ public class PiastreViewModel : ViewModelBase
         FormLarghezza = FormAltezza = FormSpessore = FormDurezza = FormPeso = string.Empty;
         FormStato                = StatoPiastra.Attiva;
         FormCategoriaSelezionata = null;
+        FormFormatoSelezionato   = null;
         ErroreCodiceDuplicato    = null;
         PercorsoDisegnoPendente  = null;
     }
@@ -425,6 +457,8 @@ public class PiastreViewModel : ViewModelBase
             p.Stato                    = FormStato;
             p.IdCategoriaPiastra       = FormCategoriaSelezionata?.IdCategoriaPiastra;
             p.Categoria                = FormCategoriaSelezionata;
+            p.IdFormato                = FormFormatoSelezionato?.IdFormato;
+            p.Formato                  = FormFormatoSelezionato;
             p.LarghezzaMm              = ParseDecimal(FormLarghezza);
             p.AltezzaMm                = ParseDecimal(FormAltezza);
             p.SpessoreMm               = ParseDecimal(FormSpessore);
@@ -444,6 +478,8 @@ public class PiastreViewModel : ViewModelBase
                 Stato                    = FormStato,
                 IdCategoriaPiastra       = FormCategoriaSelezionata?.IdCategoriaPiastra,
                 Categoria                = FormCategoriaSelezionata,
+                IdFormato                = FormFormatoSelezionato?.IdFormato,
+                Formato                  = FormFormatoSelezionato,
                 LarghezzaMm              = ParseDecimal(FormLarghezza),
                 AltezzaMm                = ParseDecimal(FormAltezza),
                 SpessoreMm               = ParseDecimal(FormSpessore),
@@ -508,9 +544,18 @@ public class PiastreViewModel : ViewModelBase
     {
         var tutte       = await _macchineRepo.GetAllAsync();
         var idGiaCompat = MacchineCompatibili.Select(c => c.IdMacchinaStandard).ToHashSet();
+
+        // Mostra solo le macchine con lo stesso formato della piastra (se impostato)
+        var idFormatoPiastra = PiastraSelezionata?.IdFormato;
+
         MacchineDisponibili.Clear();
-        foreach (var m in tutte.Where(m => m.Attiva && !idGiaCompat.Contains(m.IdMacchinaStandard)))
+        foreach (var m in tutte.Where(m =>
+            m.Attiva
+            && !idGiaCompat.Contains(m.IdMacchinaStandard)
+            && (idFormatoPiastra is null || m.IdFormato == idFormatoPiastra)))
+        {
             MacchineDisponibili.Add(m);
+        }
         MacchinaCompatibileDaAggiungere = null;
         IsAggiungiMacchinaVisible = true;
     }
