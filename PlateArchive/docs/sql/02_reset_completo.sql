@@ -117,7 +117,7 @@ BEGIN TRY
         Note               NVARCHAR(MAX)    NULL,
         CONSTRAINT PK_MacchineStandard  PRIMARY KEY (IdMacchinaStandard),
         CONSTRAINT FK_MacchineStandard_FormatiMacchine_IdFormato
-            FOREIGN KEY (IdFormato)    REFERENCES FormatiMacchine   (IdFormato)    ON DELETE SET NULL,
+            FOREIGN KEY (IdFormato)    REFERENCES FormatiMacchine   (IdFormato)    ON DELETE NO ACTION,
         CONSTRAINT FK_MacchineStandard_ProduttoriMacchine_IdProduttore
             FOREIGN KEY (IdProduttore) REFERENCES ProduttoriMacchine (IdProduttore) ON DELETE SET NULL
     );
@@ -149,7 +149,7 @@ BEGIN TRY
         CONSTRAINT FK_Piastre_CategoriePiastre_IdCategoriaPiastra
             FOREIGN KEY (IdCategoriaPiastra) REFERENCES CategoriePiastre (IdCategoriaPiastra) ON DELETE SET NULL,
         CONSTRAINT FK_Piastre_FormatiMacchine_IdFormato
-            FOREIGN KEY (IdFormato) REFERENCES FormatiMacchine (IdFormato) ON DELETE SET NULL
+            FOREIGN KEY (IdFormato) REFERENCES FormatiMacchine (IdFormato) ON DELETE NO ACTION
     );
     CREATE UNIQUE INDEX IX_Piastre_CodicePiastra          ON Piastre (CodicePiastra);
     CREATE UNIQUE INDEX IX_Piastre_CodiceArticoloGestionale
@@ -239,7 +239,7 @@ BEGIN TRY
         CONSTRAINT FK_ClientiPiastre_Piastre_IdPiastra
             FOREIGN KEY (IdPiastra)         REFERENCES Piastre        (IdPiastra)         ON DELETE CASCADE,
         CONSTRAINT FK_ClientiPiastre_ClientiMacchine_IdClienteMacchina
-            FOREIGN KEY (IdClienteMacchina) REFERENCES ClientiMacchine (IdClienteMacchina) ON DELETE SET NULL
+            FOREIGN KEY (IdClienteMacchina) REFERENCES ClientiMacchine (IdClienteMacchina) ON DELETE NO ACTION
     );
     CREATE UNIQUE INDEX IX_ClientiPiastre_IdCliente_IdPiastra ON ClientiPiastre (IdCliente, IdPiastra);
     CREATE INDEX IX_ClientiPiastre_IdCliente         ON ClientiPiastre (IdCliente);

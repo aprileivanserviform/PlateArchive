@@ -82,14 +82,14 @@ namespace PlateArchive.Data.Migrations
             migrationBuilder.DropColumn(name: "Formato",   table: "MacchineStandard");
             migrationBuilder.DropColumn(name: "Produttore", table: "MacchineStandard");
 
-            // FK verso le nuove tabelle lookup
+            // FK verso le nuove tabelle lookup (NO ACTION lato DB — nulling gestito da EF ClientSetNull)
             migrationBuilder.AddForeignKey(
                 name: "FK_MacchineStandard_FamiglieMacchine_IdFamiglia",
                 table: "MacchineStandard",
                 column: "IdFamiglia",
                 principalTable: "FamiglieMacchine",
                 principalColumn: "IdFamiglia",
-                onDelete: ReferentialAction.SetNull);
+                onDelete: ReferentialAction.NoAction);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_MacchineStandard_ProduttoriMacchine_IdProduttore",
@@ -97,7 +97,7 @@ namespace PlateArchive.Data.Migrations
                 column: "IdProduttore",
                 principalTable: "ProduttoriMacchine",
                 principalColumn: "IdProduttore",
-                onDelete: ReferentialAction.SetNull);
+                onDelete: ReferentialAction.NoAction);
 
             migrationBuilder.CreateIndex(
                 name: "IX_MacchineStandard_IdFamiglia",

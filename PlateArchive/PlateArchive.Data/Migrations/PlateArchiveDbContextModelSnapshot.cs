@@ -443,7 +443,7 @@ namespace PlateArchive.Data.Migrations
                     b.HasOne("PlateArchive.Core.Models.ClienteMacchina", "ClienteMacchina")
                         .WithMany()
                         .HasForeignKey("IdClienteMacchina")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.ClientSetNull);
 
                     b.HasOne("PlateArchive.Core.Models.Piastra", "Piastra")
                         .WithMany("ClientiAssociati")
@@ -472,12 +472,12 @@ namespace PlateArchive.Data.Migrations
                     b.HasOne("PlateArchive.Core.Models.FormatoMacchina", "Formato")
                         .WithMany("Macchine")
                         .HasForeignKey("IdFormato")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.ClientSetNull);
 
                     b.HasOne("PlateArchive.Core.Models.ProduttoreMacchina", "Produttore")
                         .WithMany("Macchine")
                         .HasForeignKey("IdProduttore")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.ClientSetNull);
 
                     b.Navigation("Formato");
                     b.Navigation("Produttore");
@@ -493,7 +493,7 @@ namespace PlateArchive.Data.Migrations
                     b.HasOne("PlateArchive.Core.Models.FormatoMacchina", "Formato")
                         .WithMany("Piastre")
                         .HasForeignKey("IdFormato")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.ClientSetNull);
 
                     b.Navigation("Categoria");
                     b.Navigation("Formato");

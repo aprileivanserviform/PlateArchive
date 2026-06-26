@@ -62,7 +62,7 @@ namespace PlateArchive.Data.Migrations
                 column: "IdFormato",
                 principalTable: "FormatiMacchine",
                 principalColumn: "IdFormato",
-                onDelete: ReferentialAction.SetNull);
+                onDelete: ReferentialAction.NoAction);
 
             // ── 5. Aggiungi IdFormato a Piastre ──────────────────────────────
             migrationBuilder.AddColumn<int>(
@@ -82,7 +82,7 @@ namespace PlateArchive.Data.Migrations
                 column: "IdFormato",
                 principalTable: "FormatiMacchine",
                 principalColumn: "IdFormato",
-                onDelete: ReferentialAction.SetNull);
+                onDelete: ReferentialAction.NoAction);
         }
 
         /// <inheritdoc />

@@ -205,7 +205,7 @@ namespace PlateArchive.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade).IsRequired();
                     b.HasOne("PlateArchive.Core.Models.ClienteMacchina", "ClienteMacchina")
                         .WithMany().HasForeignKey("IdClienteMacchina")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.ClientSetNull);
                     b.HasOne("PlateArchive.Core.Models.Piastra", "Piastra")
                         .WithMany("ClientiAssociati").HasForeignKey("IdPiastra")
                         .OnDelete(DeleteBehavior.Cascade).IsRequired();

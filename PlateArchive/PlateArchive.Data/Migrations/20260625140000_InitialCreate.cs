@@ -210,7 +210,7 @@ namespace PlateArchive.Data.Migrations
                         column: x => x.IdClienteMacchina,
                         principalTable: "ClientiMacchine",
                         principalColumn: "IdClienteMacchina",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                     table.ForeignKey(
                         name: "FK_ClientiPiastre_Piastre_IdPiastra",
                         column: x => x.IdPiastra,

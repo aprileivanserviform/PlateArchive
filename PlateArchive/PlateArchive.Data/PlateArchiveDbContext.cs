@@ -41,13 +41,13 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
         mb.Entity<MacchinaStandard>()
             .HasIndex(m => m.CodiceMacchina).IsUnique();
 
-        // FK MacchinaStandard → FormatiMacchine (SET NULL)
+        // FK MacchinaStandard → FormatiMacchine (NO ACTION lato DB — ClientSetNull gestito da EF)
         mb.Entity<MacchinaStandard>()
             .HasOne(m => m.Formato)
             .WithMany(f => f.Macchine)
             .HasForeignKey(m => m.IdFormato)
             .IsRequired(false)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.ClientSetNull);
 
         // FK MacchinaStandard → ProduttoriMacchine (SET NULL)
         mb.Entity<MacchinaStandard>()
@@ -73,13 +73,13 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
             .IsRequired(false)
             .OnDelete(DeleteBehavior.SetNull);
 
-        // FK Piastra → FormatiMacchine (SET NULL)
+        // FK Piastra → FormatiMacchine (NO ACTION lato DB — ClientSetNull gestito da EF)
         mb.Entity<Piastra>()
             .HasOne(p => p.Formato)
             .WithMany(f => f.Piastre)
             .HasForeignKey(p => p.IdFormato)
             .IsRequired(false)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.ClientSetNull);
 
         // Relazione 1:1 Piastra → Disegno
         mb.Entity<Disegno>()
@@ -131,6 +131,6 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
             .WithMany()
             .HasForeignKey(cp => cp.IdClienteMacchina)
             .IsRequired(false)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.ClientSetNull);
     }
 }

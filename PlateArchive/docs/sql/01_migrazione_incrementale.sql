@@ -161,7 +161,7 @@ BEGIN TRY
             ADD CONSTRAINT FK_MacchineStandard_FormatiMacchine_IdFormato
             FOREIGN KEY (IdFormato)
             REFERENCES FormatiMacchine (IdFormato)
-            ON DELETE SET NULL;
+            ON DELETE NO ACTION;
         PRINT '  [OK] FK_MacchineStandard_FormatiMacchine_IdFormato creata.';
     END
     ELSE PRINT '  [SKIP] FK_MacchineStandard_FormatiMacchine_IdFormato esiste gia.';
@@ -202,7 +202,7 @@ BEGIN TRY
             ADD CONSTRAINT FK_Piastre_FormatiMacchine_IdFormato
             FOREIGN KEY (IdFormato)
             REFERENCES FormatiMacchine (IdFormato)
-            ON DELETE SET NULL;
+            ON DELETE NO ACTION;
         PRINT '  [OK] FK_Piastre_FormatiMacchine_IdFormato creata.';
     END
     ELSE PRINT '  [SKIP] FK_Piastre_FormatiMacchine_IdFormato esiste gia.';
