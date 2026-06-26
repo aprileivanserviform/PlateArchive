@@ -1,6 +1,19 @@
 <UserControl x:Class="PlateArchive.Wpf.Views.MacchineView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+    MacchineView — schermata catalogo modelli macchina.
+    Layout: DockPanel verticale (Header + filtri | Grid orizzontale lista | pannello destra)
+
+    Pannello destra mostra (Visibility alternata):
+      - Form creazione/modifica (IsFormVisible = true)
+      - Dettaglio macchina: piastre compatibili + clienti associati (IsDetailVisible = true)
+
+    Funzionalità speciali:
+      - "+ Aggiungi" piastra compatibile: ComboBox inline con ItemTemplate (codice + descrizione)
+      - "Rimuovi" sulla riga della piastra compatibile → RimuoviCompatibilitaCommand
+      - "Disabilita/Abilita" → ToggleAttivaCommand (macchine disabilitate spariscono con filtro SoloAttive)
+    -->
 
     <DockPanel Background="{DynamicResource Brush.Background}">
 

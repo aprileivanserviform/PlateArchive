@@ -4,9 +4,16 @@ using PlateArchive.Data.Repositories.Interfaces;
 
 namespace PlateArchive.Data.Repositories.Implementations;
 
+/// <summary>
+/// Repository per la tabella Piastre.
+/// Le query beneficiano automaticamente del HasQueryFilter(IsEliminata == false) configurato
+/// in PlateArchiveDbContext — le piastre eliminate logicamente non vengono mai restituite.
+/// Eccezione: DeleteAsync usa IgnoreQueryFilters() per poter trovare e cancellare fisicamente
+/// una piastra precedentemente eliminata logicamente (es. in test o migrazione).
+/// </summary>
 public class PiastraRepository(PlateArchiveDbContext db) : IPiastraRepository
 {
-    // Le query usano il HasQueryFilter (IsEliminata == false) in automatico.
+    // HasQueryFilter esclude automaticamente le piastre con IsEliminata = true.
 
     public async Task<Piastra?> GetByIdAsync(int id) =>
         await db.Piastre
@@ -53,6 +60,7 @@ public class PiastraRepository(PlateArchiveDbContext db) : IPiastraRepository
     public async Task<bool> HasClientiAssociatiAsync(int idPiastra) =>
         await db.ClientiPiastre.AnyAsync(cp => cp.IdPiastra == idPiastra);
 
+    // Soft-delete: imposta IsEliminata = true. Il record rimane nel DB per integrità referenziale.
     public async Task EliminaLogicamenteAsync(int idPiastra)
     {
         var piastra = await db.Piastre.FirstOrDefaultAsync(p => p.IdPiastra == idPiastra);
@@ -64,6 +72,7 @@ public class PiastraRepository(PlateArchiveDbContext db) : IPiastraRepository
 
     public async Task AddAsync(Piastra entity)
     {
+        // Timestamp gestiti dal repository, non dalla UI.
         entity.DataCreazione      = DateTime.UtcNow;
         entity.DataUltimaModifica = DateTime.UtcNow;
         db.Piastre.Add(entity);
@@ -79,6 +88,7 @@ public class PiastraRepository(PlateArchiveDbContext db) : IPiastraRepository
 
     public async Task DeleteAsync(int id)
     {
+        // IgnoreQueryFilters: trova anche piastre già eliminate logicamente (es. cleanup fisico).
         var entity = await db.Piastre.IgnoreQueryFilters()
                                      .FirstOrDefaultAsync(p => p.IdPiastra == id);
         if (entity is not null)

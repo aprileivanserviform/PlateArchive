@@ -1,6 +1,15 @@
 <UserControl x:Class="PlateArchive.Wpf.Views.DisegniView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+    DisegniView — elenco disegni tecnici (uno per piastra).
+    Layout: Header (titolo + filtri) | Grid orizzontale (lista | pannello modifica metadati)
+
+    I disegni vengono creati automaticamente dal drag-drop in PiastreView.
+    Qui si modificano: percorso file, revisione, formato, stato, note.
+    Le righe "Da verificare" sono evidenziate con sfondo ambra (DataTrigger in RowStyleDisegni).
+    "Apri file" usa Process.Start con UseShellExecute per aprire AutoCAD, PDF, ecc.
+    -->
 
     <UserControl.Resources>
         <!-- Riga evidenziata per DaVerificare — estende lo stile ByteLab -->

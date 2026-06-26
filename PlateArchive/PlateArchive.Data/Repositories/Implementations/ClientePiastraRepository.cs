@@ -5,6 +5,11 @@ using PlateArchive.Data.Repositories.Interfaces;
 
 namespace PlateArchive.Data.Repositories.Implementations;
 
+/// <summary>
+/// Repository per la tabella ClientiPiastre (associazione commerciale cliente ↔ piastra).
+/// Le query includono sempre Piastra.Disegno (ThenInclude) perché la UI mostra l'icona disegno
+/// e permette di aprire il file direttamente dalla lista piastre del cliente.
+/// </summary>
 public class ClientePiastraRepository(PlateArchiveDbContext db) : IClientePiastraRepository
 {
     public async Task<ClientePiastra?> GetByIdAsync(int id) =>

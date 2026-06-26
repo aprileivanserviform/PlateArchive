@@ -7,6 +7,16 @@ using PlateArchive.Wpf.Commands;
 
 namespace PlateArchive.Wpf.ViewModels;
 
+/// <summary>
+/// ViewModel della schermata "Formati Macchina" (sezione Impostazioni).
+/// Gestisce il CRUD della tabella lookup <see cref="FormatoMacchina"/>:
+/// i formati determinano la compatibilità tra piastre e macchine.
+/// <para>
+/// Layout: lista a sinistra | pannello destra (azioni sul selezionato OPPURE form).
+/// - <see cref="IsDetailVisible"/> = elemento selezionato + nessun form aperto → mostra pulsanti Modifica/Elimina
+/// - <see cref="IsFormVisible"/>   = form aperto (nuovo o modifica) → mostra i campi di testo
+/// </para>
+/// </summary>
 public class FormatiMacchinaViewModel : ViewModelBase
 {
     private readonly IFormatoMacchinaRepository _formatiRepo;
@@ -16,7 +26,7 @@ public class FormatiMacchinaViewModel : ViewModelBase
     private string?          _errore;
     private bool             _isFormVisible;
     private bool             _isModifica;
-    private int              _idInModifica;
+    private int              _idInModifica;  // 0 = nuovo record
     private FormatoMacchina? _formatoSelezionato;
 
     public FormatiMacchinaViewModel(IFormatoMacchinaRepository formatiRepo)
@@ -32,6 +42,9 @@ public class FormatiMacchinaViewModel : ViewModelBase
         _ = LoadAsync();
     }
 
+    // ─── Lista formati ────────────────────────────────────────────────────────
+
+    /// <summary>Tutti i formati non eliminati — bound alla DataGrid.</summary>
     public ObservableCollection<FormatoMacchina> Formati { get; } = [];
 
     public FormatoMacchina? FormatoSelezionato
@@ -40,9 +53,12 @@ public class FormatiMacchinaViewModel : ViewModelBase
         set
         {
             if (SetField(ref _formatoSelezionato, value))
+                // IsDetailVisible dipende sia da FormatoSelezionato che da IsFormVisible.
                 OnPropertyChanged(nameof(IsDetailVisible));
         }
     }
+
+    // ─── Stato pannello destra ────────────────────────────────────────────────
 
     public bool IsFormVisible
     {
@@ -63,12 +79,16 @@ public class FormatiMacchinaViewModel : ViewModelBase
         set { if (SetField(ref _isModifica, value)) OnPropertyChanged(nameof(FormTitolo)); }
     }
 
+    /// <summary>True quando c'è un formato selezionato E il form non è aperto → mostra azioni.</summary>
     public bool   IsDetailVisible => FormatoSelezionato is not null && !IsFormVisible;
     public string FormTitolo      => IsModifica ? "Modifica formato" : "Nuovo formato";
+
+    // ─── Campi form ───────────────────────────────────────────────────────────
 
     public string FormNome
     {
         get => _formNome;
+        // La validazione duplicati scatta ad ogni carattere digitato (real-time).
         set { if (SetField(ref _formNome, value)) ControllaDuplicato(value); }
     }
 
@@ -86,11 +106,15 @@ public class FormatiMacchinaViewModel : ViewModelBase
 
     public bool IsErroreVisible => !string.IsNullOrEmpty(_errore);
 
+    // ─── Comandi ─────────────────────────────────────────────────────────────
+
     public ICommand NuovoCommand    { get; }
     public ICommand SalvaCommand    { get; }
     public ICommand AnnullaCommand  { get; }
     public ICommand ModificaCommand { get; }
     public ICommand EliminaCommand  { get; }
+
+    // ─── Caricamento ─────────────────────────────────────────────────────────
 
     private async Task LoadAsync()
     {
@@ -99,6 +123,12 @@ public class FormatiMacchinaViewModel : ViewModelBase
         foreach (var f in formati) Formati.Add(f);
     }
 
+    // ─── Validazione ──────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Verifica in memoria se esiste già un formato con lo stesso nome (case-insensitive),
+    /// escludendo quello che si sta modificando (se _idInModifica != 0).
+    /// </summary>
     private void ControllaDuplicato(string nome)
     {
         if (string.IsNullOrWhiteSpace(nome)) { Errore = null; return; }
@@ -108,9 +138,11 @@ public class FormatiMacchinaViewModel : ViewModelBase
         Errore = dup is not null ? $"Formato '{dup.NomeFormato}' già presente." : null;
     }
 
+    // ─── Gestione form ────────────────────────────────────────────────────────
+
     private void ApriFormNuovo()
     {
-        _idInModifica = 0;
+        _idInModifica = 0;  // 0 = nuovo record (nessun ID da escludere dalla validazione duplicati)
         IsModifica    = false;
         FormNome      = string.Empty;
         FormNote      = string.Empty;
@@ -136,6 +168,8 @@ public class FormatiMacchinaViewModel : ViewModelBase
         Errore   = null;
     }
 
+    // ─── Persistenza ─────────────────────────────────────────────────────────
+
     private async Task SalvaAsync()
     {
         var nome = FormNome.Trim();
@@ -143,6 +177,7 @@ public class FormatiMacchinaViewModel : ViewModelBase
 
         if (IsModifica)
         {
+            // Modifica in-place sull'oggetto già in lista (EF Core lo traccia).
             var f = Formati.FirstOrDefault(x => x.IdFormato == _idInModifica);
             if (f is null) return;
             f.NomeFormato = nome;
@@ -157,13 +192,15 @@ public class FormatiMacchinaViewModel : ViewModelBase
         }
 
         ChiudiForm();
-        await LoadAsync();
+        await LoadAsync();  // Ricarica per aggiornare l'ordinamento e l'ID del nuovo record.
     }
 
     private async Task EliminaAsync()
     {
         if (FormatoSelezionato is null) return;
 
+        // Prima di eliminare, verifica se il formato è ancora usato da macchine o piastre.
+        // Se sì, mostra un messaggio e blocca l'eliminazione (integrità referenziale soft).
         var haAssociazioni = await _formatiRepo.HasMacchineAssociateAsync(FormatoSelezionato.IdFormato);
         if (haAssociazioni)
         {
@@ -184,6 +221,7 @@ public class FormatiMacchinaViewModel : ViewModelBase
 
         if (conferma != MessageBoxResult.Yes) return;
 
+        // Soft-delete: imposta IsEliminata = true, non cancella il record.
         await _formatiRepo.EliminaLogicamenteAsync(FormatoSelezionato.IdFormato);
         Formati.Remove(FormatoSelezionato);
         FormatoSelezionato = null;

@@ -4,6 +4,12 @@ using PlateArchive.Data.Repositories.Interfaces;
 
 namespace PlateArchive.Services;
 
+/// <summary>
+/// Implementazione della sincronizzazione clienti dal gestionale DB2.
+/// Usa ODBC (non un driver .NET nativo) perché DB2 su AS/400 è accessibile
+/// solo tramite il driver ODBC IBM installato sui PC aziendali via VPN.
+/// La query è configurabile in appsettings.json (Db2:QueryClienti).
+/// </summary>
 public class SincronizzazioneGestionaleService(
     string connectionString,
     string queryClienti,
@@ -13,6 +19,7 @@ public class SincronizzazioneGestionaleService(
 
     public async Task<SincronizzazioneResult> SincronizzaClientiAsync(CancellationToken ct = default)
     {
+        // Se la stringa di connessione non è configurata (sviluppo locale senza VPN), esce subito.
         if (!IsDisponibile)
             return new SincronizzazioneResult(0, 0, 0, "Stringa di connessione DB2 non configurata.");
 
@@ -20,10 +27,10 @@ public class SincronizzazioneGestionaleService(
 
         try
         {
-            using var conn = new OdbcConnection(connectionString);
+            using var conn   = new OdbcConnection(connectionString);
             await conn.OpenAsync(ct);
 
-            using var cmd = new OdbcCommand(queryClienti, conn);
+            using var cmd    = new OdbcCommand(queryClienti, conn);
             using var reader = await cmd.ExecuteReaderAsync(ct);
 
             while (await reader.ReadAsync(ct))
@@ -35,6 +42,7 @@ public class SincronizzazioneGestionaleService(
 
                 var ragSoc = reader.IsDBNull(1) ? codice : reader.GetString(1).Trim();
 
+                // Strategia upsert: se esiste aggiorno la ragione sociale, altrimenti inserisco.
                 var esistente = await clienteRepo.GetByCodiceGestionaleAsync(codice);
 
                 if (esistente is null)

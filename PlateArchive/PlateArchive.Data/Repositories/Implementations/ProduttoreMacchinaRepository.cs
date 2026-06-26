@@ -4,6 +4,11 @@ using PlateArchive.Data.Repositories.Interfaces;
 
 namespace PlateArchive.Data.Repositories.Implementations;
 
+/// <summary>
+/// Repository per la tabella ProduttoriMacchine (lookup con soft-delete).
+/// Stessa struttura di FormatoMacchinaRepository: HasMacchineAssociateAsync
+/// protegge dall'eliminazione di un produttore ancora referenziato da macchine.
+/// </summary>
 public class ProduttoreMacchinaRepository(PlateArchiveDbContext db) : IProduttoreMacchinaRepository
 {
     public async Task<IEnumerable<ProduttoreMacchina>> GetAllAsync() =>

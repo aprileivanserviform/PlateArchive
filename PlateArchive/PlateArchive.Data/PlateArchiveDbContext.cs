@@ -3,8 +3,18 @@ using PlateArchive.Core.Models;
 
 namespace PlateArchive.Data;
 
+/// <summary>
+/// DbContext principale dell'applicazione.
+/// Configurato in App.xaml.cs con SQL Server (prod) o SQLite (dev/test).
+/// <para>
+/// Ogni schermata WPF ottiene la propria istanza (Scoped) tramite NavigationService:
+/// quando si naviga altrove il scope viene distrutto → DbContext rilasciato.
+/// </para>
+/// </summary>
 public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> options) : DbContext(options)
 {
+    // ─── DbSet (uno per tabella) ──────────────────────────────────────────────
+
     public DbSet<Cliente>                    Clienti                    => Set<Cliente>();
     public DbSet<MacchinaStandard>           MacchineStandard           => Set<MacchinaStandard>();
     public DbSet<FormatoMacchina>            FormatiMacchine            => Set<FormatoMacchina>();
@@ -18,6 +28,8 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
+        // ─── Chiavi primarie ──────────────────────────────────────────────────
+
         mb.Entity<Cliente>().HasKey(c => c.IdCliente);
         mb.Entity<MacchinaStandard>().HasKey(m => m.IdMacchinaStandard);
         mb.Entity<FormatoMacchina>().HasKey(f => f.IdFormato);
@@ -30,10 +42,15 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
         mb.Entity<ClienteMacchina>().HasKey(cm => cm.IdClienteMacchina);
         mb.Entity<ClientePiastra>().HasKey(cp => cp.IdClientePiastra);
 
-        // Soft delete
+        // ─── Query filter soft-delete ─────────────────────────────────────────
+        // Le entità con IsEliminata = true vengono automaticamente escluse da tutte le query.
+        // Per bypassare il filtro (es. in repository specializzati) si usa .IgnoreQueryFilters().
+
         mb.Entity<FormatoMacchina>().HasQueryFilter(f => !f.IsEliminata);
         mb.Entity<ProduttoreMacchina>().HasQueryFilter(p => !p.IsEliminata);
         mb.Entity<Piastra>().HasQueryFilter(p => !p.IsEliminata);
+
+        // ─── Indici univoci ───────────────────────────────────────────────────
 
         mb.Entity<Cliente>()
             .HasIndex(c => c.CodiceClienteGestionale).IsUnique();
@@ -41,7 +58,11 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
         mb.Entity<MacchinaStandard>()
             .HasIndex(m => m.CodiceMacchina).IsUnique();
 
-        // FK MacchinaStandard → FormatiMacchine (NO ACTION lato DB — ClientSetNull gestito da EF)
+        // ─── FK MacchinaStandard → FormatiMacchine ────────────────────────────
+        // ClientSetNull genera ON DELETE NO ACTION nel DB (evita Msg 1785 — multiple cascade paths).
+        // Quando il formato viene eliminato logicamente, EF Core imposta IdFormato = null in memoria
+        // prima di chiamare SaveChanges, senza propagazione a cascata lato DB.
+
         mb.Entity<MacchinaStandard>()
             .HasOne(m => m.Formato)
             .WithMany(f => f.Macchine)
@@ -49,7 +70,7 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
             .IsRequired(false)
             .OnDelete(DeleteBehavior.ClientSetNull);
 
-        // FK MacchinaStandard → ProduttoriMacchine (SET NULL)
+        // FK MacchinaStandard → ProduttoriMacchine (SET NULL — percorso unico, nessun Msg 1785)
         mb.Entity<MacchinaStandard>()
             .HasOne(m => m.Produttore)
             .WithMany(p => p.Macchine)
@@ -57,15 +78,18 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
             .IsRequired(false)
             .OnDelete(DeleteBehavior.SetNull);
 
+        // ─── Piastra ──────────────────────────────────────────────────────────
+
         mb.Entity<Piastra>()
             .HasIndex(p => p.CodicePiastra).IsUnique();
 
+        // CodiceArticoloGestionale univoco solo quando valorizzato (NULL non viola l'unique).
         mb.Entity<Piastra>()
             .HasIndex(p => p.CodiceArticoloGestionale)
             .IsUnique()
             .HasFilter("[CodiceArticoloGestionale] IS NOT NULL");
 
-        // FK Piastra → CategoriePiastre (SET NULL)
+        // FK Piastra → CategoriePiastre (SET NULL — percorso unico)
         mb.Entity<Piastra>()
             .HasOne(p => p.Categoria)
             .WithMany()
@@ -73,7 +97,7 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
             .IsRequired(false)
             .OnDelete(DeleteBehavior.SetNull);
 
-        // FK Piastra → FormatiMacchine (NO ACTION lato DB — ClientSetNull gestito da EF)
+        // FK Piastra → FormatiMacchine (ClientSetNull — stesso motivo di MacchinaStandard)
         mb.Entity<Piastra>()
             .HasOne(p => p.Formato)
             .WithMany(f => f.Piastre)
@@ -81,7 +105,9 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
             .IsRequired(false)
             .OnDelete(DeleteBehavior.ClientSetNull);
 
-        // Relazione 1:1 Piastra → Disegno
+        // ─── Disegno ──────────────────────────────────────────────────────────
+
+        // Relazione 1:1 Piastra → Disegno. Cascade: eliminare la piastra elimina il disegno.
         mb.Entity<Disegno>()
             .HasIndex(d => d.IdPiastra).IsUnique();
         mb.Entity<Disegno>()
@@ -89,6 +115,8 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
             .WithOne(p => p.Disegno)
             .HasForeignKey<Disegno>(d => d.IdPiastra)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // ─── ClienteMacchina (associazione cliente ↔ macchina standard) ──────
 
         mb.Entity<ClienteMacchina>()
             .HasOne(cm => cm.Cliente)
@@ -100,6 +128,9 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
             .WithMany(m => m.ClientiAssociati)
             .HasForeignKey(cm => cm.IdMacchinaStandard);
 
+        // ─── PiastraMacchinaCompatibile (N:N piastre ↔ macchine) ─────────────
+
+        // Coppia (IdPiastra, IdMacchinaStandard) univoca — evita duplicati.
         mb.Entity<PiastraMacchinaCompatibile>()
             .HasIndex(x => new { x.IdPiastra, x.IdMacchinaStandard }).IsUnique();
 
@@ -113,6 +144,9 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
             .WithMany(m => m.PiastreCompatibili)
             .HasForeignKey(x => x.IdMacchinaStandard);
 
+        // ─── ClientePiastra (associazione cliente ↔ piastra) ─────────────────
+
+        // Coppia (IdCliente, IdPiastra) univoca — un cliente non può avere la stessa piastra due volte.
         mb.Entity<ClientePiastra>()
             .HasIndex(x => new { x.IdCliente, x.IdPiastra }).IsUnique();
 
@@ -126,6 +160,8 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
             .WithMany(p => p.ClientiAssociati)
             .HasForeignKey(cp => cp.IdPiastra);
 
+        // FK ClientePiastra → ClienteMacchina opzionale (ClientSetNull — evita cascade multipli).
+        // Eliminare una ClienteMacchina non elimina le ClientePiastre collegate: IdClienteMacchina → null.
         mb.Entity<ClientePiastra>()
             .HasOne(cp => cp.ClienteMacchina)
             .WithMany()

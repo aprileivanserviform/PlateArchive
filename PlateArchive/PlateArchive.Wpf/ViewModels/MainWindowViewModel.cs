@@ -5,6 +5,16 @@ using PlateArchive.Wpf.Services;
 
 namespace PlateArchive.Wpf.ViewModels;
 
+/// <summary>
+/// ViewModel della finestra principale (MainWindow).
+/// Responsabilità:
+/// 1. Gestisce la navigazione tra le schermate tramite <see cref="NavigationService"/>.
+/// 2. Osserva <see cref="ISyncStatusService"/> e aggiorna la status bar in fondo alla finestra.
+/// 3. Controlla l'espansione della sezione "Impostazioni" nella sidebar.
+/// <para>
+/// È registrato come Singleton perché MainWindow vive per tutta la sessione.
+/// </para>
+/// </summary>
 public class MainWindowViewModel : ViewModelBase
 {
     private readonly NavigationService  _navigation;
@@ -17,12 +27,15 @@ public class MainWindowViewModel : ViewModelBase
         _navigation = navigation;
         _syncStatus = syncStatus;
 
+        // Propaga i cambiamenti di CurrentViewModel alla View tramite PropertyChanged.
         navigation.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(NavigationService.CurrentViewModel))
                 OnPropertyChanged(nameof(CurrentViewModel));
         };
 
+        // Quando lo stato della sync cambia (da un thread background),
+        // aggiorna le proprietà della status bar.
         syncStatus.PropertyChanged += (_, _) =>
         {
             OnPropertyChanged(nameof(SyncStatusText));
@@ -40,15 +53,25 @@ public class MainWindowViewModel : ViewModelBase
         ToggleImpostazioniCommand         = new RelayCommand(_ => IsImpostazioniExpanded = !IsImpostazioniExpanded);
     }
 
+    // ─── Navigazione ─────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// ViewModel attualmente visualizzato nel ContentControl centrale.
+    /// WPF lo abbina alla View corretta tramite i DataTemplate definiti in App.xaml.
+    /// </summary>
     public ViewModelBase? CurrentViewModel => _navigation.CurrentViewModel;
 
-    // ── Stato sincronizzazione (visibile nella status bar) ──────────────
-    public string? SyncStatusText  => _syncStatus.StatusText;
-    public bool    IsSyncing       => _syncStatus.IsRunning;
-    public bool    SyncHasError    => _syncStatus.HasError;
+    // ─── Status bar sincronizzazione ─────────────────────────────────────────
+
+    /// <summary>Testo da mostrare nella status bar (null = status bar collassata).</summary>
+    public string? SyncStatusText   => _syncStatus.StatusText;
+    public bool    IsSyncing        => _syncStatus.IsRunning;
+    public bool    SyncHasError     => _syncStatus.HasError;
     public bool    SyncStatusVisible => _syncStatus.StatusText is not null;
 
-    // ── Sezione Impostazioni (espandibile) ───────────────────────────────
+    // ─── Sezione Impostazioni (sidebar espandibile) ───────────────────────────
+
+    /// <summary>Controlla la visibilità del sottomenu Impostazioni nella sidebar.</summary>
     public bool IsImpostazioniExpanded
     {
         get => _isImpostazioniExpanded;
@@ -59,9 +82,11 @@ public class MainWindowViewModel : ViewModelBase
         }
     }
 
+    /// <summary>Icona freccia mostrata accanto a "Impostazioni": ▸ chiuso, ▾ aperto.</summary>
     public string ImpostazioniArrow => IsImpostazioniExpanded ? "▾" : "▸";
 
-    // ── Navigazione ─────────────────────────────────────────────────────
+    // ─── Comandi navigazione ──────────────────────────────────────────────────
+
     public ICommand NavigateToDashboardCommand       { get; }
     public ICommand NavigateToClientiCommand         { get; }
     public ICommand NavigateToPiastreCommand         { get; }

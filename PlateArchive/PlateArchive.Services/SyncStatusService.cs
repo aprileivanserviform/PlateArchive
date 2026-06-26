@@ -5,10 +5,16 @@ using System.Threading;
 
 namespace PlateArchive.Services;
 
+/// <summary>
+/// Implementazione di <see cref="ISyncStatusService"/>.
+/// Gestisce il marshalling sul thread UI: le notifiche PropertyChanged
+/// devono arrivare sul thread UI anche se la sync gira su un thread di background.
+/// </summary>
 public class SyncStatusService : ISyncStatusService
 {
-    // Cattura il SynchronizationContext del thread UI al momento della creazione
-    // (viene istanziato durante OnStartup, quindi è sempre il thread UI).
+    // SynchronizationContext catturato al momento della costruzione (durante OnStartup = thread UI).
+    // Usato per rimandare le notifiche PropertyChanged sul thread corretto,
+    // altrimenti WPF lancerebbe InvalidOperationException dal thread di background.
     private readonly SynchronizationContext? _uiContext = SynchronizationContext.Current;
 
     private bool    _isRunning;
@@ -49,6 +55,8 @@ public class SyncStatusService : ISyncStatusService
         StatusText = result.Riepilogo;
     }
 
+    // Notifica PropertyChanged sul thread UI via SynchronizationContext.Post (fire-and-forget).
+    // Se non c'è contesto UI (es. unit test), notifica direttamente.
     private void Set<T>(ref T field, T value, [CallerMemberName] string? prop = null)
     {
         if (EqualityComparer<T>.Default.Equals(field, value)) return;

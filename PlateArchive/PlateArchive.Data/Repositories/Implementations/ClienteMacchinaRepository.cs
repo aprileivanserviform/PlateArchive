@@ -4,6 +4,10 @@ using PlateArchive.Data.Repositories.Interfaces;
 
 namespace PlateArchive.Data.Repositories.Implementations;
 
+/// <summary>
+/// Repository per la tabella ClientiMacchine (associazione cliente ↔ unità fisica di macchina).
+/// Include sempre la navigation MacchinaStandard perché la UI mostra sempre il nome modello.
+/// </summary>
 public class ClienteMacchinaRepository(PlateArchiveDbContext db) : IClienteMacchinaRepository
 {
     public async Task<ClienteMacchina?> GetByIdAsync(int id) =>
@@ -27,6 +31,7 @@ public class ClienteMacchinaRepository(PlateArchiveDbContext db) : IClienteMacch
 
     public async Task AddAsync(ClienteMacchina entity)
     {
+        // Timestamp di quando il cliente ha acquistato/registrato questa macchina.
         entity.DataAssociazione = DateTime.UtcNow;
         db.ClientiMacchine.Add(entity);
         await db.SaveChangesAsync();

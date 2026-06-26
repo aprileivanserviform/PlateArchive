@@ -11,6 +11,17 @@ using PlateArchive.Wpf.Commands;
 
 namespace PlateArchive.Wpf.ViewModels;
 
+/// <summary>
+/// ViewModel della schermata Piastre — entità centrale del sistema.
+/// Layout: lista con 4 filtri (ricerca, stato, categoria, formato) | pannello destra.
+/// <para>
+/// Il pannello destra mostra alternativamente:
+/// - <b>Form creazione/modifica</b> quando <see cref="IsFormVisible"/> = true
+/// - <b>Dettaglio piastra</b> quando <see cref="IsDetailVisible"/> = true
+/// </para>
+/// Il dettaglio include macchine compatibili (con "+ Aggiungi") e clienti associati.
+/// La piastra può avere un disegno tecnico collegato, associabile via drag &amp; drop.
+/// </summary>
 public class PiastreViewModel : ViewModelBase
 {
     private readonly IPiastraRepository          _piastreRepo;
@@ -22,6 +33,7 @@ public class PiastreViewModel : ViewModelBase
     private readonly ICategoriaPiastraRepository _categorieRepo;
     private readonly IFormatoMacchinaRepository  _formatiRepo;
 
+    // Lista completa in memoria — filtrata in PiastreFiltrate.
     private readonly ObservableCollection<Piastra> _tutti = [];
 
     private string    _filtroRicerca              = string.Empty;
@@ -33,7 +45,7 @@ public class PiastreViewModel : ViewModelBase
     private bool      _isModifica;
     private int       _idPiastraInModifica;
 
-    // Campi form
+    // Campi del form creazione/modifica
     private string             _formCodicePiastra        = string.Empty;
     private string             _formCodiceArticolo       = string.Empty;
     private string             _formDescrizione          = string.Empty;
@@ -48,9 +60,10 @@ public class PiastreViewModel : ViewModelBase
     private string             _formNote                 = string.Empty;
     private string?            _erroreCodiceDuplicato;
     private string?            _erroreDisegno;
+    // File disegno trascinato sulla riga nel form: viene archiviato dopo il salvataggio della piastra.
     private string?            _percorsoDisegnoPendente;
 
-    // Aggiungi macchina compatibile
+    // Aggiungi macchina compatibile (pannello inline nel dettaglio)
     private bool              _isAggiungiMacchinaVisible;
     private MacchinaStandard? _macchinaCompatibileDaAggiungere;
 
@@ -87,18 +100,20 @@ public class PiastreViewModel : ViewModelBase
         _ = LoadAsync();
     }
 
-    // ─── Lookup ──────────────────────────────────────────────────
+    // ─── Lookup per i ComboBox ────────────────────────────────────────────────
 
+    /// <summary>Categorie piastre — usate per il ComboBox filtro e nel form.</summary>
     public ObservableCollection<CategoriaPiastra> CategoriePiastre { get; } = [];
     public ObservableCollection<FormatoMacchina>  FormatiMacchine  { get; } = [];
 
+    /// <summary>"Tutti" + nomi categorie — per il ComboBox filtro nella lista.</summary>
     public IEnumerable<string> CategorieFiltro =>
         Enumerable.Prepend(CategoriePiastre.Select(c => c.Descrizione), "Tutti");
 
     public IEnumerable<string> FormatiFiltro =>
         Enumerable.Prepend(FormatiMacchine.Select(f => f.NomeFormato), "Tutti");
 
-    // ─── Proprietà lista ─────────────────────────────────────────
+    // ─── Filtri lista ─────────────────────────────────────────────────────────
 
     public string FiltroRicerca
     {
@@ -127,7 +142,10 @@ public class PiastreViewModel : ViewModelBase
     public IEnumerable<string>       StatiFiltro  { get; } = ["Tutti", "Attiva", "Obsoleta", "Da verificare"];
     public IEnumerable<StatoPiastra> StatiPiastra { get; } = Enum.GetValues<StatoPiastra>();
 
+    /// <summary>Subset filtrato di _tutti — bound alla DataGrid.</summary>
     public ObservableCollection<Piastra> PiastreFiltrate { get; } = [];
+
+    // ─── Selezione ───────────────────────────────────────────────────────────
 
     public Piastra? PiastraSelezionata
     {
@@ -140,6 +158,7 @@ public class PiastreViewModel : ViewModelBase
                 OnPropertyChanged(nameof(IsDetailVisible));
                 OnPropertyChanged(nameof(IsDisegnoPresente));
                 OnPropertyChanged(nameof(IsDisegnoAssente));
+                // Se il form di modifica era aperto, aggiorna i campi con la nuova selezione.
                 if (IsFormVisible && IsModifica && value is not null)
                     ApriFormModifica();
                 _ = LoadDettaglioAsync();
@@ -159,16 +178,21 @@ public class PiastreViewModel : ViewModelBase
 
     public bool IsErroreDisegnoVisible => !string.IsNullOrEmpty(_erroreDisegno);
 
-    // ─── Proprietà pannello dettaglio ────────────────────────────
+    // ─── Pannello dettaglio ───────────────────────────────────────────────────
 
+    /// <summary>Macchine con cui questa piastra è tecnicamente compatibile.</summary>
     public ObservableCollection<PiastraMacchinaCompatibile> MacchineCompatibili { get; } = [];
+
+    /// <summary>Clienti che possiedono questa piastra (associazione commerciale).</summary>
     public ObservableCollection<ClientePiastra>             ClientiAssociati    { get; } = [];
+
+    /// <summary>Macchine disponibili da aggiungere come compatibili (già escluse quelle associate).</summary>
     public ObservableCollection<MacchinaStandard>           MacchineDisponibili { get; } = [];
 
     public bool IsDisegnoPresente => PiastraSelezionata?.Disegno is not null;
     public bool IsDisegnoAssente  => PiastraSelezionata?.Disegno is null;
 
-    // ─── Aggiungi macchina compatibile ───────────────────────────
+    // ─── Pannello aggiungi macchina compatibile ───────────────────────────────
 
     public bool IsAggiungiMacchinaVisible
     {
@@ -182,7 +206,7 @@ public class PiastreViewModel : ViewModelBase
         set => SetField(ref _macchinaCompatibileDaAggiungere, value);
     }
 
-    // ─── Proprietà form ──────────────────────────────────────────
+    // ─── Stato pannello destra ────────────────────────────────────────────────
 
     public bool IsFormVisible
     {
@@ -199,9 +223,12 @@ public class PiastreViewModel : ViewModelBase
     public bool   IsDetailVisible => PiastraSelezionata is not null && !IsFormVisible;
     public string FormTitolo      => IsModifica ? "Modifica piastra" : "Nuova piastra";
 
+    // ─── Campi form creazione/modifica ────────────────────────────────────────
+
     public string FormCodicePiastra
     {
         get => _formCodicePiastra;
+        // Controllo duplicati real-time ad ogni carattere.
         set { if (SetField(ref _formCodicePiastra, value)) ControllaDuplicato(value); }
     }
 
@@ -281,8 +308,14 @@ public class PiastreViewModel : ViewModelBase
         }
     }
 
+    /// <summary>Blocca il salvataggio se il codice è già presente in _tutti.</summary>
     public bool IsErroreVisible => !string.IsNullOrEmpty(_erroreCodiceDuplicato);
 
+    /// <summary>
+    /// Percorso del file disegno trascinato nel form (non ancora salvato).
+    /// Viene passato ad <see cref="AssociaDisegnoAsync"/> dopo il salvataggio della piastra,
+    /// in modo che l'IdPiastra sia già disponibile.
+    /// </summary>
     public string? PercorsoDisegnoPendente
     {
         get => _percorsoDisegnoPendente;
@@ -299,9 +332,10 @@ public class PiastreViewModel : ViewModelBase
 
     public bool    IsDisegnoPendenteVisible => !string.IsNullOrEmpty(_percorsoDisegnoPendente);
     public bool    IsDisegnoPendenteAssente => string.IsNullOrEmpty(_percorsoDisegnoPendente);
+    /// <summary>Solo il nome del file (senza percorso) — mostrato nel form come anteprima.</summary>
     public string? NomeFilePendente         => Path.GetFileName(_percorsoDisegnoPendente);
 
-    // ─── Comandi ─────────────────────────────────────────────────
+    // ─── Comandi ─────────────────────────────────────────────────────────────
 
     public ICommand NuovaCommand                    { get; }
     public ICommand ModificaCommand                 { get; }
@@ -314,12 +348,13 @@ public class PiastreViewModel : ViewModelBase
     public ICommand RimuoviCompatibilitaCommand     { get; }
     public ICommand AprirDisegnoCommand             { get; }
 
-    // ─── Caricamento ─────────────────────────────────────────────
+    // ─── Caricamento ─────────────────────────────────────────────────────────
 
     private async Task LoadAsync()
     {
         var categorie = await _categorieRepo.GetAllAsync();
         foreach (var c in categorie) CategoriePiastre.Add(c);
+        // Notifica CategorieFiltro perché è calcolata da CategoriePiastre.
         OnPropertyChanged(nameof(CategorieFiltro));
 
         var formati = await _formatiRepo.GetAllAsync();
@@ -331,6 +366,7 @@ public class PiastreViewModel : ViewModelBase
         AggiornaFiltro();
     }
 
+    /// <summary>Carica macchine compatibili e clienti per la piastra selezionata.</summary>
     private async Task LoadDettaglioAsync()
     {
         MacchineCompatibili.Clear();
@@ -338,6 +374,7 @@ public class PiastreViewModel : ViewModelBase
         if (PiastraSelezionata is null) return;
 
         var id = PiastraSelezionata.IdPiastra;
+        // Le due query sono indipendenti — eseguite in parallelo per velocità.
         var (macchine, clienti) = (
             await _compatRepo.GetByPiastraAsync(id),
             await _clientiPiastreRepo.GetByPiastraAsync(id));
@@ -345,6 +382,8 @@ public class PiastreViewModel : ViewModelBase
         foreach (var m in macchine) MacchineCompatibili.Add(m);
         foreach (var c in clienti)  ClientiAssociati.Add(c);
     }
+
+    // ─── Filtro lista (in memoria, senza query al DB) ─────────────────────────
 
     private void AggiornaFiltro()
     {
@@ -380,11 +419,12 @@ public class PiastreViewModel : ViewModelBase
         }
     }
 
-    // ─── Controllo duplicato codice ──────────────────────────────
+    // ─── Validazione duplicato codice ─────────────────────────────────────────
 
     private void ControllaDuplicato(string codice)
     {
         if (string.IsNullOrWhiteSpace(codice)) { ErroreCodiceDuplicato = null; return; }
+        // Esclude sé stesso durante la modifica (_idPiastraInModifica = 0 per nuove piastre).
         var simile = _tutti.FirstOrDefault(p =>
             p.CodicePiastra.Equals(codice.Trim(), StringComparison.OrdinalIgnoreCase)
             && p.IdPiastra != _idPiastraInModifica);
@@ -393,11 +433,11 @@ public class PiastreViewModel : ViewModelBase
             : null;
     }
 
-    // ─── Gestione form ───────────────────────────────────────────
+    // ─── Gestione form creazione/modifica ─────────────────────────────────────
 
     private void ApriFormNuova()
     {
-        _idPiastraInModifica = 0;
+        _idPiastraInModifica = 0;  // 0 = nuova piastra (nessun ID da escludere dalla validazione)
         IsModifica = false;
         ResetForm();
         IsFormVisible = true;
@@ -456,6 +496,7 @@ public class PiastreViewModel : ViewModelBase
             p.Descrizione              = N(FormDescrizione);
             p.Stato                    = FormStato;
             p.IdCategoriaPiastra       = FormCategoriaSelezionata?.IdCategoriaPiastra;
+            // Aggiorna anche le navigazioni per il binding nella lista.
             p.Categoria                = FormCategoriaSelezionata;
             p.IdFormato                = FormFormatoSelezionato?.IdFormato;
             p.Formato                  = FormFormatoSelezionato;
@@ -492,21 +533,24 @@ public class PiastreViewModel : ViewModelBase
             piastraSalvata = nuova;
         }
 
+        // Salva il percorso pendente prima di ChiudiForm (che lo azzera).
         var filePendente = _percorsoDisegnoPendente;
         AggiornaFiltro();
         ChiudiForm();
         PiastraSelezionata = piastraSalvata;
 
+        // Associa il disegno dopo aver salvato (serve IdPiastra per il record Disegno).
         if (!string.IsNullOrEmpty(filePendente))
             await AssociaDisegnoAsync(piastraSalvata, filePendente);
     }
 
-    // ─── Eliminazione logica ─────────────────────────────────────
+    // ─── Eliminazione logica ──────────────────────────────────────────────────
 
     private async Task EliminaAsync()
     {
         if (PiastraSelezionata is null) return;
 
+        // Blocca l'eliminazione se la piastra è associata a clienti (integrità commerciale).
         var hasClienti = await _piastreRepo.HasClientiAssociatiAsync(PiastraSelezionata.IdPiastra);
         if (hasClienti)
         {
@@ -518,6 +562,7 @@ public class PiastreViewModel : ViewModelBase
             return;
         }
 
+        // Se ha macchine compatibili, avvisa ma NON blocca (compatibilità è eliminabile).
         var hasMacchine = MacchineCompatibili.Count > 0;
         var testo = hasMacchine
             ? $"La piastra '{PiastraSelezionata.CodicePiastra}' è associata a {MacchineCompatibili.Count} macchina/e compatibile/i.\n\nEliminarla comunque?"
@@ -532,20 +577,20 @@ public class PiastreViewModel : ViewModelBase
 
         if (conferma != MessageBoxResult.Yes) return;
 
+        // Soft-delete: imposta IsEliminata = true. EF query filter la escluderà automaticamente.
         await _piastreRepo.EliminaLogicamenteAsync(PiastraSelezionata.IdPiastra);
         _tutti.Remove(PiastraSelezionata);
         PiastraSelezionata = null;
         AggiornaFiltro();
     }
 
-    // ─── Aggiungi / rimuovi macchina compatibile ─────────────────
+    // ─── Aggiungi / rimuovi macchina compatibile ──────────────────────────────
 
     private async Task ApriAggiungiMacchinaAsync()
     {
         var tutte       = await _macchineRepo.GetAllAsync();
         var idGiaCompat = MacchineCompatibili.Select(c => c.IdMacchinaStandard).ToHashSet();
-
-        // Mostra solo le macchine con lo stesso formato della piastra (se impostato)
+        // Se la piastra ha un formato, mostra solo le macchine dello stesso formato.
         var idFormatoPiastra = PiastraSelezionata?.IdFormato;
 
         MacchineDisponibili.Clear();
@@ -571,6 +616,7 @@ public class PiastreViewModel : ViewModelBase
         };
         await _compatRepo.AddAsync(nuova);
         ChiudiAggiungiMacchina();
+        // Ricarica il dettaglio per includere la nuova compatibilità.
         await LoadDettaglioAsync();
     }
 
@@ -584,10 +630,11 @@ public class PiastreViewModel : ViewModelBase
     {
         if (param is not PiastraMacchinaCompatibile c) return;
         await _compatRepo.DeleteAsync(c.IdCompatibilita);
+        // Ricarica invece di rimuovere in memoria: garantisce coerenza con il DB.
         await LoadDettaglioAsync();
     }
 
-    // ─── Apertura file disegno ───────────────────────────────────
+    // ─── Apertura file disegno ────────────────────────────────────────────────
 
     private void AprirDisegno()
     {
@@ -604,6 +651,7 @@ public class PiastreViewModel : ViewModelBase
 
         try
         {
+            // UseShellExecute = true apre con l'applicazione predefinita del SO (AutoCAD, Adobe, ecc.)
             Process.Start(new ProcessStartInfo(percorso) { UseShellExecute = true });
         }
         catch (Exception ex)
@@ -612,10 +660,17 @@ public class PiastreViewModel : ViewModelBase
         }
     }
 
-    // ─── Associazione disegno via drag & drop ────────────────────
+    // ─── Associazione disegno via drag & drop ─────────────────────────────────
 
+    /// <summary>
+    /// Archivia il file nel percorso di archivio (FileArchivioService) e crea/aggiorna
+    /// il record Disegno associato alla piastra.
+    /// Chiamato da PiastreView.xaml.cs quando l'utente trascina un file sulla riga
+    /// (drag &amp; drop), oppure dopo il salvataggio se era presente un file pendente.
+    /// </summary>
     public async Task AssociaDisegnoAsync(Piastra piastra, string percorsoFile)
     {
+        // Archivia il file (copia nella cartella archivio) — se fallisce usa il percorso originale.
         var percorsoEffettivo = await _fileArchivio.ArchiviaDisegnoAsync(percorsoFile, piastra.CodicePiastra)
                                 ?? percorsoFile;
 
@@ -623,6 +678,7 @@ public class PiastreViewModel : ViewModelBase
 
         if (piastra.Disegno is null)
         {
+            // Prima associazione: crea un nuovo record Disegno.
             var nuovoDisegno = new Disegno
             {
                 IdPiastra              = piastra.IdPiastra,
@@ -630,6 +686,7 @@ public class PiastreViewModel : ViewModelBase
                 NomeFile               = Path.GetFileName(percorsoEffettivo),
                 PercorsoFile           = percorsoEffettivo,
                 Formato                = formato,
+                // Il disegno appena aggiunto è "Da verificare" fino a revisione manuale.
                 Stato                  = StatoDisegno.DaVerificare,
                 DataUltimaModificaFile = DateTime.UtcNow
             };
@@ -638,6 +695,7 @@ public class PiastreViewModel : ViewModelBase
         }
         else
         {
+            // Sostituzione: aggiorna il record esistente con il nuovo file.
             piastra.Disegno.NomeFile               = Path.GetFileName(percorsoEffettivo);
             piastra.Disegno.PercorsoFile           = percorsoEffettivo;
             piastra.Disegno.Formato                = formato;
@@ -645,6 +703,7 @@ public class PiastreViewModel : ViewModelBase
             await _disegniRepo.UpdateAsync(piastra.Disegno);
         }
 
+        // Notifica la View solo se la piastra modificata è quella selezionata.
         if (PiastraSelezionata == piastra)
         {
             OnPropertyChanged(nameof(PiastraSelezionata));
@@ -652,6 +711,8 @@ public class PiastreViewModel : ViewModelBase
             OnPropertyChanged(nameof(IsDisegnoAssente));
         }
     }
+
+    // ─── Utility ─────────────────────────────────────────────────────────────
 
     private static string?  N(string s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 

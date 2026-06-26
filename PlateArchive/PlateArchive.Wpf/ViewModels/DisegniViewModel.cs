@@ -10,17 +10,29 @@ using PlateArchive.Wpf.Commands;
 
 namespace PlateArchive.Wpf.ViewModels;
 
+/// <summary>
+/// ViewModel della schermata Disegni.
+/// Mostra tutti i disegni tecnici presenti nel sistema (uno per piastra)
+/// con filtro per stato e ricerca testuale.
+/// Permette di modificare i metadati del disegno (percorso file, revisione, stato)
+/// e di aprire il file con l'applicazione predefinita del sistema operativo.
+/// <para>
+/// NOTA: i disegni vengono creati automaticamente quando si associa un file a una piastra
+/// (drag &amp; drop in PiastreView). Qui si gestisce solo la modifica dei metadati.
+/// </para>
+/// </summary>
 public class DisegniViewModel : ViewModelBase
 {
     private readonly IDisegnoRepository _disegniRepo;
 
+    // Lista completa in memoria — il filtro è applicato su questa.
     private readonly ObservableCollection<Disegno> _tutti = [];
 
     private string   _filtroRicerca          = string.Empty;
     private string   _filtroStatoSelezionato = "Tutti";
     private Disegno? _disegnoSelezionato;
 
-    // Campi form modifica
+    // Campi del form di modifica (sincronizzati con DisegnoSelezionato)
     private string       _formPercorsoFile = string.Empty;
     private string       _formRevisione    = string.Empty;
     private string       _formFormato      = string.Empty;
@@ -32,14 +44,14 @@ public class DisegniViewModel : ViewModelBase
     {
         _disegniRepo = disegniRepo;
 
-        SalvaCommand    = new RelayCommand(async _ => await SalvaAsync(), _ => DisegnoSelezionato is not null);
-        AprirFileCommand = new RelayCommand(_ => AprirFile(), _ => !string.IsNullOrWhiteSpace(FormPercorsoFile));
+        SalvaCommand      = new RelayCommand(async _ => await SalvaAsync(), _ => DisegnoSelezionato is not null);
+        AprirFileCommand  = new RelayCommand(_ => AprirFile(),   _ => !string.IsNullOrWhiteSpace(FormPercorsoFile));
         SfogliaFileCommand = new RelayCommand(_ => SfogliaFile(), _ => DisegnoSelezionato is not null);
 
         _ = LoadAsync();
     }
 
-    // ─── Proprietà lista ─────────────────────────────────────────
+    // ─── Filtri lista ─────────────────────────────────────────────────────────
 
     public string FiltroRicerca
     {
@@ -53,9 +65,13 @@ public class DisegniViewModel : ViewModelBase
         set { if (SetField(ref _filtroStatoSelezionato, value)) AggiornaFiltro(); }
     }
 
+    /// <summary>Valori disponibili nel ComboBox di filtro stato.</summary>
     public IEnumerable<string> StatiFiltro { get; } = ["Tutti", "Attivo", "Da verificare", "Obsoleto"];
 
+    /// <summary>Subset filtrato di _tutti — bound alla DataGrid.</summary>
     public ObservableCollection<Disegno> DisegniFiltrati { get; } = [];
+
+    // ─── Selezione e dettaglio ────────────────────────────────────────────────
 
     public Disegno? DisegnoSelezionato
     {
@@ -66,19 +82,21 @@ public class DisegniViewModel : ViewModelBase
             {
                 OnPropertyChanged(nameof(IsDetailVisible));
                 OnPropertyChanged(nameof(IsNessunDisegnoSelezionato));
+                // Popola il form con i dati del disegno selezionato
                 CaricaForm();
             }
         }
     }
 
-    public bool IsDetailVisible           => DisegnoSelezionato is not null;
+    public bool IsDetailVisible            => DisegnoSelezionato is not null;
     public bool IsNessunDisegnoSelezionato => DisegnoSelezionato is null;
 
-    // ─── Proprietà form modifica ─────────────────────────────────
+    // ─── Campi form modifica ──────────────────────────────────────────────────
 
     public string FormPercorsoFile
     {
         get => _formPercorsoFile;
+        // Quando il percorso viene modificato manualmente, azzera l'eventuale errore precedente.
         set { if (SetField(ref _formPercorsoFile, value)) ErroreFileNonTrovato = null; }
     }
 
@@ -118,17 +136,17 @@ public class DisegniViewModel : ViewModelBase
 
     public bool IsErroreFileVisible => !string.IsNullOrEmpty(_erroreFileNonTrovato);
 
-    public IEnumerable<StatoDisegno> StatiDisegno { get; } = Enum.GetValues<StatoDisegno>();
+    /// <summary>Tutti i valori dell'enum StatoDisegno — usati nel ComboBox del form.</summary>
+    public IEnumerable<StatoDisegno> StatiDisegno    { get; } = Enum.GetValues<StatoDisegno>();
+    public IEnumerable<string>       FormatiDisponibili { get; } = ["DWG", "DXF", "PDF", "STP", "STEP", "IGS"];
 
-    public IEnumerable<string> FormatiDisponibili { get; } = ["DWG", "DXF", "PDF", "STP", "STEP", "IGS"];
+    // ─── Comandi ─────────────────────────────────────────────────────────────
 
-    // ─── Comandi ─────────────────────────────────────────────────
-
-    public ICommand SalvaCommand      { get; }
-    public ICommand AprirFileCommand  { get; }
+    public ICommand SalvaCommand       { get; }
+    public ICommand AprirFileCommand   { get; }
     public ICommand SfogliaFileCommand { get; }
 
-    // ─── Caricamento ─────────────────────────────────────────────
+    // ─── Caricamento ─────────────────────────────────────────────────────────
 
     private async Task LoadAsync()
     {
@@ -136,6 +154,8 @@ public class DisegniViewModel : ViewModelBase
         foreach (var d in disegni) _tutti.Add(d);
         AggiornaFiltro();
     }
+
+    // ─── Filtro in memoria ────────────────────────────────────────────────────
 
     private void AggiornaFiltro()
     {
@@ -149,6 +169,7 @@ public class DisegniViewModel : ViewModelBase
 
         var f = FiltroRicerca.Trim().ToLower();
 
+        // I disegni "Da verificare" vengono mostrati per primi (priorità visiva).
         var filtrati = _tutti
             .Where(d =>
                 (statoFiltro is null || d.Stato == statoFiltro)
@@ -162,18 +183,20 @@ public class DisegniViewModel : ViewModelBase
         foreach (var d in filtrati) DisegniFiltrati.Add(d);
     }
 
+    // ─── Form ─────────────────────────────────────────────────────────────────
+
     private void CaricaForm()
     {
         if (DisegnoSelezionato is null) return;
-        FormPercorsoFile     = DisegnoSelezionato.PercorsoFile ?? string.Empty;
-        FormRevisione        = DisegnoSelezionato.Revisione    ?? string.Empty;
-        FormFormato          = DisegnoSelezionato.Formato      ?? string.Empty;
-        FormStato            = DisegnoSelezionato.Stato;
-        FormNote             = DisegnoSelezionato.Note         ?? string.Empty;
-        ErroreFileNonTrovato = null;
+        FormPercorsoFile      = DisegnoSelezionato.PercorsoFile ?? string.Empty;
+        FormRevisione         = DisegnoSelezionato.Revisione    ?? string.Empty;
+        FormFormato           = DisegnoSelezionato.Formato      ?? string.Empty;
+        FormStato             = DisegnoSelezionato.Stato;
+        FormNote              = DisegnoSelezionato.Note         ?? string.Empty;
+        ErroreFileNonTrovato  = null;
     }
 
-    // ─── Salvataggio ─────────────────────────────────────────────
+    // ─── Salvataggio ─────────────────────────────────────────────────────────
 
     private async Task SalvaAsync()
     {
@@ -187,11 +210,11 @@ public class DisegniViewModel : ViewModelBase
 
         await _disegniRepo.UpdateAsync(DisegnoSelezionato);
 
-        // Riordina la lista (lo stato potrebbe essere cambiato)
+        // Riordina la lista perché il cambio di Stato sposta il disegno nella griglia.
         AggiornaFiltro();
     }
 
-    // ─── Apertura e selezione file ───────────────────────────────
+    // ─── Apertura file ────────────────────────────────────────────────────────
 
     private void AprirFile()
     {
@@ -207,6 +230,8 @@ public class DisegniViewModel : ViewModelBase
         ErroreFileNonTrovato = null;
         try
         {
+            // UseShellExecute = true apre il file con l'applicazione predefinita del SO
+            // (es. AutoCAD per .dwg, Adobe per .pdf).
             Process.Start(new ProcessStartInfo(percorso) { UseShellExecute = true });
         }
         catch

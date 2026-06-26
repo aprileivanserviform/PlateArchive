@@ -4,6 +4,11 @@ using PlateArchive.Data.Repositories.Interfaces;
 
 namespace PlateArchive.Data.Repositories.Implementations;
 
+/// <summary>
+/// Repository per la tabella MacchineStandard (catalogo modelli, non unità fisiche).
+/// Nota: MacchinaStandard non ha soft-delete — usa il flag Attiva per disabilitare un modello
+/// senza eliminarlo (le unità cliente esistenti rimangono referenziate).
+/// </summary>
 public class MacchinaStandardRepository(PlateArchiveDbContext db) : IMacchinaStandardRepository
 {
     public async Task<MacchinaStandard?> GetByIdAsync(int id) =>

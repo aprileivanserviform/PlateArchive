@@ -7,15 +7,27 @@ using PlateArchive.Wpf.Commands;
 
 namespace PlateArchive.Wpf.ViewModels;
 
+/// <summary>
+/// ViewModel della schermata Macchine (catalogo modelli standard).
+/// Layout: lista a sinistra con filtri | pannello destra (dettaglio OPPURE form CRUD).
+/// <para>
+/// Il pannello destra mostra alternativamente:
+/// - <b>Form creazione/modifica</b> quando <see cref="IsFormVisible"/> = true
+/// - <b>Dettaglio macchina</b> quando <see cref="IsDetailVisible"/> = true (selezione + no form)
+/// </para>
+/// Il dettaglio include le piastre compatibili (con pulsante "+ Aggiungi" per aggiungerne)
+/// e i clienti che possiedono quel modello (solo lettura).
+/// </summary>
 public class MacchineViewModel : ViewModelBase
 {
-    private readonly IMacchinaStandardRepository     _macchineRepo;
-    private readonly ICompatibilitaRepository        _compatRepo;
-    private readonly IClienteMacchinaRepository      _clientiMacchineRepo;
-    private readonly IFormatoMacchinaRepository      _formatiRepo;
-    private readonly IProduttoreMacchinaRepository   _produttoriRepo;
-    private readonly IPiastraRepository              _piastreRepo;
+    private readonly IMacchinaStandardRepository   _macchineRepo;
+    private readonly ICompatibilitaRepository      _compatRepo;
+    private readonly IClienteMacchinaRepository    _clientiMacchineRepo;
+    private readonly IFormatoMacchinaRepository    _formatiRepo;
+    private readonly IProduttoreMacchinaRepository _produttoriRepo;
+    private readonly IPiastraRepository            _piastreRepo;
 
+    // Lista completa in memoria — filtrata in MacchineFiltrate.
     private readonly ObservableCollection<MacchinaStandard> _tutti = [];
 
     private string  _filtroRicerca  = string.Empty;
@@ -25,10 +37,8 @@ public class MacchineViewModel : ViewModelBase
     private bool    _isFormVisible;
     private bool    _isModifica;
     private int     _idMacchinaInModifica;
-    private bool    _isAggiungiPiastraVisible;
-    private Piastra? _piastraCompatibileDaAggiungere;
 
-    // Campi form
+    // Campi del form creazione/modifica
     private string              _formCodiceMacchina      = string.Empty;
     private string              _formNomeMacchina        = string.Empty;
     private FormatoMacchina?    _formFormatoSelezionato;
@@ -38,6 +48,10 @@ public class MacchineViewModel : ViewModelBase
     private string              _formVersione            = string.Empty;
     private string              _formNote                = string.Empty;
     private string?             _avvisoDuplicato;
+
+    // Aggiunta piastra compatibile (pannello inline nel dettaglio)
+    private bool     _isAggiungiPiastraVisible;
+    private Piastra? _piastraCompatibileDaAggiungere;
 
     private CancellationTokenSource? _debounceCts;
 
@@ -62,7 +76,7 @@ public class MacchineViewModel : ViewModelBase
         AnnullaFormCommand  = new RelayCommand(_ => ChiudiForm());
         ToggleAttivaCommand = new RelayCommand(async _ => await ToggleAttivaAsync(), _ => MacchinaSelezionata is not null);
 
-        AggiungiPiastraCommand        = new RelayCommand(async _ => await ApriAggiungiPiastraAsync(), _ => MacchinaSelezionata is not null);
+        AggiungiPiastraCommand         = new RelayCommand(async _ => await ApriAggiungiPiastraAsync(), _ => MacchinaSelezionata is not null);
         ConfermaAggiungiPiastraCommand = new RelayCommand(async _ => await ConfermaAggiungiPiastraAsync(), _ => PiastraCompatibileDaAggiungere is not null);
         AnnullaAggiungiPiastraCommand  = new RelayCommand(_ => AnnullaAggiungiPiastra());
         RimuoviCompatibilitaCommand    = new RelayCommand(async o => await RimuoviCompatibilitaAsync(o));
@@ -70,15 +84,17 @@ public class MacchineViewModel : ViewModelBase
         _ = LoadAsync();
     }
 
-    // ─── Lookup ──────────────────────────────────────────────────
+    // ─── Lookup per i ComboBox del form ──────────────────────────────────────
 
+    /// <summary>Tutti i formati non eliminati — usati nel ComboBox Formato del form.</summary>
     public ObservableCollection<FormatoMacchina>    FormatiMacchine    { get; } = [];
     public ObservableCollection<ProduttoreMacchina> ProduttoriMacchine { get; } = [];
 
+    /// <summary>Valori per il ComboBox filtro formato nella lista: "Tutti" + nomi formati.</summary>
     public IEnumerable<string> FormatiFiltro =>
         Enumerable.Prepend(FormatiMacchine.Select(f => f.NomeFormato), "Tutti");
 
-    // ─── Proprietà lista ─────────────────────────────────────────
+    // ─── Filtri lista ─────────────────────────────────────────────────────────
 
     public string FiltroRicerca
     {
@@ -98,7 +114,10 @@ public class MacchineViewModel : ViewModelBase
         set { if (SetField(ref _filtroFormato, value)) AggiornaFiltro(); }
     }
 
+    /// <summary>Subset filtrato di _tutti — bound alla DataGrid.</summary>
     public ObservableCollection<MacchinaStandard> MacchineFiltrate { get; } = [];
+
+    // ─── Selezione ───────────────────────────────────────────────────────────
 
     public MacchinaStandard? MacchinaSelezionata
     {
@@ -109,7 +128,9 @@ public class MacchineViewModel : ViewModelBase
             {
                 OnPropertyChanged(nameof(IsDetailVisible));
                 OnPropertyChanged(nameof(ToggleAttivaLabel));
+                // Chiude il pannello "aggiungi piastra" se l'utente cambia macchina.
                 if (IsAggiungiPiastraVisible) AnnullaAggiungiPiastra();
+                // Se il form di modifica era aperto, aggiorna i campi con la nuova selezione.
                 if (IsFormVisible && IsModifica && value is not null)
                     ApriFormModifica();
                 _ = LoadDettaglioAsync();
@@ -117,11 +138,18 @@ public class MacchineViewModel : ViewModelBase
         }
     }
 
-    // ─── Proprietà pannello dettaglio ────────────────────────────
+    // ─── Pannello dettaglio ───────────────────────────────────────────────────
 
+    /// <summary>Piastre tecnicamente compatibili con la macchina selezionata.</summary>
     public ObservableCollection<PiastraMacchinaCompatibile> PiastreCompatibili { get; } = [];
+
+    /// <summary>Clienti che possiedono la macchina selezionata (solo lettura).</summary>
     public ObservableCollection<ClienteMacchina>            ClientiAssociati   { get; } = [];
+
+    /// <summary>Piastre disponibili da aggiungere come compatibili (già escluse quelle associate).</summary>
     public ObservableCollection<Piastra>                    PiastreDisponibili { get; } = [];
+
+    // ─── Pannello aggiungi piastra compatibile ────────────────────────────────
 
     public bool IsAggiungiPiastraVisible
     {
@@ -135,7 +163,7 @@ public class MacchineViewModel : ViewModelBase
         set => SetField(ref _piastraCompatibileDaAggiungere, value);
     }
 
-    // ─── Proprietà form ──────────────────────────────────────────
+    // ─── Stato pannello destra ────────────────────────────────────────────────
 
     public bool IsFormVisible
     {
@@ -149,13 +177,16 @@ public class MacchineViewModel : ViewModelBase
         set { if (SetField(ref _isModifica, value)) OnPropertyChanged(nameof(FormTitolo)); }
     }
 
-    public bool IsDetailVisible => MacchinaSelezionata is not null && !IsFormVisible;
+    public bool   IsDetailVisible   => MacchinaSelezionata is not null && !IsFormVisible;
     public string FormTitolo        => IsModifica ? "Modifica macchina" : "Nuova macchina";
     public string ToggleAttivaLabel => MacchinaSelezionata?.Attiva == true ? "Disabilita" : "Abilita";
+
+    // ─── Campi form creazione/modifica ────────────────────────────────────────
 
     public string FormCodiceMacchina
     {
         get => _formCodiceMacchina;
+        // Debounce 300ms: non esegue la ricerca duplicati ad ogni tasto, ma aspetta la pausa.
         set { if (SetField(ref _formCodiceMacchina, value)) _ = ControllaDuplicatoAsync(value); }
     }
 
@@ -211,9 +242,10 @@ public class MacchineViewModel : ViewModelBase
         }
     }
 
+    /// <summary>Mostra un banner di avviso (non blocca il salvataggio) se esiste un codice simile.</summary>
     public bool IsAvvisoDuplicatoVisible => !string.IsNullOrEmpty(_avvisoDuplicato);
 
-    // ─── Comandi ─────────────────────────────────────────────────
+    // ─── Comandi ─────────────────────────────────────────────────────────────
 
     public ICommand NuovaCommand                   { get; }
     public ICommand ModificaCommand                { get; }
@@ -225,7 +257,7 @@ public class MacchineViewModel : ViewModelBase
     public ICommand AnnullaAggiungiPiastraCommand  { get; }
     public ICommand RimuoviCompatibilitaCommand    { get; }
 
-    // ─── Caricamento ─────────────────────────────────────────────
+    // ─── Caricamento ─────────────────────────────────────────────────────────
 
     private async Task LoadAsync()
     {
@@ -237,23 +269,27 @@ public class MacchineViewModel : ViewModelBase
         foreach (var p in produttori) ProduttoriMacchine.Add(p);
         foreach (var m in macchine)   _tutti.Add(m);
 
+        // Aggiorna FormatiFiltro perché dipende da FormatiMacchine.
         OnPropertyChanged(nameof(FormatiFiltro));
         AggiornaFiltro();
     }
 
+    /// <summary>Carica le piastre compatibili e i clienti per la macchina attualmente selezionata.</summary>
     private async Task LoadDettaglioAsync()
     {
         PiastreCompatibili.Clear();
         ClientiAssociati.Clear();
         if (MacchinaSelezionata is null) return;
 
-        var id = MacchinaSelezionata.IdMacchinaStandard;
+        var id      = MacchinaSelezionata.IdMacchinaStandard;
         var piastre = await _compatRepo.GetByMacchinaAsync(id);
         var clienti = await _clientiMacchineRepo.GetByMacchinaAsync(id);
 
         foreach (var p in piastre) PiastreCompatibili.Add(p);
         foreach (var c in clienti) ClientiAssociati.Add(c);
     }
+
+    // ─── Filtro lista ─────────────────────────────────────────────────────────
 
     private void AggiornaFiltro()
     {
@@ -275,17 +311,18 @@ public class MacchineViewModel : ViewModelBase
         }
     }
 
-    // ─── Controllo duplicati (debounce 300 ms) ───────────────────
+    // ─── Validazione codice duplicato (con debounce) ──────────────────────────
 
     private async Task ControllaDuplicatoAsync(string codice)
     {
+        // Annulla il controllo precedente se l'utente continua a digitare.
         _debounceCts?.Cancel();
         _debounceCts = new CancellationTokenSource();
         try
         {
             await Task.Delay(300, _debounceCts.Token);
             if (string.IsNullOrWhiteSpace(codice)) { AvvisoDuplicato = null; return; }
-            var norm = Normalizza(codice);
+            var norm   = Normalizza(codice);
             var simile = _tutti.FirstOrDefault(m =>
                 Normalizza(m.CodiceMacchina) == norm
                 && m.IdMacchinaStandard != _idMacchinaInModifica);
@@ -293,18 +330,19 @@ public class MacchineViewModel : ViewModelBase
                 ? $"Attenzione: esiste già '{simile.CodiceMacchina}'. Procedere comunque?"
                 : null;
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException) { /* annullato da un nuovo keystroke */ }
     }
 
+    // Normalizza il codice per confronto fuzzy: ignora spazi, trattini, underscore e case.
     private static string Normalizza(string s) =>
         s.ToLower().Replace(" ", "").Replace("_", "").Replace("-", "");
 
-    // ─── Gestione form ───────────────────────────────────────────
+    // ─── Gestione form creazione/modifica ─────────────────────────────────────
 
     private void ApriFormNuova()
     {
         _idMacchinaInModifica = 0;
-        IsModifica = false;
+        IsModifica  = false;
         ResetForm();
         IsFormVisible = true;
     }
@@ -312,16 +350,16 @@ public class MacchineViewModel : ViewModelBase
     private void ApriFormModifica()
     {
         if (MacchinaSelezionata is null) return;
-        _idMacchinaInModifica      = MacchinaSelezionata.IdMacchinaStandard;
-        FormCodiceMacchina         = MacchinaSelezionata.CodiceMacchina;
-        FormNomeMacchina           = MacchinaSelezionata.NomeMacchina;
-        FormFormatoSelezionato     = FormatiMacchine.FirstOrDefault(f => f.IdFormato    == MacchinaSelezionata.IdFormato);
-        FormProduttoreSelezionato  = ProduttoriMacchine.FirstOrDefault(p => p.IdProduttore == MacchinaSelezionata.IdProduttore);
-        FormLarghezza              = MacchinaSelezionata.LarghezzaMm?.ToString("F2") ?? string.Empty;
-        FormAltezza                = MacchinaSelezionata.AltezzaMm?.ToString("F2")   ?? string.Empty;
-        FormVersione               = MacchinaSelezionata.Versione ?? string.Empty;
-        FormNote                   = MacchinaSelezionata.Note    ?? string.Empty;
-        AvvisoDuplicato            = null;
+        _idMacchinaInModifica     = MacchinaSelezionata.IdMacchinaStandard;
+        FormCodiceMacchina        = MacchinaSelezionata.CodiceMacchina;
+        FormNomeMacchina          = MacchinaSelezionata.NomeMacchina;
+        FormFormatoSelezionato    = FormatiMacchine.FirstOrDefault(f => f.IdFormato    == MacchinaSelezionata.IdFormato);
+        FormProduttoreSelezionato = ProduttoriMacchine.FirstOrDefault(p => p.IdProduttore == MacchinaSelezionata.IdProduttore);
+        FormLarghezza             = MacchinaSelezionata.LarghezzaMm?.ToString("F2") ?? string.Empty;
+        FormAltezza               = MacchinaSelezionata.AltezzaMm?.ToString("F2")   ?? string.Empty;
+        FormVersione              = MacchinaSelezionata.Versione ?? string.Empty;
+        FormNote                  = MacchinaSelezionata.Note    ?? string.Empty;
+        AvvisoDuplicato           = null;
         IsModifica    = true;
         IsFormVisible = true;
     }
@@ -348,6 +386,7 @@ public class MacchineViewModel : ViewModelBase
 
         if (IsModifica)
         {
+            // Modifica in-place dell'oggetto già in _tutti (EF Core lo traccia).
             var m = _tutti.FirstOrDefault(x => x.IdMacchinaStandard == _idMacchinaInModifica);
             if (m is null) return;
             m.CodiceMacchina = FormCodiceMacchina.Trim();
@@ -358,6 +397,7 @@ public class MacchineViewModel : ViewModelBase
             m.AltezzaMm      = ParseDecimal(FormAltezza);
             m.Versione       = N(FormVersione);
             m.Note           = N(FormNote);
+            // Aggiorna anche le navigazioni in memoria per il binding nella lista.
             m.Formato        = FormFormatoSelezionato;
             m.Produttore     = FormProduttoreSelezionato;
             await _macchineRepo.UpdateAsync(m);
@@ -395,15 +435,18 @@ public class MacchineViewModel : ViewModelBase
         await _macchineRepo.UpdateAsync(MacchinaSelezionata);
         OnPropertyChanged(nameof(MacchinaSelezionata));
         OnPropertyChanged(nameof(ToggleAttivaLabel));
+        // Ricalcola il filtro perché la macchina potrebbe sparire dalla lista (SoloAttive = true).
         AggiornaFiltro();
     }
 
-    // ─── Aggiungi piastra compatibile ─────────────────────────
+    // ─── Aggiungi piastra compatibile ─────────────────────────────────────────
 
     private async Task ApriAggiungiPiastraAsync()
     {
-        var tutte = await _piastreRepo.GetAllAsync();
+        var tutte       = await _piastreRepo.GetAllAsync();
+        // Esclude le piastre già compatibili.
         var idGiaCompat = PiastreCompatibili.Select(c => c.IdPiastra).ToHashSet();
+        // Se la macchina ha un formato, mostra solo le piastre dello stesso formato.
         var idFormato   = MacchinaSelezionata?.IdFormato;
 
         PiastreDisponibili.Clear();
@@ -428,6 +471,7 @@ public class MacchineViewModel : ViewModelBase
         };
         await _compatRepo.AddAsync(nuova);
         AnnullaAggiungiPiastra();
+        // Ricarica il dettaglio per includere la nuova compatibilità.
         await LoadDettaglioAsync();
     }
 
@@ -441,8 +485,11 @@ public class MacchineViewModel : ViewModelBase
     {
         if (param is not PiastraMacchinaCompatibile c) return;
         await _compatRepo.DeleteAsync(c.IdCompatibilita);
+        // Aggiorna la lista in memoria senza ricaricare tutto dal DB.
         PiastreCompatibili.Remove(c);
     }
+
+    // ─── Utility ─────────────────────────────────────────────────────────────
 
     private static decimal? ParseDecimal(string s) =>
         decimal.TryParse(s.Replace(',', '.'), System.Globalization.NumberStyles.Any,

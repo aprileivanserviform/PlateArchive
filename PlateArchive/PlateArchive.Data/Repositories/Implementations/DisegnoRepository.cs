@@ -5,6 +5,11 @@ using PlateArchive.Data.Repositories.Interfaces;
 
 namespace PlateArchive.Data.Repositories.Implementations;
 
+/// <summary>
+/// Repository per la tabella Disegni (metadati — il file fisico è gestito da FileArchivioService).
+/// Ogni disegno ha una relazione 1:1 con una Piastra (IdPiastra univoco).
+/// Le query includono Piastra.CodicePiastra per mostrare il codice nella lista disegni.
+/// </summary>
 public class DisegnoRepository(PlateArchiveDbContext db) : IDisegnoRepository
 {
     public async Task<Disegno?> GetByIdAsync(int id) =>

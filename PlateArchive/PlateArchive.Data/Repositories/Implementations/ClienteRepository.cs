@@ -4,6 +4,11 @@ using PlateArchive.Data.Repositories.Interfaces;
 
 namespace PlateArchive.Data.Repositories.Implementations;
 
+/// <summary>
+/// Repository per la tabella Clienti.
+/// I clienti non hanno soft-delete: vengono sincronizzati dal gestionale DB2
+/// e un cliente eliminato nel gestionale viene semplicemente ignorato nelle sincronizzazioni successive.
+/// </summary>
 public class ClienteRepository(PlateArchiveDbContext db) : IClienteRepository
 {
     public async Task<Cliente?> GetByIdAsync(int id) =>
