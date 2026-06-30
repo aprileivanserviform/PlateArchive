@@ -1,6 +1,7 @@
 <UserControl x:Class="PlateArchive.Wpf.Views.FormatiMacchinaView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:b="clr-namespace:PlateArchive.Wpf.Behaviors">
     <!--
     FormatiMacchinaView — gestione CRUD dei formati macchina (sezione Impostazioni).
     Layout: Header | Grid orizzontale:
@@ -42,7 +43,8 @@
                     Background="{DynamicResource Brush.Surface}"
                     BorderBrush="{DynamicResource Brush.Border}"
                     BorderThickness="1">
-                <DataGrid ItemsSource="{Binding Formati}"
+                <DataGrid b:DataGridColumnLayout.Chiave="Formati.Lista"
+                          ItemsSource="{Binding Formati}"
                           SelectedItem="{Binding FormatoSelezionato, Mode=TwoWay}"
                           CanUserAddRows="False" IsReadOnly="True"
                           RowHeight="36">

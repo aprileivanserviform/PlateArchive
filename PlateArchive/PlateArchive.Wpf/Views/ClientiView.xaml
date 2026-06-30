@@ -1,6 +1,7 @@
 <UserControl x:Class="PlateArchive.Wpf.Views.ClientiView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:b="clr-namespace:PlateArchive.Wpf.Behaviors">
     <!--
     ClientiView — lista anagrafica clienti sincronizzati dal gestionale DB2.
     Layout: Header (titolo + ricerca + sync) | DataGrid clienti
@@ -81,7 +82,8 @@
                 Margin="24,20"
                 BorderBrush="{DynamicResource Brush.Border}"
                 BorderThickness="1">
-            <DataGrid ItemsSource="{Binding ClientiFiltrati}"
+            <DataGrid b:DataGridColumnLayout.Chiave="Clienti.Lista"
+                      ItemsSource="{Binding ClientiFiltrati}"
                       CanUserAddRows="False" IsReadOnly="True">
                 <DataGrid.RowStyle>
                     <Style TargetType="DataGridRow" BasedOn="{StaticResource DataGridRow.Base}">

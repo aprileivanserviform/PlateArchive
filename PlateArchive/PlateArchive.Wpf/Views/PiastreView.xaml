@@ -2,7 +2,8 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:PlateArchive.Wpf.ViewModels"
-             xmlns:conv="clr-namespace:PlateArchive.Wpf.Converters">
+             xmlns:conv="clr-namespace:PlateArchive.Wpf.Converters"
+             xmlns:b="clr-namespace:PlateArchive.Wpf.Behaviors">
 
     <UserControl.Resources>
 
@@ -294,6 +295,7 @@
                     BorderThickness="1">
                 <Grid>
                     <DataGrid x:Name="PiastreDataGrid"
+                              b:DataGridColumnLayout.Chiave="Piastre.Lista"
                               ItemsSource="{Binding PiastreFiltrate}"
                               SelectedItem="{Binding PiastraSelezionata, Mode=TwoWay}"
                               CanUserAddRows="False" IsReadOnly="True"

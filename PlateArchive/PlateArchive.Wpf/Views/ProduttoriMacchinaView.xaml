@@ -1,6 +1,7 @@
 <UserControl x:Class="PlateArchive.Wpf.Views.ProduttoriMacchinaView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:b="clr-namespace:PlateArchive.Wpf.Behaviors">
     <!--
     ProduttoriMacchinaView — gestione CRUD dei produttori di macchine (sezione Impostazioni).
     Layout: Header | Grid orizzontale:
@@ -39,7 +40,8 @@
                     Background="{DynamicResource Brush.Surface}"
                     BorderBrush="{DynamicResource Brush.Border}"
                     BorderThickness="1">
-                <DataGrid ItemsSource="{Binding Produttori}"
+                <DataGrid b:DataGridColumnLayout.Chiave="Produttori.Lista"
+                          ItemsSource="{Binding Produttori}"
                           SelectedItem="{Binding ProduttoreSelezionato, Mode=TwoWay}"
                           CanUserAddRows="False" IsReadOnly="True"
                           RowHeight="36">

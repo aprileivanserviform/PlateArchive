@@ -81,6 +81,9 @@ public partial class App : Application
         // SyncStatusService: aggiorna la barra di stato durante la sincronizzazione.
         services.AddSingleton<ISyncStatusService, SyncStatusService>();
 
+        // ColumnLayoutService: persiste larghezza e ordine colonne DataGrid in %AppData%.
+        services.AddSingleton<IColumnLayoutService, ColumnLayoutService>();
+
         // ─── ViewModels (Transient) ───────────────────────────────────────────
         // Transient = una nuova istanza ogni volta che NavigationService chiede un ViewModel.
         // Questo garantisce che ogni navigazione parta con stato pulito.
