@@ -10,7 +10,30 @@ namespace PlateArchive.Wpf.Views;
 
 public partial class PiastreView : UserControl
 {
-    public PiastreView() => InitializeComponent();
+    public PiastreView()
+    {
+        InitializeComponent();
+        DataContextChanged += PiastreView_DataContextChanged;
+    }
+
+    private void PiastreView_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (DataContext is not PiastreViewModel vm) return;
+        ColCodice.Header        = vm.FiltroCodice;
+        ColDescrizione.Header   = vm.FiltroDescrizione;
+        ColArtGestionale.Header = vm.FiltroArtGestionale;
+        ColCategoria.Header     = vm.FiltroCategoria;
+        ColFormato.Header       = vm.FiltroFormato;
+        ColTipo.Header          = vm.FiltroTipo;
+        ColStato.Header         = vm.FiltroStato;
+        ColLarghezza.Header     = vm.FiltroLarghezza;
+        ColAltezza.Header       = vm.FiltroAltezza;
+        ColSpessore.Header      = vm.FiltroSpessore;
+        ColDurezza.Header       = vm.FiltroDurezza;
+        ColPeso.Header          = vm.FiltroPeso;
+        ColDataCreazione.Header = vm.FiltroDataCreazione;
+        ColDataModifica.Header  = vm.FiltroDataModifica;
+    }
 
     private void Row_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {

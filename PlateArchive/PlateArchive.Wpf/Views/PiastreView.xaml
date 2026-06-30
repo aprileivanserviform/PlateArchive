@@ -1,18 +1,255 @@
 <UserControl x:Class="PlateArchive.Wpf.Views.PiastreView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!--
-    PiastreView — schermata catalogo piastre.
-    Layout: DockPanel verticale (Header + filtri | Grid orizzontale lista | pannello destra)
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:PlateArchive.Wpf.ViewModels"
+             xmlns:conv="clr-namespace:PlateArchive.Wpf.Converters">
 
-    Pannello destra mostra (Visibility alternata):
-      - Form creazione/modifica (IsFormVisible = true)
-      - Dettaglio piastra: macchine compatibili + clienti associati (IsDetailVisible = true)
+    <UserControl.Resources>
 
-    Funzionalità:
-      - Drag-drop file su riga DataGrid → chiama PiastreView.xaml.cs → AssociaDisegnoAsync
-      - Filtro per testo, stato, categoria, formato (tutti in memoria, senza query al DB)
-    -->
+        <!-- Converter enum ↔ bool per i RadioButton nel popup filtro -->
+        <conv:EnumToBoolConverter x:Key="EnumToBool"/>
+
+        <!-- ── Stile RadioButton operatore filtro ─────────────────────────────── -->
+        <Style x:Key="FilterOp" TargetType="RadioButton">
+            <Setter Property="Focusable"      Value="False"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Root"
+                                Background="Transparent"
+                                Padding="12,6"
+                                Cursor="Hand">
+                            <TextBlock x:Name="Lbl"
+                                       Text="{TemplateBinding Content}"
+                                       FontSize="{StaticResource FontSize.Caption}"
+                                       Foreground="{DynamicResource Brush.TextPrimary}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background"
+                                        Value="{DynamicResource Brush.ItemHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Root" Property="Background"
+                                        Value="{DynamicResource Brush.Primary}"/>
+                                <Setter TargetName="Lbl"  Property="Foreground"
+                                        Value="{DynamicResource Brush.OnPrimary}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Variante "Rimuovi filtro" (nessun highlight attivo, testo secondario) -->
+        <Style x:Key="FilterOp.Remove" TargetType="RadioButton" BasedOn="{StaticResource FilterOp}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Root"
+                                Background="Transparent"
+                                Padding="12,6"
+                                Cursor="Hand">
+                            <TextBlock x:Name="Lbl"
+                                       Text="{TemplateBinding Content}"
+                                       FontSize="{StaticResource FontSize.Caption}"
+                                       Foreground="{DynamicResource Brush.TextSecondary}"
+                                       FontWeight="{StaticResource FontWeight.SemiBold}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background"
+                                        Value="{DynamicResource Brush.ItemHover}"/>
+                                <Setter TargetName="Lbl"  Property="Foreground"
+                                        Value="{DynamicResource Brush.TextPrimary}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ── Stile ToggleButton icona filtro nell'header ────────────────────── -->
+        <Style x:Key="FilterToggle" TargetType="ToggleButton">
+            <Setter Property="Focusable"      Value="False"/>
+            <Setter Property="Background"     Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding"        Value="3"/>
+            <Setter Property="Cursor"         Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderThickness="0"
+                                CornerRadius="{StaticResource Radius.XS}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center"
+                                              HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background"
+                                        Value="{DynamicResource Brush.ItemHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Root" Property="Background"
+                                        Value="{DynamicResource Brush.PrimarySubtle}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ── DataTemplate header colonna con filtro popup ──────────────────── -->
+        <!--
+            DataContext = FiltroColonna (impostato via code-behind: ColXxx.Header = vm.FiltroXxx)
+        -->
+        <DataTemplate x:Key="FiltroColonnaHeader" DataType="{x:Type vm:FiltroColonna}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Titolo colonna -->
+                <TextBlock Grid.Column="0"
+                           Text="{Binding Titolo}"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"/>
+
+                <!-- Bottone funnel (icona filtro) -->
+                <ToggleButton x:Name="FilterBtn"
+                              Grid.Column="1"
+                              IsChecked="{Binding IsPopupOpen, Mode=TwoWay}"
+                              Style="{StaticResource FilterToggle}"
+                              Margin="4,0,0,0"
+                              ToolTip="Filtra questa colonna">
+                    <TextBlock FontFamily="Segoe MDL2 Assets"
+                               Text="&#xE71C;"
+                               FontWeight="Normal">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="FontSize"   Value="11"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Brush.TextDisabled}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsAttivo}" Value="True">
+                                        <Setter Property="Foreground" Value="{DynamicResource Brush.Primary}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </ToggleButton>
+
+                <!-- Popup filtro -->
+                <Popup Grid.Column="1"
+                       IsOpen="{Binding IsPopupOpen, Mode=TwoWay}"
+                       PlacementTarget="{Binding ElementName=FilterBtn}"
+                       Placement="Bottom"
+                       StaysOpen="False"
+                       AllowsTransparency="True"
+                       HorizontalOffset="-4">
+                    <Border Background="{DynamicResource Brush.Surface}"
+                            BorderBrush="{DynamicResource Brush.Border}"
+                            BorderThickness="1"
+                            CornerRadius="{StaticResource Radius.S}"
+                            Effect="{StaticResource Elevation.Shadow.S}"
+                            Padding="0,4"
+                            MinWidth="220">
+                        <StackPanel>
+
+                            <!-- Rimuovi filtro -->
+                            <RadioButton Content="Rimuovi filtro"
+                                         GroupName="{Binding Titolo}"
+                                         IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=Nessuno, Mode=TwoWay}"
+                                         Style="{StaticResource FilterOp.Remove}"/>
+
+                            <Separator Margin="8,2" Opacity="0.5"/>
+
+                            <!-- Operatori solo testo: Contiene / Non contiene -->
+                            <StackPanel Visibility="{Binding MostraContiene, Converter={StaticResource BoolToVis}}">
+                                <RadioButton Content="Contiene"
+                                             GroupName="{Binding Titolo}"
+                                             IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=Contiene, Mode=TwoWay}"
+                                             Style="{StaticResource FilterOp}"/>
+                                <RadioButton Content="Non contiene"
+                                             GroupName="{Binding Titolo}"
+                                             IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=NonContiene, Mode=TwoWay}"
+                                             Style="{StaticResource FilterOp}"/>
+                            </StackPanel>
+
+                            <!-- Uguale / Diverso (tutti i tipi) -->
+                            <RadioButton Content="È uguale a"
+                                         GroupName="{Binding Titolo}"
+                                         IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=UgualeA, Mode=TwoWay}"
+                                         Style="{StaticResource FilterOp}"/>
+                            <RadioButton Content="Non è uguale a"
+                                         GroupName="{Binding Titolo}"
+                                         IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=DiversoDa, Mode=TwoWay}"
+                                         Style="{StaticResource FilterOp}"/>
+
+                            <!-- Operatori comparazione: solo numerico e data -->
+                            <StackPanel Visibility="{Binding MostraComparazione, Converter={StaticResource BoolToVis}}">
+                                <RadioButton Content="È più grande di"
+                                             GroupName="{Binding Titolo}"
+                                             IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=MaggioreDi, Mode=TwoWay}"
+                                             Style="{StaticResource FilterOp}"/>
+                                <RadioButton Content="È più grande o uguale a"
+                                             GroupName="{Binding Titolo}"
+                                             IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=MaggioreUgualeDi, Mode=TwoWay}"
+                                             Style="{StaticResource FilterOp}"/>
+                                <RadioButton Content="È più piccolo di"
+                                             GroupName="{Binding Titolo}"
+                                             IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=MinoreDi, Mode=TwoWay}"
+                                             Style="{StaticResource FilterOp}"/>
+                                <RadioButton Content="È più piccolo o uguale a"
+                                             GroupName="{Binding Titolo}"
+                                             IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=MinoreUgualeDi, Mode=TwoWay}"
+                                             Style="{StaticResource FilterOp}"/>
+                                <RadioButton Content="Da/a"
+                                             GroupName="{Binding Titolo}"
+                                             IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=Tra, Mode=TwoWay}"
+                                             Style="{StaticResource FilterOp}"/>
+                            </StackPanel>
+
+                            <!-- Vuoto / Non vuoto (tutti i tipi) -->
+                            <RadioButton Content="È vuoto"
+                                         GroupName="{Binding Titolo}"
+                                         IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=Vuoto, Mode=TwoWay}"
+                                         Style="{StaticResource FilterOp}"/>
+                            <RadioButton Content="Non è vuoto"
+                                         GroupName="{Binding Titolo}"
+                                         IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=NonVuoto, Mode=TwoWay}"
+                                         Style="{StaticResource FilterOp}"/>
+
+                            <!-- Input valore (visibile quando l'operatore lo richiede) -->
+                            <StackPanel Visibility="{Binding MostraInput, Converter={StaticResource BoolToVis}}"
+                                        Margin="8,6,8,4">
+                                <!-- Input testo / numerico / data -->
+                                <TextBox Visibility="{Binding MostraTextInput, Converter={StaticResource BoolToVis}}"
+                                         Text="{Binding Valore1, UpdateSourceTrigger=PropertyChanged}"
+                                         MinWidth="188" Margin="0,0,0,2"/>
+                                <!-- Secondo valore per "Da/a" -->
+                                <TextBox Visibility="{Binding IsTra, Converter={StaticResource BoolToVis}}"
+                                         Text="{Binding Valore2, UpdateSourceTrigger=PropertyChanged}"
+                                         MinWidth="188" Margin="0,4,0,2"/>
+                                <!-- Picker enum: ComboBox con i valori disponibili -->
+                                <ComboBox Visibility="{Binding MostraEnumInput, Converter={StaticResource BoolToVis}}"
+                                          ItemsSource="{Binding ValoriEnum}"
+                                          SelectedItem="{Binding Valore1, Mode=TwoWay}"
+                                          MinWidth="188"/>
+                            </StackPanel>
+
+                        </StackPanel>
+                    </Border>
+                </Popup>
+            </Grid>
+        </DataTemplate>
+
+    </UserControl.Resources>
 
     <DockPanel Background="{DynamicResource Brush.Background}">
 
@@ -22,46 +259,32 @@
                 Padding="24,14"
                 BorderBrush="{DynamicResource Brush.Border}"
                 BorderThickness="0,0,0,1">
-            <StackPanel>
-                <!-- Riga 1: titolo + pulsante -->
-                <DockPanel Margin="0,0,0,10">
-                    <Button DockPanel.Dock="Right"
-                            Content="+ Nuova piastra"
-                            Command="{Binding NuovaCommand}"
-                            Margin="12,0,0,0"/>
-                    <TextBlock Text="Piastre"
-                               Style="{StaticResource TextBlock.Title}"
-                               VerticalAlignment="Center"/>
-                </DockPanel>
-                <!-- Riga 2: filtri -->
-                <DockPanel>
-                    <ComboBox DockPanel.Dock="Right"
-                              ItemsSource="{Binding StatiFiltro}"
-                              SelectedItem="{Binding FiltroStatoSelezionato}"
-                              Width="110" Margin="10,0,0,0"
-                              VerticalAlignment="Center"/>
-                    <ComboBox DockPanel.Dock="Right"
-                              ItemsSource="{Binding FormatiFiltro}"
-                              SelectedItem="{Binding FiltroFormatoSelezionato}"
-                              Width="80" Margin="10,0,0,0"
-                              VerticalAlignment="Center"/>
-                    <ComboBox DockPanel.Dock="Right"
-                              ItemsSource="{Binding CategorieFiltro}"
-                              SelectedItem="{Binding FiltroCategoriaSelezionato}"
-                              Width="110" Margin="10,0,0,0"
-                              VerticalAlignment="Center"/>
-                    <TextBox Text="{Binding FiltroRicerca, UpdateSourceTrigger=PropertyChanged}"
-                             MinWidth="80"/>
-                </DockPanel>
-            </StackPanel>
+            <DockPanel>
+                <Button DockPanel.Dock="Right"
+                        Content="+ Nuova piastra"
+                        Command="{Binding NuovaCommand}"
+                        Margin="12,0,0,0"/>
+                <TextBlock Text="Piastre"
+                           Style="{StaticResource TextBlock.Title}"
+                           VerticalAlignment="Center"
+                           Margin="0,0,0,0"/>
+                <!-- Ricerca globale (manteniamo la barra testo; i filtri per colonna
+                     sono accessibili dall'icona funnel nell'intestazione di ogni colonna) -->
+                <TextBox DockPanel.Dock="Right"
+                         Text="{Binding FiltroRicerca, UpdateSourceTrigger=PropertyChanged}"
+                         Width="220"
+                         VerticalAlignment="Center"
+                         Margin="0,0,16,0"/>
+            </DockPanel>
         </Border>
 
         <!-- ── Body ───────────────────────────────────────────── -->
         <Grid Margin="24,20,24,24">
             <Grid.ColumnDefinitions>
+                <!-- Tabella: occupa tutto lo spazio disponibile -->
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="20"/>
-                <ColumnDefinition Width="560"/>
+                <!-- Pannello destra: Auto → si riduce a 0 quando Collapsed -->
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
             <!-- Lista piastre -->
@@ -86,16 +309,17 @@
                             </Style>
                         </DataGrid.RowStyle>
                         <DataGrid.Columns>
-                            <!-- ⚠ icona di avviso se la piastra non ha un disegno associato -->
-                            <DataGridTemplateColumn Width="34" Header="">
+
+                            <!-- ⚠ Icona: nessun disegno associato -->
+                            <DataGridTemplateColumn Width="30" Header="" CanUserSort="False">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE7BA;"
-                                                   FontSize="13"
+                                                   FontSize="12"
                                                    Foreground="{DynamicResource Brush.Warning}"
                                                    HorizontalAlignment="Center"
                                                    VerticalAlignment="Center"
-                                                   ToolTip="Nessun disegno associato a questa piastra">
+                                                   ToolTip="Nessun disegno associato">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="Visibility" Value="Collapsed"/>
@@ -110,21 +334,105 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTextColumn Header="Codice"
-                                               Binding="{Binding CodicePiastra}"
-                                               Width="130"/>
-                            <DataGridTextColumn Header="Descrizione"
-                                               Binding="{Binding Descrizione}"
-                                               Width="*"/>
-                            <DataGridTextColumn Header="Categoria"
-                                               Binding="{Binding Categoria.Descrizione}"
-                                               Width="95"/>
-                            <DataGridTextColumn Header="Formato"
-                                               Binding="{Binding Formato.NomeFormato}"
-                                               Width="80"/>
-                            <DataGridTextColumn Header="Stato"
-                                               Binding="{Binding Stato}"
-                                               Width="80"/>
+
+                            <!-- Codice -->
+                            <DataGridTextColumn x:Name="ColCodice"
+                                                Binding="{Binding CodicePiastra}"
+                                                Width="120"
+                                                SortMemberPath="CodicePiastra"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Descrizione -->
+                            <DataGridTextColumn x:Name="ColDescrizione"
+                                                Binding="{Binding Descrizione}"
+                                                Width="180"
+                                                SortMemberPath="Descrizione"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Articolo gestionale -->
+                            <DataGridTextColumn x:Name="ColArtGestionale"
+                                                Binding="{Binding CodiceArticoloGestionale}"
+                                                Width="130"
+                                                SortMemberPath="CodiceArticoloGestionale"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Categoria -->
+                            <DataGridTextColumn x:Name="ColCategoria"
+                                                Binding="{Binding Categoria.Descrizione}"
+                                                Width="90"
+                                                SortMemberPath="Categoria.Descrizione"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Formato macchina -->
+                            <DataGridTextColumn x:Name="ColFormato"
+                                                Binding="{Binding Formato.NomeFormato}"
+                                                Width="75"
+                                                SortMemberPath="Formato.NomeFormato"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Tipo piastra -->
+                            <DataGridTextColumn x:Name="ColTipo"
+                                                Binding="{Binding TipoPiastra}"
+                                                Width="90"
+                                                SortMemberPath="TipoPiastra"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Stato -->
+                            <DataGridTextColumn x:Name="ColStato"
+                                                Binding="{Binding Stato}"
+                                                Width="80"
+                                                SortMemberPath="Stato"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Larghezza -->
+                            <DataGridTextColumn x:Name="ColLarghezza"
+                                                Binding="{Binding LarghezzaMm, StringFormat='{}{0:F1}', TargetNullValue='—'}"
+                                                Width="68"
+                                                SortMemberPath="LarghezzaMm"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Altezza -->
+                            <DataGridTextColumn x:Name="ColAltezza"
+                                                Binding="{Binding AltezzaMm, StringFormat='{}{0:F1}', TargetNullValue='—'}"
+                                                Width="60"
+                                                SortMemberPath="AltezzaMm"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Spessore -->
+                            <DataGridTextColumn x:Name="ColSpessore"
+                                                Binding="{Binding SpessoreMm, StringFormat='{}{0:F2}', TargetNullValue='—'}"
+                                                Width="68"
+                                                SortMemberPath="SpessoreMm"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Durezza -->
+                            <DataGridTextColumn x:Name="ColDurezza"
+                                                Binding="{Binding Durezza, StringFormat='{}{0:F1}', TargetNullValue='—'}"
+                                                Width="60"
+                                                SortMemberPath="Durezza"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Peso -->
+                            <DataGridTextColumn x:Name="ColPeso"
+                                                Binding="{Binding Peso, StringFormat='{}{0:F3}', TargetNullValue='—'}"
+                                                Width="65"
+                                                SortMemberPath="Peso"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Data creazione -->
+                            <DataGridTextColumn x:Name="ColDataCreazione"
+                                                Binding="{Binding DataCreazione, StringFormat='dd/MM/yyyy'}"
+                                                Width="100"
+                                                SortMemberPath="DataCreazione"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Ultima modifica -->
+                            <DataGridTextColumn x:Name="ColDataModifica"
+                                                Binding="{Binding DataUltimaModifica, StringFormat='dd/MM/yyyy'}"
+                                                Width="110"
+                                                SortMemberPath="DataUltimaModifica"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
                         </DataGrid.Columns>
                     </DataGrid>
 
@@ -145,8 +453,12 @@
                 </Grid>
             </Border>
 
-            <!-- Pannello destra: dettaglio OPPURE form -->
-            <Grid Grid.Column="2">
+            <!-- Pannello destra: si comprime a 0px quando non c'è nulla da mostrare
+                 (nessuna piastra selezionata e nessun form aperto). -->
+            <Grid Grid.Column="1"
+                  Margin="20,0,0,0"
+                  Width="560"
+                  Visibility="{Binding IsPannelloDxVisible, Converter={StaticResource BoolToVis}}">
 
                 <!-- ── Form creazione/modifica ─────────────────── -->
                 <ScrollViewer Visibility="{Binding IsFormVisible, Converter={StaticResource BoolToVis}}"
@@ -201,7 +513,6 @@
                                     Margin="0,0,0,10">
                             <TextBlock Text="Cliente esclusivo *" Style="{StaticResource FieldLabel}"/>
 
-                            <!-- Chip cliente selezionato -->
                             <Border Visibility="{Binding IsClienteEsclusivoSelezionatoVisible, Converter={StaticResource BoolToVis}}"
                                     Background="{DynamicResource Brush.PrimarySubtle}"
                                     BorderBrush="{DynamicResource Brush.Primary}"
@@ -226,7 +537,6 @@
                                 </DockPanel>
                             </Border>
 
-                            <!-- Typeahead ricerca -->
                             <Grid Visibility="{Binding IsClienteEsclusivoSearchVisible, Converter={StaticResource BoolToVis}}">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
@@ -331,8 +641,6 @@
                         <StackPanel Visibility="{Binding IsAssociazioneClientiVisible, Converter={StaticResource BoolToVis}}"
                                     Margin="0,4,0,10">
                             <TextBlock Text="Associa a clienti (opzionale)" Style="{StaticResource FieldLabel}"/>
-
-                            <!-- Chips clienti aggiunti -->
                             <ItemsControl ItemsSource="{Binding FormClientiDaAssociare}"
                                           Margin="0,0,0,4">
                                 <ItemsControl.ItemsPanel>
@@ -364,8 +672,6 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
-
-                            <!-- Typeahead ricerca cliente -->
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
@@ -407,8 +713,6 @@
 
                         <!-- Sezione disegno nel form -->
                         <TextBlock Text="Disegno" Style="{StaticResource FieldLabel}" Margin="0,4,0,4"/>
-
-                        <!-- Disegno associato (1:1 — al più uno per piastra) -->
                         <Border Background="{DynamicResource Brush.SurfaceAlt}"
                                 BorderBrush="{DynamicResource Brush.Border}"
                                 BorderThickness="1"
@@ -435,11 +739,8 @@
                             </DockPanel>
                         </Border>
 
-                        <!-- Drop zone + pulsante sfoglia — nascosti se c'è già un disegno -->
                         <StackPanel Visibility="{Binding IsFormDisegnoAssente, Converter={StaticResource BoolToVis}}"
                                     Margin="0,0,0,8">
-
-                            <!-- Area drag-and-drop -->
                             <Grid AllowDrop="True"
                                   DragOver="FormDisegno_DragOver"
                                   DragLeave="FormDisegno_DragLeave"
@@ -459,21 +760,18 @@
                                                FontSize="{StaticResource FontSize.Caption}"
                                                Foreground="{DynamicResource Brush.TextDisabled}"
                                                HorizontalAlignment="Center"
-                                               Visibility="{Binding IsDisegnoPendenteAssente,
-                                                   Converter={StaticResource BoolToVis}}"/>
+                                               Visibility="{Binding IsDisegnoPendenteAssente, Converter={StaticResource BoolToVis}}"/>
                                     <TextBlock Text="{Binding NomeFilePendente}"
                                                FontSize="{StaticResource FontSize.Body}"
                                                FontWeight="{StaticResource FontWeight.SemiBold}"
                                                Foreground="{DynamicResource Brush.Primary}"
                                                HorizontalAlignment="Center"
-                                               Visibility="{Binding IsDisegnoPendenteVisible,
-                                                   Converter={StaticResource BoolToVis}}"/>
+                                               Visibility="{Binding IsDisegnoPendenteVisible, Converter={StaticResource BoolToVis}}"/>
                                     <TextBlock Text="(verrà archiviato al salvataggio)"
                                                FontSize="{StaticResource FontSize.Caption}"
                                                Foreground="{DynamicResource Brush.TextDisabled}"
                                                HorizontalAlignment="Center"
-                                               Visibility="{Binding IsDisegnoPendenteVisible,
-                                                   Converter={StaticResource BoolToVis}}"/>
+                                               Visibility="{Binding IsDisegnoPendenteVisible, Converter={StaticResource BoolToVis}}"/>
                                 </StackPanel>
                                 <Border x:Name="FormDisegnoOverlay"
                                         Visibility="Collapsed" IsHitTestVisible="False"
@@ -488,8 +786,6 @@
                                                FontWeight="{StaticResource FontWeight.SemiBold}"/>
                                 </Border>
                             </Grid>
-
-                            <!-- Alternativa: sfoglia file -->
                             <DockPanel>
                                 <Button DockPanel.Dock="Left"
                                         Content="Sfoglia file..."
@@ -629,12 +925,11 @@
                                 </Grid>
                             </Border>
 
-                            <!-- Sezione Disegno tecnico (1:1) -->
+                            <!-- Disegno tecnico -->
                             <TextBlock Text="Disegno tecnico"
                                        Style="{StaticResource SectionTitle}"
                                        Margin="0,0,0,6"/>
 
-                            <!-- Disegno associato (1:1) -->
                             <Border Background="{DynamicResource Brush.SurfaceAlt}"
                                     BorderBrush="{DynamicResource Brush.Border}"
                                     BorderThickness="1"
@@ -675,7 +970,7 @@
                                 </DockPanel>
                             </Border>
 
-                            <!-- Drop zone nel dettaglio (visibile solo se nessun disegno) -->
+                            <!-- Drop zone (nessun disegno) -->
                             <StackPanel Visibility="{Binding IsDisegnoAssente, Converter={StaticResource BoolToVis}}"
                                         Margin="0,0,0,4">
                                 <Grid AllowDrop="True"
@@ -719,7 +1014,7 @@
                                 </DockPanel>
                             </StackPanel>
 
-                            <!-- Errore apertura file disegno -->
+                            <!-- Errore apertura file -->
                             <Border Background="{DynamicResource Brush.ErrorSurface}"
                                     BorderBrush="{DynamicResource Brush.Error}"
                                     BorderThickness="1"
@@ -734,7 +1029,7 @@
 
                             <Separator Margin="0,4,0,8"/>
 
-                            <!-- Sezione Macchine compatibili -->
+                            <!-- Macchine compatibili -->
                             <DockPanel Margin="0,0,0,6">
                                 <Button DockPanel.Dock="Right"
                                         Content="+ Aggiungi"
@@ -745,7 +1040,6 @@
                                            VerticalAlignment="Center" Margin="0"/>
                             </DockPanel>
 
-                            <!-- Inline: aggiungi macchina compatibile -->
                             <Border Visibility="{Binding IsAggiungiMacchinaVisible, Converter={StaticResource BoolToVis}}"
                                     Style="{StaticResource Card.Accent}"
                                     Padding="12,10" Margin="0,0,0,8">
@@ -769,7 +1063,6 @@
                                 </StackPanel>
                             </Border>
 
-                            <!-- DataGrid macchine compatibili -->
                             <Border BorderBrush="{DynamicResource Brush.Border}"
                                     BorderThickness="1"
                                     Margin="0,0,0,4" MaxHeight="180">
@@ -803,7 +1096,7 @@
 
                             <Separator Margin="0,4,0,8"/>
 
-                            <!-- Sezione Clienti associati -->
+                            <!-- Clienti associati -->
                             <DockPanel Margin="0,0,0,6">
                                 <Button DockPanel.Dock="Right"
                                         Content="+ Aggiungi"
@@ -814,7 +1107,6 @@
                                            VerticalAlignment="Center" Margin="0"/>
                             </DockPanel>
 
-                            <!-- Inline: aggiungi cliente associato -->
                             <Border Visibility="{Binding IsAggiungiClienteVisible, Converter={StaticResource BoolToVis}}"
                                     Style="{StaticResource Card.Accent}"
                                     Padding="12,10" Margin="0,0,0,8">
@@ -824,7 +1116,6 @@
                                                Foreground="{DynamicResource Brush.Primary}"
                                                Margin="0,0,0,6"/>
 
-                                    <!-- Chip cliente selezionato -->
                                     <Border Visibility="{Binding IsClienteSelezionatoVisible, Converter={StaticResource BoolToVis}}"
                                             Background="{DynamicResource Brush.PrimarySubtle}"
                                             BorderBrush="{DynamicResource Brush.Primary}"
@@ -849,7 +1140,6 @@
                                         </DockPanel>
                                     </Border>
 
-                                    <!-- Ricerca typeahead -->
                                     <Grid Visibility="{Binding IsClienteSearchVisible, Converter={StaticResource BoolToVis}}"
                                           Margin="0,0,0,8">
                                         <Grid.RowDefinitions>

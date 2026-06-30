@@ -39,10 +39,7 @@ public class PiastreViewModel : ViewModelBase
     private readonly ObservableCollection<Piastra> _tutti = [];
     private List<Cliente> _tuttiClienti = [];
 
-    private string    _filtroRicerca              = string.Empty;
-    private string    _filtroStatoSelezionato     = "Tutti";
-    private string    _filtroCategoriaSelezionato = "Tutti";
-    private string    _filtroFormatoSelezionato   = "Tutti";
+    private string    _filtroRicerca = string.Empty;
     private Piastra?  _piastraSelezionata;
     private bool      _isFormVisible;
     private bool      _isModifica;
@@ -104,6 +101,16 @@ public class PiastreViewModel : ViewModelBase
         _formatiRepo        = formatiRepo;
         _clientiRepo        = clientiRepo;
 
+        // Registra tutti i filtri colonna → riesegui AggiornaFiltro al cambio
+        foreach (var f in new[] {
+            FiltroCodice, FiltroDescrizione, FiltroArtGestionale,
+            FiltroCategoria, FiltroFormato, FiltroTipo, FiltroStato,
+            FiltroLarghezza, FiltroAltezza, FiltroSpessore, FiltroDurezza, FiltroPeso,
+            FiltroDataCreazione, FiltroDataModifica })
+        {
+            f.Cambiato += AggiornaFiltro;
+        }
+
         NuovaCommand                    = new RelayCommand(_ => ApriFormNuova());
         ModificaCommand                 = new RelayCommand(_ => ApriFormModifica(),                          _ => PiastraSelezionata is not null);
         SalvaCommand                    = new RelayCommand(async _ => await SalvaAsync());
@@ -129,16 +136,10 @@ public class PiastreViewModel : ViewModelBase
         SfogliaFileDettaglioCommand             = new RelayCommand(async _ => await SfogliaFileDettaglioAsync(), _ => PiastraSelezionata is not null && DisegnoCorrente is null);
     }
 
-    // ─── Lookup per i ComboBox ────────────────────────────────────────────────
+    // ─── Lookup per i ComboBox del form ──────────────────────────────────────
 
     public ObservableCollection<CategoriaPiastra> CategoriePiastre { get; } = [];
     public ObservableCollection<FormatoMacchina>  FormatiMacchine  { get; } = [];
-
-    public IEnumerable<string> CategorieFiltro =>
-        Enumerable.Prepend(CategoriePiastre.Select(c => c.Descrizione), "Tutti");
-
-    public IEnumerable<string> FormatiFiltro =>
-        Enumerable.Prepend(FormatiMacchine.Select(f => f.NomeFormato), "Tutti");
 
     // ─── Filtri lista ─────────────────────────────────────────────────────────
 
@@ -148,25 +149,22 @@ public class PiastreViewModel : ViewModelBase
         set { if (SetField(ref _filtroRicerca, value)) AggiornaFiltro(); }
     }
 
-    public string FiltroStatoSelezionato
-    {
-        get => _filtroStatoSelezionato;
-        set { if (SetField(ref _filtroStatoSelezionato, value)) AggiornaFiltro(); }
-    }
+    // Filtri per colonna (assegnati come Header delle DataGridColumn in code-behind)
+    public FiltroColonna FiltroCodice        { get; } = new("Codice",          FiltroColonnaTipo.Testo);
+    public FiltroColonna FiltroDescrizione   { get; } = new("Descrizione",     FiltroColonnaTipo.Testo);
+    public FiltroColonna FiltroArtGestionale { get; } = new("Art. gestionale", FiltroColonnaTipo.Testo);
+    public FiltroColonna FiltroCategoria     { get; } = new("Categoria",       FiltroColonnaTipo.Enum);
+    public FiltroColonna FiltroFormato       { get; } = new("Formato",         FiltroColonnaTipo.Enum);
+    public FiltroColonna FiltroTipo          { get; } = new("Tipo",            FiltroColonnaTipo.Enum);
+    public FiltroColonna FiltroStato         { get; } = new("Stato",           FiltroColonnaTipo.Enum);
+    public FiltroColonna FiltroLarghezza     { get; } = new("Larghezza",       FiltroColonnaTipo.Numerico);
+    public FiltroColonna FiltroAltezza       { get; } = new("Altezza",         FiltroColonnaTipo.Numerico);
+    public FiltroColonna FiltroSpessore      { get; } = new("Spessore",        FiltroColonnaTipo.Numerico);
+    public FiltroColonna FiltroDurezza       { get; } = new("Durezza",         FiltroColonnaTipo.Numerico);
+    public FiltroColonna FiltroPeso          { get; } = new("Peso",            FiltroColonnaTipo.Numerico);
+    public FiltroColonna FiltroDataCreazione { get; } = new("Data creazione",  FiltroColonnaTipo.Data);
+    public FiltroColonna FiltroDataModifica  { get; } = new("Ultima modifica", FiltroColonnaTipo.Data);
 
-    public string FiltroCategoriaSelezionato
-    {
-        get => _filtroCategoriaSelezionato;
-        set { if (SetField(ref _filtroCategoriaSelezionato, value)) AggiornaFiltro(); }
-    }
-
-    public string FiltroFormatoSelezionato
-    {
-        get => _filtroFormatoSelezionato;
-        set { if (SetField(ref _filtroFormatoSelezionato, value)) AggiornaFiltro(); }
-    }
-
-    public IEnumerable<string>       StatiFiltro  { get; } = ["Tutti", "Attiva", "Obsoleta", "Da verificare"];
     public IEnumerable<StatoPiastra> StatiPiastra { get; } = Enum.GetValues<StatoPiastra>();
     public IEnumerable<TipoPiastra>  TipiPiastra  { get; } = Enum.GetValues<TipoPiastra>();
 
@@ -183,6 +181,7 @@ public class PiastreViewModel : ViewModelBase
             {
                 ErroreDisegno = null;
                 OnPropertyChanged(nameof(IsDetailVisible));
+                OnPropertyChanged(nameof(IsPannelloDxVisible));
                 if (IsAggiungiMacchinaVisible) ChiudiAggiungiMacchina();
                 if (IsAggiungiClienteVisible)  ChiudiAggiungiCliente();
                 if (IsFormVisible && IsModifica && value is not null)
@@ -290,7 +289,14 @@ public class PiastreViewModel : ViewModelBase
     public bool IsFormVisible
     {
         get => _isFormVisible;
-        set { if (SetField(ref _isFormVisible, value)) OnPropertyChanged(nameof(IsDetailVisible)); }
+        set
+        {
+            if (SetField(ref _isFormVisible, value))
+            {
+                OnPropertyChanged(nameof(IsDetailVisible));
+                OnPropertyChanged(nameof(IsPannelloDxVisible));
+            }
+        }
     }
 
     public bool IsModifica
@@ -307,8 +313,9 @@ public class PiastreViewModel : ViewModelBase
         }
     }
 
-    public bool   IsDetailVisible => PiastraSelezionata is not null && !IsFormVisible;
-    public string FormTitolo      => IsModifica ? "Modifica piastra" : "Nuova piastra";
+    public bool   IsDetailVisible     => PiastraSelezionata is not null && !IsFormVisible;
+    public bool   IsPannelloDxVisible => IsDetailVisible || IsFormVisible;
+    public string FormTitolo          => IsModifica ? "Modifica piastra" : "Nuova piastra";
 
     // ─── Campi form creazione/modifica ────────────────────────────────────────
 
@@ -515,11 +522,15 @@ public class PiastreViewModel : ViewModelBase
     {
         var categorie = await _categorieRepo.GetAllAsync();
         foreach (var c in categorie) CategoriePiastre.Add(c);
-        OnPropertyChanged(nameof(CategorieFiltro));
 
         var formati = await _formatiRepo.GetAllAsync();
         foreach (var f in formati) FormatiMacchine.Add(f);
-        OnPropertyChanged(nameof(FormatiFiltro));
+
+        // Popola i valori disponibili nei filtri enum
+        FiltroCategoria.ValoriEnum.AddRange(CategoriePiastre.Select(c => c.Descrizione));
+        FiltroFormato.ValoriEnum.AddRange(FormatiMacchine.Select(f => f.NomeFormato));
+        FiltroTipo.ValoriEnum.AddRange(Enum.GetNames<TipoPiastra>());
+        FiltroStato.ValoriEnum.AddRange(Enum.GetNames<StatoPiastra>());
 
         _tuttiClienti = (await _clientiRepo.GetAllAsync()).ToList();
 
@@ -550,33 +561,35 @@ public class PiastreViewModel : ViewModelBase
 
     private void AggiornaFiltro()
     {
-        StatoPiastra? statoFiltro = FiltroStatoSelezionato switch
-        {
-            "Attiva"        => StatoPiastra.Attiva,
-            "Obsoleta"      => StatoPiastra.Obsoleta,
-            "Da verificare" => StatoPiastra.DaVerificare,
-            _               => null
-        };
-
-        var catFiltro = FiltroCategoriaSelezionato == "Tutti"
-            ? null
-            : CategoriePiastre.FirstOrDefault(c => c.Descrizione == FiltroCategoriaSelezionato);
-
-        var fmtFiltro = FiltroFormatoSelezionato == "Tutti"
-            ? null
-            : FormatiMacchine.FirstOrDefault(f => f.NomeFormato == FiltroFormatoSelezionato);
-
         var f = FiltroRicerca.Trim().ToLower();
 
         PiastreFiltrate.Clear();
         foreach (var p in _tutti.Where(p =>
-            (statoFiltro is null || p.Stato == statoFiltro)
-            && (catFiltro is null || p.IdCategoriaPiastra == catFiltro.IdCategoriaPiastra)
-            && (fmtFiltro is null || p.IdFormato == fmtFiltro.IdFormato)
-            && (string.IsNullOrEmpty(f)
+            // Ricerca testo globale (barra di ricerca in cima)
+            (string.IsNullOrEmpty(f)
                 || p.CodicePiastra.ToLower().Contains(f)
                 || (p.CodiceArticoloGestionale?.ToLower().Contains(f) ?? false)
-                || (p.Descrizione?.ToLower().Contains(f) ?? false))))
+                || (p.Descrizione?.ToLower().Contains(f) ?? false))
+            // Filtri per colonna
+            && FiltroCodice.ApplicaA(p.CodicePiastra)
+            && FiltroDescrizione.ApplicaA(p.Descrizione)
+            && FiltroArtGestionale.ApplicaA(p.CodiceArticoloGestionale)
+            && FiltroCategoria.ApplicaA(p.Categoria?.Descrizione)
+            && FiltroFormato.ApplicaA(p.Formato?.NomeFormato)
+            && FiltroTipo.ApplicaA(p.TipoPiastra.ToString())
+            && FiltroStato.ApplicaA(p.Stato.ToString())
+            && FiltroLarghezza.ApplicaA(p.LarghezzaMm.HasValue
+                ? p.LarghezzaMm.Value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) : null)
+            && FiltroAltezza.ApplicaA(p.AltezzaMm.HasValue
+                ? p.AltezzaMm.Value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) : null)
+            && FiltroSpessore.ApplicaA(p.SpessoreMm.HasValue
+                ? p.SpessoreMm.Value.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) : null)
+            && FiltroDurezza.ApplicaA(p.Durezza.HasValue
+                ? p.Durezza.Value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) : null)
+            && FiltroPeso.ApplicaA(p.Peso.HasValue
+                ? p.Peso.Value.ToString("F3", System.Globalization.CultureInfo.InvariantCulture) : null)
+            && FiltroDataCreazione.ApplicaA(p.DataCreazione.ToString("yyyy-MM-dd"))
+            && FiltroDataModifica.ApplicaA(p.DataUltimaModifica.ToString("yyyy-MM-dd"))))
         {
             PiastreFiltrate.Add(p);
         }

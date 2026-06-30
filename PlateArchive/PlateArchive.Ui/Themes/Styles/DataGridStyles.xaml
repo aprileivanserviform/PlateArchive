@@ -72,15 +72,25 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
 
-                                <TextBlock Grid.Column="0"
-                                           Text="{TemplateBinding Content}"
-                                           Foreground="{TemplateBinding Foreground}"
-                                           FontWeight="{TemplateBinding FontWeight}"
-                                           FontSize="{TemplateBinding FontSize}"
-                                           VerticalAlignment="Center"
-                                           TextTrimming="CharacterEllipsis"
-                                           TextOptions.TextFormattingMode="Ideal"
-                                           TextOptions.TextRenderingMode="ClearType"/>
+                                <!-- ContentPresenter anziché TextBlock: permette HeaderTemplate
+                                     sulle singole colonne; le colonne stringa mantengono lo stesso look. -->
+                                <ContentPresenter Grid.Column="0"
+                                                  Content="{TemplateBinding Content}"
+                                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                  VerticalAlignment="Center"
+                                                  RecognizesAccessKey="True">
+                                    <ContentPresenter.Resources>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="TextTrimming"                   Value="CharacterEllipsis"/>
+                                            <Setter Property="TextOptions.TextFormattingMode" Value="Ideal"/>
+                                            <Setter Property="TextOptions.TextRenderingMode"  Value="ClearType"/>
+                                            <Setter Property="Foreground"  Value="{DynamicResource Brush.TextPrimary}"/>
+                                            <Setter Property="FontWeight"  Value="{StaticResource FontWeight.SemiBold}"/>
+                                            <Setter Property="FontSize"    Value="{StaticResource FontSize.Caption}"/>
+                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                        </Style>
+                                    </ContentPresenter.Resources>
+                                </ContentPresenter>
 
                                 <!-- Sort indicator -->
                                 <Path x:Name="SortArrow"
