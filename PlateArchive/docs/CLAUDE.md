@@ -31,7 +31,7 @@ Codice articolo gestionale → Piastra → Disegno tecnico
 
 ## Regole di dominio (rispettarle sempre)
 
-1. Ogni piastra ha **un solo** disegno tecnico principale (relazione 1:1, vincolo `IdPiastra` univoco in `Disegni`).
+1. Una piastra può avere **più disegni** tecnici (relazione N:M via `DisegniPiastre`); lo stesso disegno può essere associato a più piastre (es. varianti di formato).
 2. Una piastra può essere compatibile con **più macchine** standard (N:N via `PiastraMacchinaCompatibile`).
 3. L'associazione **cliente–macchina è opzionale**: una piastra può essere associata a un cliente senza specificare la macchina (`ClientePiastra.IdClienteMacchina` è nullable).
 4. La compatibilità piastra–macchina è un dato tecnico standard, indipendente dal cliente.
@@ -46,7 +46,8 @@ Codice articolo gestionale → Piastra → Disegno tecnico
 | `Cliente` | `IdCliente` | Sync da DB2, `CodiceClienteGestionale` univoco |
 | `MacchinaStandard` | `IdMacchinaStandard` | `CodiceMacchina` univoco |
 | `Piastra` | `IdPiastra` | `CodicePiastra` univoco, `CodiceArticoloGestionale` univoco |
-| `Disegno` | `IdDisegno` | `IdPiastra` univoco (1:1 con Piastra) |
+| `Disegno` | `IdDisegno` | N:M con Piastra via `DisegniPiastre` |
+| `DisegnoPiastra` | `IdDisegnoPiastra` | Chiave composta `(IdDisegno, IdPiastra)` univoca |
 | `PiastraMacchinaCompatibile` | `IdCompatibilita` | Chiave composta `(IdPiastra, IdMacchinaStandard)` univoca |
 | `ClienteMacchina` | `IdClienteMacchina` | Natura commerciale/anagrafica |
 | `ClientePiastra` | `IdClientePiastra` | `IdClienteMacchina` nullable; vincolo `(IdCliente, IdPiastra)` univoco (v1) |

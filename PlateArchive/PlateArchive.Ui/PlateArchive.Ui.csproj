@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>PlateArchive.Ui</RootNamespace>
+    <AssemblyName>PlateArchive.Ui</AssemblyName>
+    <Description>Design system e layer grafico di PlateArchive (token, brush, stili controllo).</Description>
+  </PropertyGroup>
+
+</Project>

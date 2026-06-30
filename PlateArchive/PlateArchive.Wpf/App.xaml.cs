@@ -7,6 +7,7 @@ using PlateArchive.Data.Repositories.Interfaces;
 using PlateArchive.Services;
 using PlateArchive.Wpf.Services;
 using PlateArchive.Wpf.ViewModels;
+using PlateArchive.Wpf.Views;
 using System.Windows;
 
 namespace PlateArchive.Wpf;
@@ -23,6 +24,9 @@ namespace PlateArchive.Wpf;
 /// </summary>
 public partial class App : Application
 {
+    /// <summary>ServiceProvider globale — accessibile dal code-behind per risolvere ViewModel on-demand.</summary>
+    public static IServiceProvider ServiceProvider { get; private set; } = null!;
+
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
@@ -86,13 +90,17 @@ public partial class App : Application
         services.AddTransient<PiastreViewModel>();
         services.AddTransient<MacchineViewModel>();
         services.AddTransient<DisegniViewModel>();
+        services.AddTransient<ImportaDisegnoViewModel>();
         services.AddTransient<FormatiMacchinaViewModel>();
+        services.AddTransient<CategoriePiastreViewModel>();
+        services.AddTransient<ProduttoriMacchinaViewModel>();
 
         // MainWindow e MainWindowViewModel sono Singleton (vivono per tutta la sessione dell'app).
         services.AddSingleton<MainWindowViewModel>();
         services.AddSingleton<MainWindow>();
 
         var provider = services.BuildServiceProvider();
+        ServiceProvider = provider;
 
         // Naviga alla Dashboard come schermata iniziale.
         var navigation = provider.GetRequiredService<NavigationService>();

@@ -23,6 +23,13 @@ public abstract class ViewModelBase : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
 
     /// <summary>
+    /// Override per eseguire il caricamento dati asincrono al momento della navigazione.
+    /// NavigationService chiama questo metodo dopo aver impostato CurrentViewModel,
+    /// così la View può mostrare uno stato di caricamento mentre i dati arrivano dal DB.
+    /// </summary>
+    public virtual Task OnNavigatedAsync() => Task.CompletedTask;
+
+    /// <summary>
     /// Solleva l'evento PropertyChanged per la proprietà specificata.
     /// [CallerMemberName] riempie automaticamente il nome della proprietà
     /// quando chiamato dall'interno della proprietà stessa.

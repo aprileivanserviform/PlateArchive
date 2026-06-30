@@ -49,9 +49,11 @@ public class DashboardViewModel : ViewModelBase
 
         // Pulsante Sincronizza disabilitato fino all'implementazione del TASK-13
         SincronizzaClientiCommand = new RelayCommand(_ => { }, _ => false);
-
-        _ = LoadAsync();
     }
+
+    // ─── Inizializzazione navigazione ─────────────────────────────────────────
+
+    public override Task OnNavigatedAsync() => LoadAsync();
 
     // ─── Filtri di ricerca rapida ─────────────────────────────────────────────
 

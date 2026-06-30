@@ -38,9 +38,11 @@ public class FormatiMacchinaViewModel : ViewModelBase
         AnnullaCommand  = new RelayCommand(_ => ChiudiForm());
         ModificaCommand = new RelayCommand(_ => ApriFormModifica(), _ => FormatoSelezionato is not null);
         EliminaCommand  = new RelayCommand(async _ => await EliminaAsync(), _ => FormatoSelezionato is not null);
-
-        _ = LoadAsync();
     }
+
+    // ─── Inizializzazione navigazione ─────────────────────────────────────────
+
+    public override Task OnNavigatedAsync() => LoadAsync();
 
     // ─── Lista formati ────────────────────────────────────────────────────────
 

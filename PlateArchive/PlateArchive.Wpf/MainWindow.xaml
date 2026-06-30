@@ -5,6 +5,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         mc:Ignorable="d"
         Title="PlateArchive" Height="720" Width="1160"
+        WindowState="Maximized"
+        MinWidth="1100" MinHeight="650"
         WindowStartupLocation="CenterScreen"
         Style="{StaticResource Window.Base}">
 
@@ -145,6 +147,14 @@
                                 Visibility="{Binding IsImpostazioniExpanded, Converter={StaticResource BoolToVis}}">
                         <Button Content="Formati macchina"
                                 Command="{Binding NavigateToFormatiMacchinaCommand}"
+                                Style="{StaticResource NavButtonStyle}"
+                                Padding="16,10"/>
+                        <Button Content="Categorie piastre"
+                                Command="{Binding NavigateToCategoriePiastreCommand}"
+                                Style="{StaticResource NavButtonStyle}"
+                                Padding="16,10"/>
+                        <Button Content="Produttori macchina"
+                                Command="{Binding NavigateToProduttoriMacchinaCommand}"
                                 Style="{StaticResource NavButtonStyle}"
                                 Padding="16,10"/>
                     </StackPanel>

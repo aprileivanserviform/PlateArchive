@@ -7,22 +7,38 @@ namespace PlateArchive.Data.Repositories.Implementations;
 
 /// <summary>
 /// Repository per la tabella Disegni (metadati — il file fisico è gestito da FileArchivioService).
-/// Ogni disegno ha una relazione 1:1 con una Piastra (IdPiastra univoco).
-/// Le query includono Piastra.CodicePiastra per mostrare il codice nella lista disegni.
+/// Relazione 1:1 con Piastre tramite FK diretta Disegno.IdPiastra.
 /// </summary>
 public class DisegnoRepository(PlateArchiveDbContext db) : IDisegnoRepository
 {
     public async Task<Disegno?> GetByIdAsync(int id) =>
-        await db.Disegni.Include(d => d.Piastra).FirstOrDefaultAsync(d => d.IdDisegno == id);
+        await db.Disegni
+            .Include(d => d.Piastra)
+            .FirstOrDefaultAsync(d => d.IdDisegno == id);
 
     public async Task<IEnumerable<Disegno>> GetAllAsync() =>
-        await db.Disegni.Include(d => d.Piastra).OrderBy(d => d.CodiceDisegno).ToListAsync();
-
-    public async Task<Disegno?> GetByIdPiastraAsync(int idPiastra) =>
-        await db.Disegni.FirstOrDefaultAsync(d => d.IdPiastra == idPiastra);
+        await db.Disegni
+            .Include(d => d.Piastra).ThenInclude(p => p!.Categoria)
+            .Include(d => d.Piastra).ThenInclude(p => p!.Formato)
+            .OrderBy(d => d.CodiceDisegno)
+            .ToListAsync();
 
     public async Task<IEnumerable<Disegno>> GetByStatoAsync(StatoDisegno stato) =>
-        await db.Disegni.Include(d => d.Piastra).Where(d => d.Stato == stato).ToListAsync();
+        await db.Disegni
+            .Include(d => d.Piastra).ThenInclude(p => p!.Categoria)
+            .Include(d => d.Piastra).ThenInclude(p => p!.Formato)
+            .Where(d => d.Stato == stato)
+            .ToListAsync();
+
+    public async Task<Disegno?> GetByPiastraAsync(int idPiastra) =>
+        await db.Disegni
+            .FirstOrDefaultAsync(d => d.IdPiastra == idPiastra);
+
+    public async Task<Disegno?> GetByNomeFileAsync(string nomeFile) =>
+        await db.Disegni
+            .Include(d => d.Piastra)
+            .FirstOrDefaultAsync(d => d.NomeFile != null
+                && d.NomeFile.ToLower() == nomeFile.ToLower());
 
     public async Task AddAsync(Disegno entity)
     {

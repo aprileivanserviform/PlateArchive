@@ -36,6 +36,12 @@
             <DataTemplate DataType="{x:Type vm:FormatiMacchinaViewModel}">
                 <views:FormatiMacchinaView/>
             </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:CategoriePiastreViewModel}">
+                <views:CategoriePiastreView/>
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ProduttoriMacchinaViewModel}">
+                <views:ProduttoriMacchinaView/>
+            </DataTemplate>
 
         </ResourceDictionary>
     </Application.Resources>

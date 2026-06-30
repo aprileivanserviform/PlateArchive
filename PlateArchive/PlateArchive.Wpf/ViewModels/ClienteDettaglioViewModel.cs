@@ -83,8 +83,8 @@ public class ClienteDettaglioViewModel : ViewModelBase
         // Torna alla lista clienti
         TornaIndietroCommand = new RelayCommand(_ => _navigation.Navigate<ClientiViewModel>());
 
-        // Apre il pannello inline per aggiungere una macchina
-        AggiungiMacchinaCommand = new RelayCommand(_ => IsAggiungiMacchinaVisible = true);
+        // Apre il pannello inline per aggiungere una macchina (ricarica la lista al click)
+        AggiungiMacchinaCommand = new RelayCommand(async _ => await ApriAggiungiMacchinaAsync());
 
         ConfermaAggiungiMacchinaCommand = new RelayCommand(
             async _ => await ConfermaAggiungiMacchinaAsync(),
@@ -118,6 +118,9 @@ public class ClienteDettaglioViewModel : ViewModelBase
 
         ToggleStatoPiastraCommand = new RelayCommand(
             async p => await ToggleStatoPiastraAsync((ClientePiastra)p!));
+
+        ToggleAttivaCommand = new RelayCommand(
+            async p => await ToggleAttivaAsync((ClienteMacchina)p!));
     }
 
     // ─── Dati cliente ─────────────────────────────────────────────────────────
@@ -129,8 +132,12 @@ public class ClienteDettaglioViewModel : ViewModelBase
     public int IdCliente
     {
         get => _idCliente;
-        set { _idCliente = value; _ = LoadAsync(); }
+        set => _idCliente = value;
     }
+
+    // ─── Inizializzazione navigazione ─────────────────────────────────────────
+
+    public override Task OnNavigatedAsync() => LoadAsync();
 
     public Cliente? Cliente
     {
@@ -232,6 +239,7 @@ public class ClienteDettaglioViewModel : ViewModelBase
     public ICommand ConfermaAggiungiMacchinaCommand { get; }
     public ICommand AnnullaAggiungiMacchinaCommand  { get; }
     public ICommand RimuoviMacchinaCommand          { get; }
+    public ICommand ToggleAttivaCommand             { get; }
     public ICommand AggiungiPiastraCommand          { get; }
     public ICommand ConfermaAggiungiPiastraCommand  { get; }
     public ICommand AnnullaAggiungiPiastraCommand   { get; }
@@ -253,12 +261,10 @@ public class ClienteDettaglioViewModel : ViewModelBase
         Cliente = await _clienteRepo.GetByIdAsync(_idCliente);
         if (Cliente is null) return;
 
-        // Carica macchine, piastre e modelli disponibili in parallelo.
-        await Task.WhenAll(
-            CaricaMacchineAsync(),
-            CaricaPiastreAsync(),
-            CaricaMacchineDisponibiliAsync());
-
+        // Sequenziale: lo stesso DbContext non supporta query concorrenti.
+        await CaricaMacchineAsync();
+        await CaricaPiastreAsync();
+        await CaricaMacchineDisponibiliAsync();
         // Compatibilità dipende da Macchine → eseguita dopo.
         await CaricaCompatibilitaAsync();
     }
@@ -315,6 +321,17 @@ public class ClienteDettaglioViewModel : ViewModelBase
     }
 
     // ─── Aggiungi macchina ────────────────────────────────────────────────────
+
+    private async Task ApriAggiungiMacchinaAsync()
+    {
+        // Ricarica sempre al click: garantisce che le macchine create dopo il caricamento iniziale
+        // della view siano visibili, e risolve la race condition con LoadAsync() fire-and-forget.
+        await CaricaMacchineDisponibiliAsync();
+        MacchinaSelezionata = null;
+        MatricolaNuova = string.Empty;
+        NoteNuovaMacchina = string.Empty;
+        IsAggiungiMacchinaVisible = true;
+    }
 
     private async Task ConfermaAggiungiMacchinaAsync()
     {
@@ -420,6 +437,17 @@ public class ClienteDettaglioViewModel : ViewModelBase
         await _piastreRepo.DeleteAsync(piastra.IdClientePiastra);
         _tuttePiastre.Remove(piastra);
         AggiornaPiastre();
+    }
+
+    // ─── Toggle attiva macchina (Attiva ↔ Inattiva) ──────────────────────────
+
+    private async Task ToggleAttivaAsync(ClienteMacchina cm)
+    {
+        cm.Attiva = !cm.Attiva;
+        await _macchineRepo.UpdateAsync(cm);
+        // Notifica la DataGrid che la riga è cambiata (non è un ObservableObject, usiamo Replace).
+        var idx = Macchine.IndexOf(cm);
+        if (idx >= 0) { Macchine.RemoveAt(idx); Macchine.Insert(idx, cm); }
     }
 
     // ─── Toggle stato piastra (Attiva ↔ Obsoleta) ────────────────────────────

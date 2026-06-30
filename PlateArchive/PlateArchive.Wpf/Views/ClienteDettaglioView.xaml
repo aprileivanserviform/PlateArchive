@@ -39,10 +39,10 @@
         </Border>
 
         <!-- ── Tab content ────────────────────────────────────── -->
-        <TabControl Background="Transparent" BorderThickness="0" Margin="24,20,24,24">
+        <TabControl Style="{StaticResource TabControl.Base}" Margin="24,20,24,24">
 
             <!-- Tab 1: Anagrafica -->
-            <TabItem Header="Anagrafica">
+            <TabItem Header="Anagrafica" Style="{StaticResource TabItem.Base}">
                 <ScrollViewer Margin="0,16,0,0" VerticalScrollBarVisibility="Auto">
                     <Border Background="{DynamicResource Brush.Surface}"
                             BorderBrush="{DynamicResource Brush.Border}"
@@ -71,11 +71,11 @@
             </TabItem>
 
             <!-- Tab 2: Macchine -->
-            <TabItem Header="Macchine">
+            <TabItem Header="Macchine" Style="{StaticResource TabItem.Base}">
                 <DockPanel Margin="0,16,0,0">
 
                     <!-- Toolbar -->
-                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12" LastChildFill="False">
                         <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center"
                                    Style="{StaticResource TextBlock.Subtitle}"
                                    Text="Macchine associate"/>
@@ -137,6 +137,16 @@
                                   AutoGenerateColumns="False" CanUserAddRows="False"
                                   IsReadOnly="True" HeadersVisibility="Column"
                                   BorderThickness="0" RowHeight="36" ColumnHeaderHeight="34">
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow" BasedOn="{StaticResource DataGridRow.Base}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Attiva}" Value="False">
+                                            <Setter Property="Foreground" Value="{DynamicResource Brush.TextDisabled}"/>
+                                            <Setter Property="FontStyle" Value="Italic"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.RowStyle>
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Macchina"
                                                    Binding="{Binding MacchinaStandard.NomeMacchina}"
@@ -147,19 +157,89 @@
                                 <DataGridTextColumn Header="Codice interno"
                                                    Binding="{Binding CodiceInternoCliente}"
                                                    Width="130"/>
-                                <DataGridCheckBoxColumn Header="Att."
-                                                       Binding="{Binding Attiva}"
-                                                       Width="50"/>
-                                <DataGridTemplateColumn Header="" Width="70">
+                                <DataGridTemplateColumn Header="Stato" Width="90">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <Button Content="Rimuovi" FontSize="11" Padding="6,3"
-                                                    Foreground="{DynamicResource Brush.Error}"
-                                                    BorderBrush="{DynamicResource Brush.ErrorSurface}"
-                                                    Cursor="Hand"
-                                                    Command="{Binding DataContext.RimuoviMacchinaCommand,
-                                                              RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                    CommandParameter="{Binding}"/>
+                                            <Border Padding="5,2" CornerRadius="3"
+                                                    HorizontalAlignment="Left" Margin="4,0"
+                                                    VerticalAlignment="Center">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="{DynamicResource Brush.SuccessSurface}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Attiva}" Value="False">
+                                                                <Setter Property="Background" Value="{DynamicResource Brush.SurfaceVariant}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock FontSize="11" FontWeight="SemiBold" FontStyle="Normal">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="Attiva"/>
+                                                            <Setter Property="Foreground" Value="{DynamicResource Brush.Success}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Attiva}" Value="False">
+                                                                    <Setter Property="Text" Value="Inattiva"/>
+                                                                    <Setter Property="Foreground" Value="{DynamicResource Brush.TextDisabled}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="" Width="88">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+
+                                                <!-- Disattiva / Riattiva -->
+                                                <Button Command="{Binding DataContext.ToggleAttivaCommand,
+                                                                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                        CommandParameter="{Binding}">
+                                                    <Button.Style>
+                                                        <Style TargetType="Button" BasedOn="{StaticResource Button.Icon}">
+                                                            <Setter Property="ToolTip" Value="Disattiva"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Attiva}" Value="False">
+                                                                    <Setter Property="ToolTip" Value="Riattiva"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" FontWeight="Normal">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <!-- &#xE7B8; = Package (disattiva) -->
+                                                                <Setter Property="Text" Value="&#xE7B8;"/>
+                                                                <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Attiva}" Value="False">
+                                                                        <!-- &#xE777; = Ripristina (riattiva) -->
+                                                                        <Setter Property="Text" Value="&#xE777;"/>
+                                                                        <Setter Property="Foreground" Value="{DynamicResource Brush.Success}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Button>
+
+                                                <!-- Rimuovi -->
+                                                <Button Style="{StaticResource Button.IconDanger}"
+                                                        ToolTip="Rimuovi associazione"
+                                                        Command="{Binding DataContext.RimuoviMacchinaCommand,
+                                                                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                        CommandParameter="{Binding}">
+                                                    <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"
+                                                               FontWeight="Normal"
+                                                               Foreground="{DynamicResource Brush.Error}"/>
+                                                </Button>
+
+                                            </StackPanel>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
@@ -171,7 +251,7 @@
             </TabItem>
 
             <!-- Tab 3: Piastre -->
-            <TabItem Header="Piastre">
+            <TabItem Header="Piastre" Style="{StaticResource TabItem.Base}">
                 <DockPanel Margin="0,16,0,0">
 
                     <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
@@ -361,41 +441,65 @@
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <DataGridTemplateColumn Header="" Width="210">
+                                <DataGridTemplateColumn Header="" Width="132">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                <Button FontSize="11" Padding="6,3" Margin="4,0,4,0" Cursor="Hand"
-                                                        Command="{Binding DataContext.ToggleStatoPiastraCommand,
+
+                                                <!-- Archivia / Riattiva -->
+                                                <Button Command="{Binding DataContext.ToggleStatoPiastraCommand,
                                                                   RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                                         CommandParameter="{Binding}">
                                                     <Button.Style>
-                                                        <Style TargetType="Button">
-                                                            <Setter Property="Content" Value="Archivia"/>
-                                                            <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}"/>
-                                                            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}"/>
+                                                        <Style TargetType="Button" BasedOn="{StaticResource Button.Icon}">
+                                                            <Setter Property="ToolTip" Value="Archivia (sposta in storico)"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding Stato}" Value="Obsoleta">
-                                                                    <Setter Property="Content" Value="Riattiva"/>
-                                                                    <Setter Property="Foreground" Value="{DynamicResource Brush.Success}"/>
-                                                                    <Setter Property="BorderBrush" Value="{DynamicResource Brush.SuccessSurface}"/>
+                                                                    <Setter Property="ToolTip" Value="Riattiva"/>
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
                                                     </Button.Style>
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" FontWeight="Normal">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <!-- &#xE7B8; = Package (archivia) -->
+                                                                <Setter Property="Text" Value="&#xE7B8;"/>
+                                                                <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Stato}" Value="Obsoleta">
+                                                                        <!-- &#xE777; = Ripristina (riattiva) -->
+                                                                        <Setter Property="Text" Value="&#xE777;"/>
+                                                                        <Setter Property="Foreground" Value="{DynamicResource Brush.Success}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
                                                 </Button>
-                                                <Button Content="Apri dis." FontSize="11" Padding="6,3"
-                                                        Margin="0,0,4,0" Cursor="Hand"
+
+                                                <!-- Apri disegno -->
+                                                <Button Style="{StaticResource Button.Icon}"
+                                                        ToolTip="Apri disegno"
                                                         Command="{Binding DataContext.AprirDisegnoCommand,
                                                                   RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                        CommandParameter="{Binding}"/>
-                                                <Button Content="Rimuovi" FontSize="11" Padding="6,3"
-                                                        Foreground="{DynamicResource Brush.Error}"
-                                                        BorderBrush="{DynamicResource Brush.ErrorSurface}"
-                                                        Cursor="Hand"
+                                                        CommandParameter="{Binding}">
+                                                    <!-- &#xE78B; = NewWindow -->
+                                                    <TextBlock Text="&#xE78B;" FontFamily="Segoe MDL2 Assets"
+                                                               FontWeight="Normal"/>
+                                                </Button>
+
+                                                <!-- Rimuovi -->
+                                                <Button Style="{StaticResource Button.IconDanger}"
+                                                        ToolTip="Rimuovi associazione"
                                                         Command="{Binding DataContext.RimuoviPiastraCommand,
                                                                   RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                        CommandParameter="{Binding}"/>
+                                                        CommandParameter="{Binding}">
+                                                    <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"
+                                                               FontWeight="Normal"
+                                                               Foreground="{DynamicResource Brush.Error}"/>
+                                                </Button>
+
                                             </StackPanel>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
@@ -408,7 +512,7 @@
             </TabItem>
 
             <!-- Tab 4: Compatibilità -->
-            <TabItem Header="Compatibilità">
+            <TabItem Header="Compatibilità" Style="{StaticResource TabItem.Base}">
                 <DockPanel Margin="0,16,0,0">
                     <TextBlock DockPanel.Dock="Top"
                                Text="Piastre compatibili con le macchine di questo cliente"

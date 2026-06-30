@@ -70,7 +70,18 @@ BEGIN TRY
     ELSE IF OBJECT_ID('FormatiMacchine', 'U') IS NOT NULL
         PRINT '  [SKIP] FormatiMacchine esiste gia.';
     ELSE
-        PRINT '  [WARN] FamiglieMacchine non trovata (gia rinominata?).';
+    BEGIN
+        -- Nessuna delle due tabelle esiste: database creato da zero senza FamiglieMacchine.
+        -- Creiamo FormatiMacchine direttamente con il nome e le colonne corrette.
+        CREATE TABLE FormatiMacchine (
+            IdFormato   INT           NOT NULL IDENTITY(1,1),
+            NomeFormato NVARCHAR(450) NOT NULL,
+            IsEliminata BIT           NOT NULL CONSTRAINT DF_FormatiMacchine_IsEliminata DEFAULT 0,
+            Note        NVARCHAR(MAX) NULL,
+            CONSTRAINT PK_FormatiMacchine PRIMARY KEY (IdFormato)
+        );
+        PRINT '  [OK] Tabella FormatiMacchine creata da zero.';
+    END
 
     -- =========================================================================
     -- STEP 4 — Rinomina colonne in FormatiMacchine

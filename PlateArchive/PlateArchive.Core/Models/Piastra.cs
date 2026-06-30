@@ -4,10 +4,12 @@ namespace PlateArchive.Core.Models;
 
 /// <summary>
 /// Entità centrale del sistema. Rappresenta una piastra tecnica dell'azienda.
-/// Ogni piastra ha un codice interno univoco (<see cref="CodicePiastra"/>) e,
-/// facoltativamente, un codice articolo gestionale (<see cref="CodiceArticoloGestionale"/>)
-/// che la collega al gestionale commerciale.
-/// Una piastra può essere compatibile con più modelli di macchina e associata a più clienti.
+/// <para>
+/// <see cref="TipoPiastra"/> distingue le piastre del catalogo condiviso (Standard)
+/// dalle varianti personalizzate per un singolo cliente (SpecialeCliente).
+/// Le piastre speciali hanno <see cref="IdClienteEsclusivo"/> valorizzato e vengono
+/// salvate nella sottocartella Clienti\{CodiceCliente}\ dell'archivio condiviso.
+/// </para>
 /// </summary>
 public class Piastra
 {
@@ -20,6 +22,15 @@ public class Piastra
     public string? CodiceArticoloGestionale { get; set; }
     public string? Descrizione              { get; set; }
     public StatoPiastra Stato               { get; set; }
+
+    /// <summary>Standard = catalogo condiviso; SpecialeCliente = variante esclusiva di un cliente.</summary>
+    public TipoPiastra TipoPiastra { get; set; } = TipoPiastra.Standard;
+
+    /// <summary>
+    /// FK verso <see cref="Cliente"/>: valorizzato solo quando <see cref="TipoPiastra"/> = SpecialeCliente.
+    /// Determina la sottocartella di archiviazione del file disegno.
+    /// </summary>
+    public int? IdClienteEsclusivo { get; set; }
 
     /// <summary>FK verso <see cref="CategoriaPiastra"/>: tipo/famiglia della piastra (es. Flessografica, Offset).</summary>
     public int?    IdCategoriaPiastra       { get; set; }
@@ -43,15 +54,16 @@ public class Piastra
 
     // ─── Navigazioni ─────────────────────────────────────────────────────────
 
-    public CategoriaPiastra? Categoria { get; set; }
-    public FormatoMacchina?  Formato   { get; set; }
+    public CategoriaPiastra? Categoria        { get; set; }
+    public FormatoMacchina?  Formato          { get; set; }
+    public Cliente?          ClienteEsclusivo { get; set; }
 
-    /// <summary>Disegno tecnico associato (relazione 1:1 — ogni piastra ha al massimo un disegno corrente).</summary>
+    /// <summary>Disegno tecnico associato (relazione 1:1 — una piastra ha al più un disegno).</summary>
     public Disegno? Disegno { get; set; }
 
     /// <summary>Modelli di macchina con cui questa piastra è compatibile.</summary>
     public ICollection<PiastraMacchinaCompatibile> MacchineCompatibili { get; set; } = [];
 
-    /// <summary>Clienti che possiedono questa piastra.</summary>
+    /// <summary>Clienti che possiedono questa piastra (catalogo condiviso).</summary>
     public ICollection<ClientePiastra> ClientiAssociati { get; set; } = [];
 }

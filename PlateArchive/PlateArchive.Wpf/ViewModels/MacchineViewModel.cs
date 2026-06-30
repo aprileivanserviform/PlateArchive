@@ -26,6 +26,7 @@ public class MacchineViewModel : ViewModelBase
     private readonly IFormatoMacchinaRepository    _formatiRepo;
     private readonly IProduttoreMacchinaRepository _produttoriRepo;
     private readonly IPiastraRepository            _piastreRepo;
+    private readonly IClienteRepository            _clientiRepo;
 
     // Lista completa in memoria — filtrata in MacchineFiltrate.
     private readonly ObservableCollection<MacchinaStandard> _tutti = [];
@@ -53,6 +54,13 @@ public class MacchineViewModel : ViewModelBase
     private bool     _isAggiungiPiastraVisible;
     private Piastra? _piastraCompatibileDaAggiungere;
 
+    // Aggiunta cliente associato (pannello inline nel dettaglio)
+    private bool          _isAggiungiClienteVisible;
+    private Cliente?      _clienteSelezionato;
+    private string        _formMatricola           = string.Empty;
+    private List<Cliente> _tuttiClientiDisponibili = [];
+    private string        _filtroCliente           = string.Empty;
+
     private CancellationTokenSource? _debounceCts;
 
     public MacchineViewModel(
@@ -61,7 +69,8 @@ public class MacchineViewModel : ViewModelBase
         IClienteMacchinaRepository    clientiMacchineRepo,
         IFormatoMacchinaRepository    formatiRepo,
         IProduttoreMacchinaRepository produttoriRepo,
-        IPiastraRepository            piastreRepo)
+        IPiastraRepository            piastreRepo,
+        IClienteRepository            clientiRepo)
     {
         _macchineRepo        = macchineRepo;
         _compatRepo          = compatRepo;
@@ -69,6 +78,7 @@ public class MacchineViewModel : ViewModelBase
         _formatiRepo         = formatiRepo;
         _produttoriRepo      = produttoriRepo;
         _piastreRepo         = piastreRepo;
+        _clientiRepo         = clientiRepo;
 
         NuovaCommand        = new RelayCommand(_ => ApriFormNuova());
         ModificaCommand     = new RelayCommand(_ => ApriFormModifica(),  _ => MacchinaSelezionata is not null);
@@ -81,8 +91,17 @@ public class MacchineViewModel : ViewModelBase
         AnnullaAggiungiPiastraCommand  = new RelayCommand(_ => AnnullaAggiungiPiastra());
         RimuoviCompatibilitaCommand    = new RelayCommand(async o => await RimuoviCompatibilitaAsync(o));
 
-        _ = LoadAsync();
+        AggiungiClienteCommand              = new RelayCommand(async _ => await ApriAggiungiClienteAsync(), _ => MacchinaSelezionata is not null);
+        ConfermaAggiungiClienteCommand      = new RelayCommand(async _ => await ConfermaAggiungiClienteAsync(), _ => ClienteSelezionato is not null);
+        AnnullaAggiungiClienteCommand       = new RelayCommand(_ => ChiudiAggiungiCliente());
+        RimuoviClienteCommand               = new RelayCommand(async o => await RimuoviClienteAsync(o));
+        SelezionaClienteCommand             = new RelayCommand(p => ClienteSelezionato = (Cliente)p!);
+        RimuoviClienteSelezionatoCommand    = new RelayCommand(_ => ClienteSelezionato = null);
     }
+
+    // ─── Inizializzazione navigazione ─────────────────────────────────────────
+
+    public override Task OnNavigatedAsync() => LoadAsync();
 
     // ─── Lookup per i ComboBox del form ──────────────────────────────────────
 
@@ -128,8 +147,9 @@ public class MacchineViewModel : ViewModelBase
             {
                 OnPropertyChanged(nameof(IsDetailVisible));
                 OnPropertyChanged(nameof(ToggleAttivaLabel));
-                // Chiude il pannello "aggiungi piastra" se l'utente cambia macchina.
+                // Chiude i pannelli inline se l'utente cambia macchina.
                 if (IsAggiungiPiastraVisible) AnnullaAggiungiPiastra();
+                if (IsAggiungiClienteVisible) ChiudiAggiungiCliente();
                 // Se il form di modifica era aperto, aggiorna i campi con la nuova selezione.
                 if (IsFormVisible && IsModifica && value is not null)
                     ApriFormModifica();
@@ -149,6 +169,9 @@ public class MacchineViewModel : ViewModelBase
     /// <summary>Piastre disponibili da aggiungere come compatibili (già escluse quelle associate).</summary>
     public ObservableCollection<Piastra>                    PiastreDisponibili { get; } = [];
 
+    /// <summary>Suggerimenti typeahead per la ricerca cliente.</summary>
+    public ObservableCollection<Cliente>                    ClientiSuggeriti   { get; } = [];
+
     // ─── Pannello aggiungi piastra compatibile ────────────────────────────────
 
     public bool IsAggiungiPiastraVisible
@@ -161,6 +184,51 @@ public class MacchineViewModel : ViewModelBase
     {
         get => _piastraCompatibileDaAggiungere;
         set => SetField(ref _piastraCompatibileDaAggiungere, value);
+    }
+
+    // ─── Pannello aggiungi cliente associato ──────────────────────────────────
+
+    public bool IsAggiungiClienteVisible
+    {
+        get => _isAggiungiClienteVisible;
+        set => SetField(ref _isAggiungiClienteVisible, value);
+    }
+
+    public Cliente? ClienteSelezionato
+    {
+        get => _clienteSelezionato;
+        set
+        {
+            if (SetField(ref _clienteSelezionato, value))
+            {
+                if (value is not null)
+                {
+                    _filtroCliente = string.Empty;
+                    OnPropertyChanged(nameof(FiltroCliente));
+                    ClientiSuggeriti.Clear();
+                    OnPropertyChanged(nameof(IsClienteSuggerimentiVisible));
+                }
+                OnPropertyChanged(nameof(IsClienteSelezionatoVisible));
+                OnPropertyChanged(nameof(IsClienteSearchVisible));
+            }
+        }
+    }
+
+    public string FiltroCliente
+    {
+        get => _filtroCliente;
+        set { if (SetField(ref _filtroCliente, value)) AggiornaClientiSuggeriti(); }
+    }
+
+    public bool IsClienteSelezionatoVisible  => ClienteSelezionato is not null;
+    public bool IsClienteSearchVisible       => ClienteSelezionato is null;
+    public bool IsClienteSuggerimentiVisible => ClientiSuggeriti.Count > 0;
+
+    /// <summary>Matricola (numero di serie) della macchina del cliente — facoltativa.</summary>
+    public string FormMatricola
+    {
+        get => _formMatricola;
+        set => SetField(ref _formMatricola, value);
     }
 
     // ─── Stato pannello destra ────────────────────────────────────────────────
@@ -256,6 +324,12 @@ public class MacchineViewModel : ViewModelBase
     public ICommand ConfermaAggiungiPiastraCommand { get; }
     public ICommand AnnullaAggiungiPiastraCommand  { get; }
     public ICommand RimuoviCompatibilitaCommand    { get; }
+    public ICommand AggiungiClienteCommand              { get; }
+    public ICommand ConfermaAggiungiClienteCommand      { get; }
+    public ICommand AnnullaAggiungiClienteCommand       { get; }
+    public ICommand RimuoviClienteCommand               { get; }
+    public ICommand SelezionaClienteCommand             { get; }
+    public ICommand RimuoviClienteSelezionatoCommand    { get; }
 
     // ─── Caricamento ─────────────────────────────────────────────────────────
 
@@ -487,6 +561,89 @@ public class MacchineViewModel : ViewModelBase
         await _compatRepo.DeleteAsync(c.IdCompatibilita);
         // Aggiorna la lista in memoria senza ricaricare tutto dal DB.
         PiastreCompatibili.Remove(c);
+    }
+
+    // ─── Aggiungi / rimuovi cliente associato ─────────────────────────────────
+
+    private async Task ApriAggiungiClienteAsync()
+    {
+        var tutti          = await _clientiRepo.GetAllAsync();
+        var idGiaAssociati = ClientiAssociati.Select(cm => cm.IdCliente).ToHashSet();
+
+        _tuttiClientiDisponibili = tutti.Where(c => !idGiaAssociati.Contains(c.IdCliente)).ToList();
+
+        ClienteSelezionato       = null;
+        _filtroCliente           = string.Empty;
+        OnPropertyChanged(nameof(FiltroCliente));
+        ClientiSuggeriti.Clear();
+        OnPropertyChanged(nameof(IsClienteSuggerimentiVisible));
+        FormMatricola            = string.Empty;
+        IsAggiungiClienteVisible = true;
+    }
+
+    private async Task ConfermaAggiungiClienteAsync()
+    {
+        if (MacchinaSelezionata is null || ClienteSelezionato is null) return;
+
+        var nuova = new ClienteMacchina
+        {
+            IdCliente          = ClienteSelezionato.IdCliente,
+            IdMacchinaStandard = MacchinaSelezionata.IdMacchinaStandard,
+            Matricola          = string.IsNullOrWhiteSpace(FormMatricola) ? null : FormMatricola.Trim(),
+            DataAssociazione   = DateTime.UtcNow,
+            Attiva             = true,
+            Cliente            = ClienteSelezionato,
+            MacchinaStandard   = MacchinaSelezionata
+        };
+        await _clientiMacchineRepo.AddAsync(nuova);
+        ChiudiAggiungiCliente();
+        await LoadDettaglioAsync();
+    }
+
+    private void ChiudiAggiungiCliente()
+    {
+        IsAggiungiClienteVisible = false;
+        ClienteSelezionato       = null;
+        _filtroCliente           = string.Empty;
+        OnPropertyChanged(nameof(FiltroCliente));
+        ClientiSuggeriti.Clear();
+        OnPropertyChanged(nameof(IsClienteSuggerimentiVisible));
+        FormMatricola            = string.Empty;
+        _tuttiClientiDisponibili = [];
+    }
+
+    private async Task RimuoviClienteAsync(object? param)
+    {
+        if (param is not ClienteMacchina cm) return;
+
+        var conferma = MessageBox.Show(
+            $"Rimuovere l'associazione con '{cm.Cliente?.RagioneSociale}'?",
+            "Conferma rimozione",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question,
+            MessageBoxResult.No);
+
+        if (conferma != MessageBoxResult.Yes) return;
+
+        await _clientiMacchineRepo.DeleteAsync(cm.IdClienteMacchina);
+        await LoadDettaglioAsync();
+    }
+
+    // ─── Typeahead ricerca cliente ────────────────────────────────────────────
+
+    private void AggiornaClientiSuggeriti()
+    {
+        ClientiSuggeriti.Clear();
+        var f = _filtroCliente.Trim().ToLower();
+        if (!string.IsNullOrEmpty(f))
+        {
+            foreach (var c in _tuttiClientiDisponibili
+                .Where(c => c.CodiceClienteGestionale.ToLower().Contains(f)
+                         || c.RagioneSociale.ToLower().Contains(f))
+                .Take(8))
+                ClientiSuggeriti.Add(c);
+        }
+        OnPropertyChanged(nameof(IsClienteSuggerimentiVisible));
     }
 
     // ─── Utility ─────────────────────────────────────────────────────────────

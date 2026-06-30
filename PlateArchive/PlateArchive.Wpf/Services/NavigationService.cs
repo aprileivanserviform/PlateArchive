@@ -45,14 +45,26 @@ public class NavigationService(IServiceScopeFactory scopeFactory) : INotifyPrope
     /// Azione di inizializzazione eseguita sul ViewModel appena creato, prima di mostrarla.
     /// Usata per passare parametri: es. <c>vm => vm.IdCliente = 42</c>.
     /// </param>
-    public void Navigate<TViewModel>(Action<TViewModel>? configure = null) where TViewModel : ViewModelBase
+    public async void Navigate<TViewModel>(Action<TViewModel>? configure = null) where TViewModel : ViewModelBase
     {
         // Distrugge lo scope precedente — rilascia DbContext, repository e ViewModel vecchio.
         _currentScope?.Dispose();
         _currentScope = scopeFactory.CreateScope();
         var vm = _currentScope.ServiceProvider.GetRequiredService<TViewModel>();
         configure?.Invoke(vm);
+
+        // Mostra la view subito (il ViewModel può impostare IsCaricamento = true nel costruttore
+        // per mostrare uno skeleton/spinner mentre OnNavigatedAsync carica i dati).
         CurrentViewModel = vm;
+
+        try
+        {
+            // Esegue il caricamento dati. Se l'utente naviga altrove prima che termini,
+            // _currentScope viene eliminato e la query DB può fallire: l'eccezione viene
+            // gestita qui senza propagarsi al thread UI.
+            await vm.OnNavigatedAsync();
+        }
+        catch { /* scope disposto da una navigazione successiva — comportamento atteso */ }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

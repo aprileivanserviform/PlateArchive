@@ -52,9 +52,11 @@ public class ClientiViewModel : ViewModelBase
         SincronizzaCommand = new RelayCommand(
             async _ => await SincronizzaAsync(),
             _        => !_isSincronizzando && _syncService.IsDisponibile);
-
-        _ = LoadAsync();
     }
+
+    // ─── Inizializzazione navigazione ─────────────────────────────────────────
+
+    public override Task OnNavigatedAsync() => LoadAsync();
 
     // ─── Filtro ricerca ───────────────────────────────────────────────────────
 

@@ -57,13 +57,13 @@ public static class DbSeeder
 
         await db.SaveChangesAsync();
 
-        // ── Disegni (1:1 con Piastra) ────────────────────────────
+        // ── Disegni (1:1 con Piastre via FK diretta) ─────────────
         var disegni = new[]
         {
-            new Disegno { IdPiastra = piastre[0].IdPiastra, CodiceDisegno = "PLT-000245", NomeFile = "PLT-000245.dwg", PercorsoFile = @"\\server\disegni\PLT-000245.dwg", Revisione = "B", Formato = "DWG", Stato = StatoDisegno.Attivo,       DataUltimaModificaFile = now.AddDays(-30) },
-            new Disegno { IdPiastra = piastre[1].IdPiastra, CodiceDisegno = "PLT-000312", NomeFile = "PLT-000312.dwg", PercorsoFile = @"\\server\disegni\PLT-000312.dwg", Revisione = "A", Formato = "DWG", Stato = StatoDisegno.DaVerificare, DataUltimaModificaFile = now.AddDays(-10) },
-            new Disegno { IdPiastra = piastre[2].IdPiastra, CodiceDisegno = "PLT-000418", NomeFile = "PLT-000418.pdf", PercorsoFile = @"\\server\disegni\PLT-000418.pdf", Revisione = "C", Formato = "PDF", Stato = StatoDisegno.Attivo,       DataUltimaModificaFile = now.AddDays(-5)  },
-            new Disegno { IdPiastra = piastre[3].IdPiastra, CodiceDisegno = "PLT-000501", NomeFile = "PLT-000501.dwg", PercorsoFile = @"\\server\disegni\PLT-000501.dwg", Revisione = "A", Formato = "DWG", Stato = StatoDisegno.DaVerificare, DataUltimaModificaFile = now.AddDays(-2)  },
+            new Disegno { IdPiastra = piastre[0].IdPiastra, CodiceDisegno = "PLT-000245", NomeFile = "PLT-000245.dwg", PercorsoFile = @"\\server\disegni\Standard\PLT-000245.dwg", Revisione = "B", Formato = "DWG", Stato = StatoDisegno.Attivo,       DataUltimaModificaFile = now.AddDays(-30) },
+            new Disegno { IdPiastra = piastre[1].IdPiastra, CodiceDisegno = "PLT-000312", NomeFile = "PLT-000312.dwg", PercorsoFile = @"\\server\disegni\Standard\PLT-000312.dwg", Revisione = "A", Formato = "DWG", Stato = StatoDisegno.DaVerificare, DataUltimaModificaFile = now.AddDays(-10) },
+            new Disegno { IdPiastra = piastre[2].IdPiastra, CodiceDisegno = "PLT-000418", NomeFile = "PLT-000418.pdf", PercorsoFile = @"\\server\disegni\Standard\PLT-000418.pdf", Revisione = "C", Formato = "PDF", Stato = StatoDisegno.Attivo,       DataUltimaModificaFile = now.AddDays(-5)  },
+            new Disegno { IdPiastra = piastre[3].IdPiastra, CodiceDisegno = "PLT-000501", NomeFile = "PLT-000501.dwg", PercorsoFile = @"\\server\disegni\Standard\PLT-000501.dwg", Revisione = "A", Formato = "DWG", Stato = StatoDisegno.DaVerificare, DataUltimaModificaFile = now.AddDays(-2)  },
         };
         db.Disegni.AddRange(disegni);
 

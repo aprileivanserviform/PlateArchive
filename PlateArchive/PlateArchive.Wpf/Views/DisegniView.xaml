@@ -50,38 +50,47 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="20"/>
-                <ColumnDefinition Width="380"/>
+                <ColumnDefinition Width="420"/>
             </Grid.ColumnDefinitions>
 
             <!-- Lista disegni -->
-            <Border Grid.Column="0"
-                    Background="{DynamicResource Brush.Surface}"
-                    BorderBrush="{DynamicResource Brush.Border}"
-                    BorderThickness="1">
-                <DataGrid ItemsSource="{Binding DisegniFiltrati}"
-                          SelectedItem="{Binding DisegnoSelezionato, Mode=TwoWay}"
-                          CanUserAddRows="False" IsReadOnly="True"
-                          RowHeight="36"
-                          RowStyle="{StaticResource RowStyleDisegni}">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Codice"
-                                           Binding="{Binding CodiceDisegno}"
-                                           Width="130"/>
-                        <DataGridTextColumn Header="Piastra"
-                                           Binding="{Binding Piastra.CodicePiastra}"
-                                           Width="120"/>
-                        <DataGridTextColumn Header="Rev."
-                                           Binding="{Binding Revisione}"
-                                           Width="45"/>
-                        <DataGridTextColumn Header="Formato"
-                                           Binding="{Binding Formato}"
-                                           Width="60"/>
-                        <DataGridTextColumn Header="Stato"
-                                           Binding="{Binding Stato}"
-                                           Width="*"/>
-                    </DataGrid.Columns>
-                </DataGrid>
-            </Border>
+            <Grid Grid.Column="0">
+                <Border Background="{DynamicResource Brush.Surface}"
+                        BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1">
+                    <DataGrid ItemsSource="{Binding DisegniFiltrati}"
+                              SelectedItem="{Binding DisegnoSelezionato, Mode=TwoWay}"
+                              CanUserAddRows="False" IsReadOnly="True"
+                              RowHeight="36"
+                              RowStyle="{StaticResource RowStyleDisegni}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Codice"
+                                               Binding="{Binding CodiceDisegno}"
+                                               Width="130"/>
+                            <DataGridTextColumn Header="Piastra"
+                                               Binding="{Binding Piastra.CodicePiastra}"
+                                               Width="120"/>
+                            <DataGridTextColumn Header="Rev."
+                                               Binding="{Binding Revisione}"
+                                               Width="52"/>
+                            <DataGridTextColumn Header="Formato"
+                                               Binding="{Binding Formato}"
+                                               Width="72"/>
+                            <DataGridTextColumn Header="Stato"
+                                               Binding="{Binding Stato}"
+                                               Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Border>
+                <!-- Overlay caricamento -->
+                <Border Background="{DynamicResource Brush.Overlay}"
+                        Visibility="{Binding IsCaricamento, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="Caricamento..."
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="{DynamicResource Brush.TextSecondary}"
+                               FontSize="{StaticResource FontSize.Caption}"/>
+                </Border>
+            </Grid>
 
             <!-- Pannello modifica -->
             <Border Grid.Column="2"
@@ -180,22 +189,196 @@
                                 Command="{Binding AprirFileCommand}"
                                 Style="{StaticResource Button.Secondary}"/>
                     </StackPanel>
+
+                    <!-- Specifiche piastra associata -->
+                    <Separator Margin="0,14,0,10"/>
+                    <TextBlock Text="Piastra associata"
+                               Style="{StaticResource SectionTitle}"
+                               Margin="0,0,0,8"/>
+
+                    <!-- Info base -->
+                    <Border Style="{StaticResource Card.Subtle}" Padding="12,10" Margin="0,0,0,8">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Codice" Style="{StaticResource TextBlock.Caption}"/>
+                                <TextBlock Text="{Binding DisegnoSelezionato.Piastra.CodicePiastra, FallbackValue='—'}"
+                                           Margin="0,0,0,8"/>
+                                <TextBlock Text="Stato" Style="{StaticResource TextBlock.Caption}"/>
+                                <TextBlock Text="{Binding DisegnoSelezionato.Piastra.Stato, FallbackValue='—'}"
+                                           Margin="0,0,0,8"/>
+                                <TextBlock Text="Categoria" Style="{StaticResource TextBlock.Caption}"/>
+                                <TextBlock Text="{Binding DisegnoSelezionato.Piastra.Categoria.Descrizione, FallbackValue='—', TargetNullValue='—'}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="Descrizione" Style="{StaticResource TextBlock.Caption}"/>
+                                <TextBlock Text="{Binding DisegnoSelezionato.Piastra.Descrizione, FallbackValue='—', TargetNullValue='—'}"
+                                           TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                <TextBlock Text="Formato macchina" Style="{StaticResource TextBlock.Caption}"/>
+                                <TextBlock Text="{Binding DisegnoSelezionato.Piastra.Formato.NomeFormato, FallbackValue='—', TargetNullValue='—'}"
+                                           Margin="0,0,0,8"/>
+                                <TextBlock Text="Peso (kg)" Style="{StaticResource TextBlock.Caption}"/>
+                                <TextBlock>
+                                    <TextBlock.Text>
+                                        <Binding Path="DisegnoSelezionato.Piastra.Peso"
+                                                 StringFormat="{}{0:F3}"
+                                                 FallbackValue="—" TargetNullValue="—"/>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Dimensioni -->
+                    <Border Style="{StaticResource Card.Subtle}" Padding="12,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Larghezza" Style="{StaticResource TextBlock.Caption}"/>
+                                <TextBlock>
+                                    <TextBlock.Text>
+                                        <Binding Path="DisegnoSelezionato.Piastra.LarghezzaMm"
+                                                 StringFormat="{}{0:F1} mm"
+                                                 FallbackValue="—" TargetNullValue="—"/>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="Altezza" Style="{StaticResource TextBlock.Caption}"/>
+                                <TextBlock>
+                                    <TextBlock.Text>
+                                        <Binding Path="DisegnoSelezionato.Piastra.AltezzaMm"
+                                                 StringFormat="{}{0:F1} mm"
+                                                 FallbackValue="—" TargetNullValue="—"/>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Spessore" Style="{StaticResource TextBlock.Caption}"/>
+                                <TextBlock>
+                                    <TextBlock.Text>
+                                        <Binding Path="DisegnoSelezionato.Piastra.SpessoreMm"
+                                                 StringFormat="{}{0:F2} mm"
+                                                 FallbackValue="—" TargetNullValue="—"/>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+                            <StackPanel Grid.Column="3">
+                                <TextBlock Text="Durezza" Style="{StaticResource TextBlock.Caption}"/>
+                                <TextBlock>
+                                    <TextBlock.Text>
+                                        <Binding Path="DisegnoSelezionato.Piastra.Durezza"
+                                                 StringFormat="{}{0:F1}"
+                                                 FallbackValue="—" TargetNullValue="—"/>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
                 </StackPanel>
             </Border>
 
-            <!-- Placeholder nessun disegno selezionato -->
-            <Border Grid.Column="2"
-                    Visibility="{Binding IsNessunDisegnoSelezionato, Converter={StaticResource BoolToVis}}"
-                    Background="{DynamicResource Brush.Surface}"
-                    BorderBrush="{DynamicResource Brush.Border}"
-                    BorderThickness="1"
-                    CornerRadius="{StaticResource Radius.M}">
-                <TextBlock Text="Seleziona un disegno dalla lista per modificarne i metadati."
-                           Foreground="{DynamicResource Brush.TextSecondary}"
-                           FontSize="{StaticResource FontSize.Caption}"
-                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                           TextWrapping="Wrap" Padding="20"/>
-            </Border>
+            <!-- Drop zone importazione: visibile quando un disegno è selezionato, separata dal pannello modifica -->
+            <Grid Grid.Column="2"
+                  x:Name="DropZoneEdit"
+                  VerticalAlignment="Bottom"
+                  Visibility="{Binding IsDetailVisible, Converter={StaticResource BoolToVis}}"
+                  AllowDrop="True"
+                  DragOver="DropZoneEdit_DragOver"
+                  DragLeave="DropZoneEdit_DragLeave"
+                  Drop="DropZoneEdit_Drop"
+                  MinHeight="56">
+                <Border Background="{DynamicResource Brush.Surface}"
+                        BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource Radius.M}"/>
+                <Rectangle Stroke="{DynamicResource Brush.Border}"
+                           StrokeDashArray="5,3"
+                           StrokeThickness="1.5"
+                           Fill="Transparent"
+                           RadiusX="8" RadiusY="8"
+                           Margin="3"/>
+                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
+                           TextAlignment="Center" Margin="8">
+                    <Run Text="Importa nuovo disegno"
+                         FontSize="{StaticResource FontSize.Caption}"
+                         Foreground="{DynamicResource Brush.TextSecondary}"/>
+                    <LineBreak/>
+                    <Run Text="Trascina DWG / DXF / PDF"
+                         FontSize="{StaticResource FontSize.Caption}"
+                         Foreground="{DynamicResource Brush.TextDisabled}"/>
+                </TextBlock>
+                <Border x:Name="DropZoneEditOverlay"
+                        Visibility="Collapsed" IsHitTestVisible="False"
+                        Background="{DynamicResource Brush.Overlay}"
+                        BorderBrush="{DynamicResource Brush.Primary}"
+                        BorderThickness="2"
+                        CornerRadius="{StaticResource Radius.M}">
+                    <TextBlock Text="Rilascia per importare"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="{DynamicResource Brush.OnPrimary}"
+                               FontSize="{StaticResource FontSize.Caption}"
+                               FontWeight="{StaticResource FontWeight.SemiBold}"/>
+                </Border>
+            </Grid>
+
+            <!-- Placeholder / drop zone quando nessun disegno è selezionato -->
+            <Grid Grid.Column="2"
+                  x:Name="DropZonePlaceholder"
+                  Visibility="{Binding IsNessunDisegnoSelezionato, Converter={StaticResource BoolToVis}}"
+                  AllowDrop="True"
+                  DragOver="DropZonePlaceholder_DragOver"
+                  DragLeave="DropZonePlaceholder_DragLeave"
+                  Drop="DropZonePlaceholder_Drop">
+                <Border Background="{DynamicResource Brush.Surface}"
+                        BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource Radius.M}"/>
+                <Rectangle Stroke="{DynamicResource Brush.Border}"
+                           StrokeDashArray="5,3"
+                           StrokeThickness="1.5"
+                           Fill="Transparent"
+                           RadiusX="8" RadiusY="8"
+                           Margin="4"/>
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="Seleziona un disegno dalla lista per modificarne i metadati."
+                               Foreground="{DynamicResource Brush.TextSecondary}"
+                               FontSize="{StaticResource FontSize.Caption}"
+                               HorizontalAlignment="Center"
+                               TextWrapping="Wrap" Padding="20,0,20,12"
+                               TextAlignment="Center"/>
+                    <TextBlock HorizontalAlignment="Center" TextAlignment="Center">
+                        <Run Text="Importa nuovo disegno"
+                             FontSize="{StaticResource FontSize.Caption}"
+                             Foreground="{DynamicResource Brush.TextSecondary}"/>
+                        <LineBreak/>
+                        <Run Text="Trascina DWG / DXF / PDF"
+                             FontSize="{StaticResource FontSize.Caption}"
+                             Foreground="{DynamicResource Brush.TextDisabled}"/>
+                    </TextBlock>
+                </StackPanel>
+                <Border x:Name="DropZonePlaceholderOverlay"
+                        Visibility="Collapsed" IsHitTestVisible="False"
+                        Background="{DynamicResource Brush.Overlay}"
+                        BorderBrush="{DynamicResource Brush.Primary}"
+                        BorderThickness="2"
+                        CornerRadius="{StaticResource Radius.M}">
+                    <TextBlock Text="Rilascia per importare il disegno"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="{DynamicResource Brush.OnPrimary}"
+                               FontSize="{StaticResource FontSize.BodyLarge}"
+                               FontWeight="{StaticResource FontWeight.SemiBold}"/>
+                </Border>
+            </Grid>
 
         </Grid>
     </DockPanel>

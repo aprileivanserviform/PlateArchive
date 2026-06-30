@@ -1,0 +1,35 @@
+<UserControl x:Class="PlateArchive.Wpf.Views.CategoriePiastreView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <DockPanel Background="{DynamicResource Brush.Background}">
+
+        <!-- ── Header ─────────────────────────────────────────── -->
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource Brush.Surface}"
+                Padding="24,14"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,0,0,1">
+            <TextBlock Text="Categorie Piastre"
+                       Style="{StaticResource TextBlock.Title}"
+                       VerticalAlignment="Center"/>
+        </Border>
+
+        <!-- ── Body ───────────────────────────────────────────── -->
+        <Border Margin="24,20,24,24"
+                Background="{DynamicResource Brush.Surface}"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="1">
+            <DataGrid ItemsSource="{Binding Categorie}"
+                      CanUserAddRows="False" IsReadOnly="True"
+                      RowHeight="36">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Codice"      Binding="{Binding Codice}"      Width="90"/>
+                    <DataGridTextColumn Header="Descrizione" Binding="{Binding Descrizione}" Width="*"/>
+                    <DataGridTextColumn Header="Ordine"      Binding="{Binding Ordine}"      Width="70"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+    </DockPanel>
+</UserControl>

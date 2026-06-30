@@ -1,0 +1,49 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        PlateArchive Design System — Light Theme
+        ════════════════════════════════════════
+        Layer di caricamento:
+          1. Base      — Spacing · CornerRadius · Typography · Elevation
+          2. Colors    — palette semantica Light
+          3. Brushes   — brush tipizzate Light (usa token Colors)
+          4. Styles    — stili controllo (usa brush)
+          5. App       — stili applicativi generici
+    -->
+
+    <ResourceDictionary.MergedDictionaries>
+
+        <!-- ── 1. BASE TOKENS ──────────────────────────────────── -->
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Base/Spacing.xaml"/>
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Base/CornerRadius.xaml"/>
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Base/Typography.xaml"/>
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Base/Elevation.xaml"/>
+
+        <!-- ── 2. COLORI ───────────────────────────────────────── -->
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Colors/LightColors.xaml"/>
+
+        <!-- ── 3. BRUSH ────────────────────────────────────────── -->
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Brushes/LightBrushes.xaml"/>
+
+        <!-- ── 4. STILI CONTROLLO ─────────────────────────────── -->
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Styles/WindowStyles.xaml"/>
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Styles/ScrollBarStyles.xaml"/>
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Styles/TextBlockStyles.xaml"/>
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Styles/TextBoxStyles.xaml"/>
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Styles/ButtonStyles.xaml"/>
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Styles/CheckBoxStyles.xaml"/>
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Styles/ComboBoxStyles.xaml"/>
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Styles/TabControlStyles.xaml"/>
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Styles/DataGridStyles.xaml"/>
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Styles/CardStyles.xaml"/>
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Styles/SeparatorStyles.xaml"/>
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Styles/TooltipStyles.xaml"/>
+
+        <!-- ── 5. STILI APP GENERICI ──────────────────────────── -->
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Styles/AppStyles.xaml"/>
+
+    </ResourceDictionary.MergedDictionaries>
+
+</ResourceDictionary>

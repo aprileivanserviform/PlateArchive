@@ -61,7 +61,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="20"/>
-                <ColumnDefinition Width="380"/>
+                <ColumnDefinition Width="560"/>
             </Grid.ColumnDefinitions>
 
             <!-- Lista piastre -->
@@ -86,6 +86,30 @@
                             </Style>
                         </DataGrid.RowStyle>
                         <DataGrid.Columns>
+                            <!-- ⚠ icona di avviso se la piastra non ha un disegno associato -->
+                            <DataGridTemplateColumn Width="34" Header="">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE7BA;"
+                                                   FontSize="13"
+                                                   Foreground="{DynamicResource Brush.Warning}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   ToolTip="Nessun disegno associato a questa piastra">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Disegno}" Value="{x:Null}">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                             <DataGridTextColumn Header="Codice"
                                                Binding="{Binding CodicePiastra}"
                                                Width="130"/>
@@ -125,8 +149,9 @@
             <Grid Grid.Column="2">
 
                 <!-- ── Form creazione/modifica ─────────────────── -->
-                <Border Visibility="{Binding IsFormVisible, Converter={StaticResource BoolToVis}}"
-                        Background="{DynamicResource Brush.Surface}"
+                <ScrollViewer Visibility="{Binding IsFormVisible, Converter={StaticResource BoolToVis}}"
+                              VerticalScrollBarVisibility="Auto">
+                <Border Background="{DynamicResource Brush.Surface}"
                         BorderBrush="{DynamicResource Brush.Border}"
                         BorderThickness="1"
                         CornerRadius="{StaticResource Radius.M}"
@@ -165,6 +190,82 @@
                         <ComboBox ItemsSource="{Binding StatiPiastra}"
                                   SelectedItem="{Binding FormStato}"
                                   Margin="0,0,0,10"/>
+
+                        <TextBlock Text="Tipo piastra" Style="{StaticResource FieldLabel}"/>
+                        <ComboBox ItemsSource="{Binding TipiPiastra}"
+                                  SelectedItem="{Binding FormTipo}"
+                                  Margin="0,0,0,10"/>
+
+                        <!-- Cliente esclusivo — visibile solo per SpecialeCliente -->
+                        <StackPanel Visibility="{Binding IsClienteEsclusivoVisible, Converter={StaticResource BoolToVis}}"
+                                    Margin="0,0,0,10">
+                            <TextBlock Text="Cliente esclusivo *" Style="{StaticResource FieldLabel}"/>
+
+                            <!-- Chip cliente selezionato -->
+                            <Border Visibility="{Binding IsClienteEsclusivoSelezionatoVisible, Converter={StaticResource BoolToVis}}"
+                                    Background="{DynamicResource Brush.PrimarySubtle}"
+                                    BorderBrush="{DynamicResource Brush.Primary}"
+                                    BorderThickness="1"
+                                    CornerRadius="{StaticResource Radius.S}"
+                                    Padding="8,5" Margin="0,0,0,4">
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right"
+                                            Style="{StaticResource Button.Icon}"
+                                            Command="{Binding RimuoviClienteEsclusivoCommand}"
+                                            Margin="6,0,0,0">
+                                        <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="10" FontWeight="Normal"/>
+                                    </Button>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock FontWeight="{StaticResource FontWeight.SemiBold}"
+                                                   Text="{Binding FormClienteEsclusivo.RagioneSociale}"/>
+                                        <TextBlock Text="{Binding FormClienteEsclusivo.CodiceClienteGestionale}"
+                                                   FontSize="{StaticResource FontSize.Caption}"
+                                                   Foreground="{DynamicResource Brush.TextSecondary}"/>
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+
+                            <!-- Typeahead ricerca -->
+                            <Grid Visibility="{Binding IsClienteEsclusivoSearchVisible, Converter={StaticResource BoolToVis}}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBox Grid.Row="0"
+                                         Text="{Binding FiltroClienteEsclusivo, UpdateSourceTrigger=PropertyChanged}"
+                                         Style="{StaticResource FieldBox}"/>
+                                <Border Grid.Row="1"
+                                        Visibility="{Binding IsClientiEsclusiviSuggerimentiVisible, Converter={StaticResource BoolToVis}}"
+                                        Background="{DynamicResource Brush.Surface}"
+                                        BorderBrush="{DynamicResource Brush.Border}"
+                                        BorderThickness="1"
+                                        CornerRadius="{StaticResource Radius.S}"
+                                        Margin="0,2,0,0">
+                                    <ItemsControl ItemsSource="{Binding ClientiEsclusiviSuggeriti}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource Button.Ghost}"
+                                                        HorizontalContentAlignment="Left"
+                                                        HorizontalAlignment="Stretch"
+                                                        Command="{Binding DataContext.SelezionaClienteEsclusivoCommand,
+                                                                  RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Padding="8,5">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding CodiceClienteGestionale}"
+                                                                   FontWeight="{StaticResource FontWeight.SemiBold}"
+                                                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                                                   MinWidth="60" Margin="0,0,8,0"/>
+                                                        <TextBlock Text="{Binding RagioneSociale}"/>
+                                                    </StackPanel>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Border>
+                            </Grid>
+                        </StackPanel>
 
                         <TextBlock Text="Formato macchina" Style="{StaticResource FieldLabel}"/>
                         <ComboBox ItemsSource="{Binding FormatiMacchine}"
@@ -226,58 +327,181 @@
                                  Style="{StaticResource FieldBox}"
                                  AcceptsReturn="True" Height="60"/>
 
-                        <!-- Drop zone disegno nel form -->
+                        <!-- Associa a clienti (solo per piastre Standard) -->
+                        <StackPanel Visibility="{Binding IsAssociazioneClientiVisible, Converter={StaticResource BoolToVis}}"
+                                    Margin="0,4,0,10">
+                            <TextBlock Text="Associa a clienti (opzionale)" Style="{StaticResource FieldLabel}"/>
+
+                            <!-- Chips clienti aggiunti -->
+                            <ItemsControl ItemsSource="{Binding FormClientiDaAssociare}"
+                                          Margin="0,0,0,4">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource Brush.PrimarySubtle}"
+                                                BorderBrush="{DynamicResource Brush.Primary}"
+                                                BorderThickness="1"
+                                                CornerRadius="{StaticResource Radius.S}"
+                                                Padding="7,3" Margin="0,2,4,2">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding RagioneSociale}"
+                                                           FontSize="{StaticResource FontSize.Caption}"
+                                                           VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                                <Button Style="{StaticResource Button.Icon}"
+                                                        Command="{Binding DataContext.RimuoviClienteAssociatoFormCommand,
+                                                                  RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Padding="2">
+                                                    <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets"
+                                                               FontSize="9" FontWeight="Normal"/>
+                                                </Button>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- Typeahead ricerca cliente -->
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBox Grid.Row="0"
+                                         Text="{Binding FormFiltroClienteAssociato, UpdateSourceTrigger=PropertyChanged}"/>
+                                <Border Grid.Row="1"
+                                        Visibility="{Binding IsFormClientiAssociatiSuggerimentiVisible, Converter={StaticResource BoolToVis}}"
+                                        Background="{DynamicResource Brush.Surface}"
+                                        BorderBrush="{DynamicResource Brush.Border}"
+                                        BorderThickness="1"
+                                        CornerRadius="{StaticResource Radius.S}"
+                                        Margin="0,2,0,0">
+                                    <ItemsControl ItemsSource="{Binding FormClientiAssociatiSuggeriti}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource Button.Ghost}"
+                                                        HorizontalContentAlignment="Left"
+                                                        HorizontalAlignment="Stretch"
+                                                        Command="{Binding DataContext.SelezionaClienteAssociatoFormCommand,
+                                                                  RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Padding="8,5">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding CodiceClienteGestionale}"
+                                                                   FontWeight="{StaticResource FontWeight.SemiBold}"
+                                                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                                                   MinWidth="60" Margin="0,0,8,0"/>
+                                                        <TextBlock Text="{Binding RagioneSociale}"/>
+                                                    </StackPanel>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Border>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Sezione disegno nel form -->
                         <TextBlock Text="Disegno" Style="{StaticResource FieldLabel}" Margin="0,4,0,4"/>
-                        <Grid AllowDrop="True"
-                              DragOver="FormDisegno_DragOver"
-                              DragLeave="FormDisegno_DragLeave"
-                              Drop="FormDisegno_Drop"
-                              Margin="0,0,0,16" MinHeight="56">
-                            <Border Background="{DynamicResource Brush.SurfaceAlt}"
-                                    BorderBrush="{DynamicResource Brush.Border}"
-                                    BorderThickness="1.5"
-                                    CornerRadius="{StaticResource Radius.S}">
-                            </Border>
-                            <Rectangle Stroke="{DynamicResource Brush.Border}"
-                                       StrokeDashArray="5,3"
-                                       StrokeThickness="1.5"
-                                       Fill="{DynamicResource Brush.SurfaceAlt}"
-                                       RadiusX="4" RadiusY="4"/>
-                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
-                                        Margin="8">
-                                <TextBlock Text="Trascina qui DWG / DXF / PDF"
-                                           FontSize="{StaticResource FontSize.Caption}"
-                                           Foreground="{DynamicResource Brush.TextDisabled}"
-                                           HorizontalAlignment="Center"
-                                           Visibility="{Binding IsDisegnoPendenteAssente,
-                                               Converter={StaticResource BoolToVis}}"/>
-                                <TextBlock Text="{Binding NomeFilePendente}"
-                                           FontSize="{StaticResource FontSize.Body}"
+
+                        <!-- Disegno associato (1:1 — al più uno per piastra) -->
+                        <Border Background="{DynamicResource Brush.SurfaceAlt}"
+                                BorderBrush="{DynamicResource Brush.Border}"
+                                BorderThickness="1"
+                                CornerRadius="{StaticResource Radius.S}"
+                                Padding="8,6" Margin="0,0,0,8"
+                                Visibility="{Binding IsFormDisegnoPresente, Converter={StaticResource BoolToVis}}">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <Button Style="{StaticResource Button.Icon}"
+                                            ToolTip="Apri" Margin="0,0,2,0"
+                                            Command="{Binding AprirDisegnoCommand}">
+                                        <TextBlock Text="&#xE78B;" FontFamily="Segoe MDL2 Assets" FontWeight="Normal"/>
+                                    </Button>
+                                    <Button Style="{StaticResource Button.IconDanger}"
+                                            ToolTip="Rimuovi"
+                                            Command="{Binding RimuoviDisegnoCommand}">
+                                        <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"/>
+                                    </Button>
+                                </StackPanel>
+                                <TextBlock Text="{Binding DisegnoCorrente.NomeFile}"
                                            FontWeight="{StaticResource FontWeight.SemiBold}"
-                                           Foreground="{DynamicResource Brush.Primary}"
-                                           HorizontalAlignment="Center"
-                                           Visibility="{Binding IsDisegnoPendenteVisible,
-                                               Converter={StaticResource BoolToVis}}"/>
-                                <TextBlock Text="(verrà associato al salvataggio)"
+                                           VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"/>
+                            </DockPanel>
+                        </Border>
+
+                        <!-- Drop zone + pulsante sfoglia — nascosti se c'è già un disegno -->
+                        <StackPanel Visibility="{Binding IsFormDisegnoAssente, Converter={StaticResource BoolToVis}}"
+                                    Margin="0,0,0,8">
+
+                            <!-- Area drag-and-drop -->
+                            <Grid AllowDrop="True"
+                                  DragOver="FormDisegno_DragOver"
+                                  DragLeave="FormDisegno_DragLeave"
+                                  Drop="FormDisegno_Drop"
+                                  Margin="0,0,0,6" MinHeight="56">
+                                <Border Background="{DynamicResource Brush.SurfaceAlt}"
+                                        BorderBrush="{DynamicResource Brush.Border}"
+                                        BorderThickness="1.5"
+                                        CornerRadius="{StaticResource Radius.S}"/>
+                                <Rectangle Stroke="{DynamicResource Brush.Border}"
+                                           StrokeDashArray="5,3"
+                                           StrokeThickness="1.5"
+                                           Fill="{DynamicResource Brush.SurfaceAlt}"
+                                           RadiusX="4" RadiusY="4"/>
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8">
+                                    <TextBlock Text="Trascina qui DWG / DXF / PDF"
+                                               FontSize="{StaticResource FontSize.Caption}"
+                                               Foreground="{DynamicResource Brush.TextDisabled}"
+                                               HorizontalAlignment="Center"
+                                               Visibility="{Binding IsDisegnoPendenteAssente,
+                                                   Converter={StaticResource BoolToVis}}"/>
+                                    <TextBlock Text="{Binding NomeFilePendente}"
+                                               FontSize="{StaticResource FontSize.Body}"
+                                               FontWeight="{StaticResource FontWeight.SemiBold}"
+                                               Foreground="{DynamicResource Brush.Primary}"
+                                               HorizontalAlignment="Center"
+                                               Visibility="{Binding IsDisegnoPendenteVisible,
+                                                   Converter={StaticResource BoolToVis}}"/>
+                                    <TextBlock Text="(verrà archiviato al salvataggio)"
+                                               FontSize="{StaticResource FontSize.Caption}"
+                                               Foreground="{DynamicResource Brush.TextDisabled}"
+                                               HorizontalAlignment="Center"
+                                               Visibility="{Binding IsDisegnoPendenteVisible,
+                                                   Converter={StaticResource BoolToVis}}"/>
+                                </StackPanel>
+                                <Border x:Name="FormDisegnoOverlay"
+                                        Visibility="Collapsed" IsHitTestVisible="False"
+                                        Background="{DynamicResource Brush.Overlay}"
+                                        BorderBrush="{DynamicResource Brush.Primary}"
+                                        BorderThickness="2"
+                                        CornerRadius="{StaticResource Radius.S}">
+                                    <TextBlock Text="Rilascia per allegare il disegno"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource Brush.OnPrimary}"
+                                               FontSize="{StaticResource FontSize.Body}"
+                                               FontWeight="{StaticResource FontWeight.SemiBold}"/>
+                                </Border>
+                            </Grid>
+
+                            <!-- Alternativa: sfoglia file -->
+                            <DockPanel>
+                                <Button DockPanel.Dock="Left"
+                                        Content="Sfoglia file..."
+                                        Command="{Binding SfogliaFileFormCommand}"
+                                        Style="{StaticResource Button.Secondary}"/>
+                                <TextBlock Text="oppure trascina sopra"
                                            FontSize="{StaticResource FontSize.Caption}"
                                            Foreground="{DynamicResource Brush.TextDisabled}"
-                                           HorizontalAlignment="Center"
-                                           Visibility="{Binding IsDisegnoPendenteVisible,
-                                               Converter={StaticResource BoolToVis}}"/>
-                            </StackPanel>
-                            <Border x:Name="FormDisegnoOverlay"
-                                    Visibility="Collapsed" IsHitTestVisible="False"
-                                    Background="{DynamicResource Brush.Overlay}"
-                                    BorderBrush="{DynamicResource Brush.Primary}"
-                                    BorderThickness="2"
-                                    CornerRadius="{StaticResource Radius.S}">
-                                <TextBlock Text="Rilascia per allegare il disegno"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                                           Foreground="{DynamicResource Brush.OnPrimary}"
-                                           FontSize="{StaticResource FontSize.Body}"
-                                           FontWeight="{StaticResource FontWeight.SemiBold}"/>
-                            </Border>
-                        </Grid>
+                                           VerticalAlignment="Center"
+                                           Margin="10,0,0,0"/>
+                            </DockPanel>
+                        </StackPanel>
 
                         <StackPanel Orientation="Horizontal">
                             <Button Content="Salva"
@@ -289,6 +513,7 @@
                         </StackPanel>
                     </StackPanel>
                 </Border>
+                </ScrollViewer>
 
                 <!-- ── Dettaglio piastra selezionata ──────────── -->
                 <ScrollViewer Visibility="{Binding IsDetailVisible, Converter={StaticResource BoolToVis}}"
@@ -301,7 +526,12 @@
                         <StackPanel>
                             <!-- Header dettaglio -->
                             <DockPanel Margin="0,0,0,16">
-                                <StackPanel DockPanel.Dock="Left">
+                                <Button DockPanel.Dock="Right"
+                                        Content="Modifica"
+                                        Command="{Binding ModificaCommand}"
+                                        Style="{StaticResource Button.Secondary}"
+                                        VerticalAlignment="Top"/>
+                                <StackPanel VerticalAlignment="Top">
                                     <TextBlock Text="{Binding PiastraSelezionata.CodicePiastra}"
                                                Style="{StaticResource TextBlock.BodyLarge}"
                                                FontWeight="{StaticResource FontWeight.SemiBold}"/>
@@ -309,11 +539,6 @@
                                                Style="{StaticResource TextBlock.Caption}"
                                                Margin="0,2,0,0"/>
                                 </StackPanel>
-                                <Button DockPanel.Dock="Right"
-                                        Content="Modifica"
-                                        Command="{Binding ModificaCommand}"
-                                        Style="{StaticResource Button.Secondary}"
-                                        VerticalAlignment="Top"/>
                             </DockPanel>
 
                             <!-- Info base -->
@@ -404,71 +629,95 @@
                                 </Grid>
                             </Border>
 
-                            <!-- Sezione Disegno -->
-                            <TextBlock Text="Disegno" Style="{StaticResource SectionTitle}"/>
+                            <!-- Sezione Disegno tecnico (1:1) -->
+                            <TextBlock Text="Disegno tecnico"
+                                       Style="{StaticResource SectionTitle}"
+                                       Margin="0,0,0,6"/>
 
-                            <!-- Drop zone disegno -->
-                            <Grid Margin="0,0,0,16"
-                                  AllowDrop="True"
-                                  DragOver="DisegnoSection_DragOver"
-                                  DragLeave="DisegnoSection_DragLeave"
-                                  Drop="DisegnoSection_Drop">
-                                <StackPanel>
-                                    <!-- Disegno presente -->
-                                    <Border Visibility="{Binding IsDisegnoPresente, Converter={StaticResource BoolToVis}}"
-                                            Style="{StaticResource Card.Subtle}"
-                                            Padding="12,10">
-                                        <DockPanel>
-                                            <Button DockPanel.Dock="Right"
-                                                    Content="Apri file"
-                                                    Command="{Binding AprirDisegnoCommand}"
-                                                    Style="{StaticResource Button.Secondary}"
-                                                    VerticalAlignment="Center"
-                                                    Margin="8,0,0,0"/>
-                                            <StackPanel DockPanel.Dock="Left">
-                                                <TextBlock Text="{Binding PiastraSelezionata.Disegno.CodiceDisegno}"
-                                                           FontWeight="{StaticResource FontWeight.SemiBold}"/>
-                                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                                    <TextBlock Text="Rev. " Style="{StaticResource TextBlock.Caption}"/>
-                                                    <TextBlock Text="{Binding PiastraSelezionata.Disegno.Revisione, FallbackValue='—'}"
-                                                               Style="{StaticResource TextBlock.Caption}"/>
-                                                    <TextBlock Text=" · " Style="{StaticResource TextBlock.Caption}"/>
-                                                    <TextBlock Text="{Binding PiastraSelezionata.Disegno.Stato}"
-                                                               Style="{StaticResource TextBlock.Caption}"/>
-                                                </StackPanel>
-                                                <TextBlock Text="{Binding PiastraSelezionata.Disegno.PercorsoFile}"
-                                                           Style="{StaticResource TextBlock.Caption}"
-                                                           Margin="0,2,0,0"
-                                                           TextTrimming="CharacterEllipsis"/>
-                                            </StackPanel>
-                                        </DockPanel>
+                            <!-- Disegno associato (1:1) -->
+                            <Border Background="{DynamicResource Brush.SurfaceAlt}"
+                                    BorderBrush="{DynamicResource Brush.Border}"
+                                    BorderThickness="1"
+                                    CornerRadius="{StaticResource Radius.S}"
+                                    Padding="10,8" Margin="0,0,0,4"
+                                    Visibility="{Binding IsDisegnoPresente, Converter={StaticResource BoolToVis}}">
+                                <DockPanel>
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                        <Button Style="{StaticResource Button.Icon}"
+                                                ToolTip="Apri" Margin="0,0,2,0"
+                                                Command="{Binding AprirDisegnoCommand}">
+                                            <TextBlock Text="&#xE78B;" FontFamily="Segoe MDL2 Assets" FontWeight="Normal"/>
+                                        </Button>
+                                        <Button Style="{StaticResource Button.IconDanger}"
+                                                ToolTip="Rimuovi"
+                                                Command="{Binding RimuoviDisegnoCommand}">
+                                            <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"/>
+                                        </Button>
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding DisegnoCorrente.NomeFile}"
+                                                   FontWeight="{StaticResource FontWeight.SemiBold}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                            <TextBlock Text="{Binding DisegnoCorrente.Formato}"
+                                                       FontSize="{StaticResource FontSize.Caption}"
+                                                       Foreground="{DynamicResource Brush.TextSecondary}"
+                                                       Margin="0,0,8,0"/>
+                                            <TextBlock Text="Rev."
+                                                       FontSize="{StaticResource FontSize.Caption}"
+                                                       Foreground="{DynamicResource Brush.TextSecondary}"
+                                                       Margin="0,0,2,0"/>
+                                            <TextBlock Text="{Binding DisegnoCorrente.Revisione}"
+                                                       FontSize="{StaticResource FontSize.Caption}"
+                                                       Foreground="{DynamicResource Brush.TextSecondary}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+
+                            <!-- Drop zone nel dettaglio (visibile solo se nessun disegno) -->
+                            <StackPanel Visibility="{Binding IsDisegnoAssente, Converter={StaticResource BoolToVis}}"
+                                        Margin="0,0,0,4">
+                                <Grid AllowDrop="True"
+                                      DragOver="DettaglioDisegno_DragOver"
+                                      DragLeave="DettaglioDisegno_DragLeave"
+                                      Drop="DettaglioDisegno_Drop"
+                                      Margin="0,0,0,6" MinHeight="56">
+                                    <Rectangle Stroke="{DynamicResource Brush.Border}"
+                                               StrokeDashArray="5,3"
+                                               StrokeThickness="1.5"
+                                               Fill="{DynamicResource Brush.SurfaceAlt}"
+                                               RadiusX="4" RadiusY="4"/>
+                                    <TextBlock Text="Trascina qui DWG / DXF / PDF"
+                                               FontSize="{StaticResource FontSize.Caption}"
+                                               Foreground="{DynamicResource Brush.TextDisabled}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                                    <Border x:Name="DettaglioDisegnoOverlay"
+                                            Visibility="Collapsed" IsHitTestVisible="False"
+                                            Background="{DynamicResource Brush.Overlay}"
+                                            BorderBrush="{DynamicResource Brush.Primary}"
+                                            BorderThickness="2"
+                                            CornerRadius="{StaticResource Radius.S}">
+                                        <TextBlock Text="Rilascia per allegare il disegno"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource Brush.OnPrimary}"
+                                                   FontSize="{StaticResource FontSize.Body}"
+                                                   FontWeight="{StaticResource FontWeight.SemiBold}"/>
                                     </Border>
-
-                                    <!-- Disegno assente -->
-                                    <Border Visibility="{Binding IsDisegnoAssente, Converter={StaticResource BoolToVis}}"
-                                            Style="{StaticResource Card.Subtle}"
-                                            Padding="12,10" MinHeight="44">
-                                        <TextBlock Text="Nessun disegno associato. Trascina qui un file DWG/DXF/PDF."
-                                                   Foreground="{DynamicResource Brush.TextDisabled}"
-                                                   FontSize="{StaticResource FontSize.Caption}"
-                                                   VerticalAlignment="Center"/>
-                                    </Border>
-                                </StackPanel>
-
-                                <!-- Overlay drag attivo -->
-                                <Border x:Name="DisegnoSectionOverlay"
-                                        Visibility="Collapsed" IsHitTestVisible="False"
-                                        Background="{DynamicResource Brush.Overlay}"
-                                        BorderBrush="{DynamicResource Brush.Primary}"
-                                        BorderThickness="2"
-                                        CornerRadius="{StaticResource Radius.S}">
-                                    <TextBlock Text="Rilascia per associare il disegno"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center"
-                                               Foreground="{DynamicResource Brush.OnPrimary}"
-                                               FontSize="{StaticResource FontSize.Body}"
-                                               FontWeight="{StaticResource FontWeight.SemiBold}"/>
-                                </Border>
-                            </Grid>
+                                </Grid>
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Left"
+                                            Content="Sfoglia file..."
+                                            Command="{Binding SfogliaFileDettaglioCommand}"
+                                            Style="{StaticResource Button.Secondary}"/>
+                                    <TextBlock Text="oppure trascina sopra"
+                                               FontSize="{StaticResource FontSize.Caption}"
+                                               Foreground="{DynamicResource Brush.TextDisabled}"
+                                               VerticalAlignment="Center"
+                                               Margin="10,0,0,0"/>
+                                </DockPanel>
+                            </StackPanel>
 
                             <!-- Errore apertura file disegno -->
                             <Border Background="{DynamicResource Brush.ErrorSurface}"
@@ -483,13 +732,14 @@
                                            Foreground="{DynamicResource Brush.Error}"/>
                             </Border>
 
+                            <Separator Margin="0,4,0,8"/>
+
                             <!-- Sezione Macchine compatibili -->
                             <DockPanel Margin="0,0,0,6">
                                 <Button DockPanel.Dock="Right"
                                         Content="+ Aggiungi"
                                         Command="{Binding AggiungiMacchinaCommand}"
-                                        Style="{StaticResource Button.Ghost}"
-                                        Padding="8,4"/>
+                                        Style="{StaticResource Button.Secondary}"/>
                                 <TextBlock Text="Macchine compatibili"
                                            Style="{StaticResource SectionTitle}"
                                            VerticalAlignment="Center" Margin="0"/>
@@ -522,7 +772,7 @@
                             <!-- DataGrid macchine compatibili -->
                             <Border BorderBrush="{DynamicResource Brush.Border}"
                                     BorderThickness="1"
-                                    Margin="0,0,0,16" MaxHeight="180">
+                                    Margin="0,0,0,4" MaxHeight="180">
                                 <DataGrid ItemsSource="{Binding MacchineCompatibili}"
                                           CanUserAddRows="False" IsReadOnly="True"
                                           RowHeight="30" ColumnHeaderHeight="30">
@@ -533,15 +783,17 @@
                                         <DataGridTextColumn Header="Codice"
                                                            Binding="{Binding MacchinaStandard.CodiceMacchina}"
                                                            Width="110"/>
-                                        <DataGridTemplateColumn Header="" Width="60">
+                                        <DataGridTemplateColumn Header="" Width="44">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
-                                                    <Button Content="Rimuovi"
-                                                            Padding="6,3"
-                                                            Style="{StaticResource DangerBtn}"
+                                                    <Button Style="{StaticResource Button.IconDanger}"
+                                                            ToolTip="Rimuovi"
                                                             Command="{Binding DataContext.RimuoviCompatibilitaCommand,
                                                                       RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                            CommandParameter="{Binding}"/>
+                                                            CommandParameter="{Binding}">
+                                                        <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"
+                                                                   Foreground="{DynamicResource Brush.Error}"/>
+                                                    </Button>
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
@@ -549,8 +801,105 @@
                                 </DataGrid>
                             </Border>
 
+                            <Separator Margin="0,4,0,8"/>
+
                             <!-- Sezione Clienti associati -->
-                            <TextBlock Text="Clienti associati" Style="{StaticResource SectionTitle}"/>
+                            <DockPanel Margin="0,0,0,6">
+                                <Button DockPanel.Dock="Right"
+                                        Content="+ Aggiungi"
+                                        Command="{Binding AggiungiClienteCommand}"
+                                        Style="{StaticResource Button.Secondary}"/>
+                                <TextBlock Text="Clienti associati"
+                                           Style="{StaticResource SectionTitle}"
+                                           VerticalAlignment="Center" Margin="0"/>
+                            </DockPanel>
+
+                            <!-- Inline: aggiungi cliente associato -->
+                            <Border Visibility="{Binding IsAggiungiClienteVisible, Converter={StaticResource BoolToVis}}"
+                                    Style="{StaticResource Card.Accent}"
+                                    Padding="12,10" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="Seleziona cliente:"
+                                               FontSize="{StaticResource FontSize.Caption}"
+                                               Foreground="{DynamicResource Brush.Primary}"
+                                               Margin="0,0,0,6"/>
+
+                                    <!-- Chip cliente selezionato -->
+                                    <Border Visibility="{Binding IsClienteSelezionatoVisible, Converter={StaticResource BoolToVis}}"
+                                            Background="{DynamicResource Brush.PrimarySubtle}"
+                                            BorderBrush="{DynamicResource Brush.Primary}"
+                                            BorderThickness="1"
+                                            CornerRadius="{StaticResource Radius.S}"
+                                            Padding="8,5" Margin="0,0,0,8">
+                                        <DockPanel>
+                                            <Button DockPanel.Dock="Right"
+                                                    Style="{StaticResource Button.Icon}"
+                                                    Command="{Binding RimuoviClienteSelezionatoCommand}"
+                                                    Margin="6,0,0,0">
+                                                <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets"
+                                                           FontSize="10" FontWeight="Normal"/>
+                                            </Button>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock FontWeight="{StaticResource FontWeight.SemiBold}"
+                                                           Text="{Binding ClienteSelezionato.RagioneSociale}"/>
+                                                <TextBlock Text="{Binding ClienteSelezionato.CodiceClienteGestionale}"
+                                                           FontSize="{StaticResource FontSize.Caption}"
+                                                           Foreground="{DynamicResource Brush.TextSecondary}"/>
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </Border>
+
+                                    <!-- Ricerca typeahead -->
+                                    <Grid Visibility="{Binding IsClienteSearchVisible, Converter={StaticResource BoolToVis}}"
+                                          Margin="0,0,0,8">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <TextBox Grid.Row="0"
+                                                 Text="{Binding FiltroCliente, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <Border Grid.Row="1"
+                                                Visibility="{Binding IsClienteSuggerimentiVisible, Converter={StaticResource BoolToVis}}"
+                                                Background="{DynamicResource Brush.Surface}"
+                                                BorderBrush="{DynamicResource Brush.Border}"
+                                                BorderThickness="1"
+                                                CornerRadius="{StaticResource Radius.S}"
+                                                Margin="0,2,0,0">
+                                            <ItemsControl ItemsSource="{Binding ClientiSuggeriti}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Button Style="{StaticResource Button.Ghost}"
+                                                                HorizontalContentAlignment="Left"
+                                                                HorizontalAlignment="Stretch"
+                                                                Command="{Binding DataContext.SelezionaClienteCommand,
+                                                                          RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                CommandParameter="{Binding}"
+                                                                Padding="8,5">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="{Binding CodiceClienteGestionale}"
+                                                                           FontWeight="{StaticResource FontWeight.SemiBold}"
+                                                                           Foreground="{DynamicResource Brush.TextSecondary}"
+                                                                           MinWidth="60" Margin="0,0,8,0"/>
+                                                                <TextBlock Text="{Binding RagioneSociale}"/>
+                                                            </StackPanel>
+                                                        </Button>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </Border>
+                                    </Grid>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Content="Conferma"
+                                                Command="{Binding ConfermaAggiungiClienteCommand}"
+                                                Margin="0,0,8,0"/>
+                                        <Button Content="Annulla"
+                                                Command="{Binding AnnullaAggiungiClienteCommand}"
+                                                Style="{StaticResource Button.Secondary}"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
                             <Border BorderBrush="{DynamicResource Brush.Border}"
                                     BorderThickness="1" MaxHeight="160">
                                 <DataGrid ItemsSource="{Binding ClientiAssociati}"
@@ -563,6 +912,20 @@
                                         <DataGridTextColumn Header="Macchina"
                                                            Binding="{Binding ClienteMacchina.MacchinaStandard.NomeMacchina}"
                                                            Width="120"/>
+                                        <DataGridTemplateColumn Header="" Width="44">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Button Style="{StaticResource Button.IconDanger}"
+                                                            ToolTip="Rimuovi"
+                                                            Command="{Binding DataContext.RimuoviClienteCommand,
+                                                                      RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                            CommandParameter="{Binding}">
+                                                        <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"
+                                                                   Foreground="{DynamicResource Brush.Error}"/>
+                                                    </Button>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Border>

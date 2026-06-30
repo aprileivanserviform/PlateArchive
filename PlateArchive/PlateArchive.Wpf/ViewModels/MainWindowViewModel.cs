@@ -49,8 +49,10 @@ public class MainWindowViewModel : ViewModelBase
         NavigateToPiastreCommand          = new RelayCommand(_ => _navigation.Navigate<PiastreViewModel>());
         NavigateToMacchineCommand         = new RelayCommand(_ => _navigation.Navigate<MacchineViewModel>());
         NavigateToDisegniCommand          = new RelayCommand(_ => _navigation.Navigate<DisegniViewModel>());
-        NavigateToFormatiMacchinaCommand  = new RelayCommand(_ => _navigation.Navigate<FormatiMacchinaViewModel>());
-        ToggleImpostazioniCommand         = new RelayCommand(_ => IsImpostazioniExpanded = !IsImpostazioniExpanded);
+        NavigateToFormatiMacchinaCommand    = new RelayCommand(_ => _navigation.Navigate<FormatiMacchinaViewModel>());
+        NavigateToCategoriePiastreCommand   = new RelayCommand(_ => _navigation.Navigate<CategoriePiastreViewModel>());
+        NavigateToProduttoriMacchinaCommand = new RelayCommand(_ => _navigation.Navigate<ProduttoriMacchinaViewModel>());
+        ToggleImpostazioniCommand           = new RelayCommand(_ => IsImpostazioniExpanded = !IsImpostazioniExpanded);
     }
 
     // ─── Navigazione ─────────────────────────────────────────────────────────
@@ -92,6 +94,8 @@ public class MainWindowViewModel : ViewModelBase
     public ICommand NavigateToPiastreCommand         { get; }
     public ICommand NavigateToMacchineCommand        { get; }
     public ICommand NavigateToDisegniCommand         { get; }
-    public ICommand NavigateToFormatiMacchinaCommand { get; }
-    public ICommand ToggleImpostazioniCommand        { get; }
+    public ICommand NavigateToFormatiMacchinaCommand    { get; }
+    public ICommand NavigateToCategoriePiastreCommand   { get; }
+    public ICommand NavigateToProduttoriMacchinaCommand { get; }
+    public ICommand ToggleImpostazioniCommand           { get; }
 }

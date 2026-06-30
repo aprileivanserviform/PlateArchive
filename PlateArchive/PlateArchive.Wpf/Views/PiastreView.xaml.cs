@@ -82,40 +82,6 @@ public partial class PiastreView : UserControl
         await vm.AssociaDisegnoAsync(piastra, file);
     }
 
-    // ── Sezione Disegno ─────────────────────────────────────────
-
-    private void DisegnoSection_DragOver(object sender, DragEventArgs e)
-    {
-        var valido = IsValidFileDrop(e)
-            && DataContext is PiastreViewModel { PiastraSelezionata: not null };
-
-        e.Effects = valido ? DragDropEffects.Copy : DragDropEffects.None;
-        DisegnoSectionOverlay.Visibility = valido ? Visibility.Visible : Visibility.Collapsed;
-        e.Handled = true;
-    }
-
-    private void DisegnoSection_DragLeave(object sender, DragEventArgs e)
-    {
-        if (sender is UIElement el)
-        {
-            var pos  = e.GetPosition(el);
-            var size = el.RenderSize;
-            if (pos.X < 0 || pos.Y < 0 || pos.X > size.Width || pos.Y > size.Height)
-                DisegnoSectionOverlay.Visibility = Visibility.Collapsed;
-        }
-    }
-
-    private async void DisegnoSection_Drop(object sender, DragEventArgs e)
-    {
-        DisegnoSectionOverlay.Visibility = Visibility.Collapsed;
-        if (!IsValidFileDrop(e)) return;
-        if (DataContext is not PiastreViewModel vm) return;
-        if (vm.PiastraSelezionata is null) return;
-
-        var file = ((string[])e.Data.GetData(DataFormats.FileDrop))[0];
-        await vm.AssociaDisegnoAsync(vm.PiastraSelezionata, file);
-    }
-
     // ── Drop zone nel form (file pendente) ──────────────────────
 
     private void FormDisegno_DragOver(object sender, DragEventArgs e)
@@ -149,5 +115,42 @@ public partial class PiastreView : UserControl
         if (!IsValidFileDrop(e)) return;
         if (DataContext is not PiastreViewModel vm) return;
         vm.PercorsoDisegnoPendente = ((string[])e.Data.GetData(DataFormats.FileDrop))[0];
+    }
+
+    // ── Drop zone nel dettaglio (piastra senza disegno) ────────────
+
+    private void DettaglioDisegno_DragOver(object sender, DragEventArgs e)
+    {
+        if (IsValidFileDrop(e))
+        {
+            e.Effects = DragDropEffects.Copy;
+            DettaglioDisegnoOverlay.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            e.Effects = DragDropEffects.None;
+        }
+        e.Handled = true;
+    }
+
+    private void DettaglioDisegno_DragLeave(object sender, DragEventArgs e)
+    {
+        if (sender is UIElement el)
+        {
+            var pos  = e.GetPosition(el);
+            var size = el.RenderSize;
+            if (pos.X < 0 || pos.Y < 0 || pos.X > size.Width || pos.Y > size.Height)
+                DettaglioDisegnoOverlay.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private async void DettaglioDisegno_Drop(object sender, DragEventArgs e)
+    {
+        DettaglioDisegnoOverlay.Visibility = Visibility.Collapsed;
+        if (!IsValidFileDrop(e)) return;
+        if (DataContext is not PiastreViewModel vm) return;
+        if (vm.PiastraSelezionata is null) return;
+        var file = ((string[])e.Data.GetData(DataFormats.FileDrop))[0];
+        await vm.AssociaDisegnoAsync(vm.PiastraSelezionata, file);
     }
 }

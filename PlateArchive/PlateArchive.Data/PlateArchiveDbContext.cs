@@ -105,16 +105,30 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
             .IsRequired(false)
             .OnDelete(DeleteBehavior.ClientSetNull);
 
-        // ─── Disegno ──────────────────────────────────────────────────────────
+        // ─── Disegno → Piastra (1:1) ─────────────────────────────────────────
+        // Ogni disegno appartiene a esattamente una piastra.
+        // Il vincolo UNIQUE su IdPiastra garantisce che una piastra abbia al più un disegno.
 
-        // Relazione 1:1 Piastra → Disegno. Cascade: eliminare la piastra elimina il disegno.
         mb.Entity<Disegno>()
             .HasIndex(d => d.IdPiastra).IsUnique();
+
         mb.Entity<Disegno>()
             .HasOne(d => d.Piastra)
             .WithOne(p => p.Disegno)
             .HasForeignKey<Disegno>(d => d.IdPiastra)
-            .OnDelete(DeleteBehavior.Cascade);
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // ─── Piastra.IdClienteEsclusivo → Cliente ────────────────────────────
+        // Solo le piastre SpecialeCliente hanno questa FK valorizzata.
+        // ClientSetNull — evita cascade multipli (ClientePiastra già punta a Cliente).
+
+        mb.Entity<Piastra>()
+            .HasOne(p => p.ClienteEsclusivo)
+            .WithMany()
+            .HasForeignKey(p => p.IdClienteEsclusivo)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.ClientSetNull);
 
         // ─── ClienteMacchina (associazione cliente ↔ macchina standard) ──────
 

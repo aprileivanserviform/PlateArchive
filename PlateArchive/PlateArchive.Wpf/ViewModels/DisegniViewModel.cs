@@ -31,6 +31,7 @@ public class DisegniViewModel : ViewModelBase
     private string   _filtroRicerca          = string.Empty;
     private string   _filtroStatoSelezionato = "Tutti";
     private Disegno? _disegnoSelezionato;
+    private bool     _isCaricamento;
 
     // Campi del form di modifica (sincronizzati con DisegnoSelezionato)
     private string       _formPercorsoFile = string.Empty;
@@ -47,8 +48,6 @@ public class DisegniViewModel : ViewModelBase
         SalvaCommand      = new RelayCommand(async _ => await SalvaAsync(), _ => DisegnoSelezionato is not null);
         AprirFileCommand  = new RelayCommand(_ => AprirFile(),   _ => !string.IsNullOrWhiteSpace(FormPercorsoFile));
         SfogliaFileCommand = new RelayCommand(_ => SfogliaFile(), _ => DisegnoSelezionato is not null);
-
-        _ = LoadAsync();
     }
 
     // ─── Filtri lista ─────────────────────────────────────────────────────────
@@ -86,6 +85,12 @@ public class DisegniViewModel : ViewModelBase
                 CaricaForm();
             }
         }
+    }
+
+    public bool IsCaricamento
+    {
+        get => _isCaricamento;
+        set => SetField(ref _isCaricamento, value);
     }
 
     public bool IsDetailVisible            => DisegnoSelezionato is not null;
@@ -146,12 +151,28 @@ public class DisegniViewModel : ViewModelBase
     public ICommand AprirFileCommand   { get; }
     public ICommand SfogliaFileCommand { get; }
 
+    // ─── Inizializzazione navigazione ─────────────────────────────────────────
+
+    public override async Task OnNavigatedAsync()
+    {
+        IsCaricamento = true;
+        try   { await LoadAsync(); }
+        finally { IsCaricamento = false; }
+    }
+
     // ─── Caricamento ─────────────────────────────────────────────────────────
 
     private async Task LoadAsync()
     {
         var disegni = await _disegniRepo.GetAllAsync();
         foreach (var d in disegni) _tutti.Add(d);
+        AggiornaFiltro();
+    }
+
+    /// <summary>Aggiunge un disegno appena creato alla lista senza ricaricare tutto dal DB.</summary>
+    public void AggiungiDisegno(Disegno d)
+    {
+        _tutti.Add(d);
         AggiornaFiltro();
     }
 
@@ -169,14 +190,14 @@ public class DisegniViewModel : ViewModelBase
 
         var f = FiltroRicerca.Trim().ToLower();
 
-        // I disegni "Da verificare" vengono mostrati per primi (priorità visiva).
+        // Ordine: i più recenti (DataUltimaModificaFile) in cima, poi alfabetico.
         var filtrati = _tutti
             .Where(d =>
                 (statoFiltro is null || d.Stato == statoFiltro)
                 && (string.IsNullOrEmpty(f)
                     || (d.CodiceDisegno?.ToLower().Contains(f) ?? false)
                     || (d.Piastra?.CodicePiastra.ToLower().Contains(f) ?? false)))
-            .OrderBy(d => d.Stato == StatoDisegno.DaVerificare ? 0 : 1)
+            .OrderByDescending(d => d.DataUltimaModificaFile)
             .ThenBy(d => d.CodiceDisegno);
 
         DisegniFiltrati.Clear();
@@ -201,17 +222,22 @@ public class DisegniViewModel : ViewModelBase
     private async Task SalvaAsync()
     {
         if (DisegnoSelezionato is null) return;
+        var salvato = DisegnoSelezionato;
 
-        DisegnoSelezionato.PercorsoFile = N(FormPercorsoFile);
-        DisegnoSelezionato.Revisione    = N(FormRevisione);
-        DisegnoSelezionato.Formato      = N(FormFormato);
-        DisegnoSelezionato.Stato        = FormStato;
-        DisegnoSelezionato.Note         = N(FormNote);
+        salvato.PercorsoFile = N(FormPercorsoFile);
+        salvato.Revisione    = N(FormRevisione);
+        salvato.Formato      = N(FormFormato);
+        salvato.Stato        = FormStato;
+        salvato.Note         = N(FormNote);
 
-        await _disegniRepo.UpdateAsync(DisegnoSelezionato);
+        await _disegniRepo.UpdateAsync(salvato);
 
-        // Riordina la lista perché il cambio di Stato sposta il disegno nella griglia.
+        // Riordina la lista: il rebuild può causare la perdita di selezione nel DataGrid.
+        // Ripristiniamo sempre la selezione sull'elemento salvato; SetField gestisce il no-op
+        // se l'oggetto non è cambiato, ma garantisce CaricaForm() se il DataGrid ha perso
+        // la selezione (o ne ha selezionata un'altra durante il CollectionChanged.Reset).
         AggiornaFiltro();
+        DisegnoSelezionato = salvato;
     }
 
     // ─── Apertura file ────────────────────────────────────────────────────────
