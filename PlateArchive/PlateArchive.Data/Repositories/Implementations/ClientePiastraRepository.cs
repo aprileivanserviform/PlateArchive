@@ -1,9 +1,15 @@
 using Microsoft.EntityFrameworkCore;
+using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
 using PlateArchive.Data.Repositories.Interfaces;
 
 namespace PlateArchive.Data.Repositories.Implementations;
 
+/// <summary>
+/// Repository per la tabella ClientiPiastre (associazione commerciale cliente ↔ piastra).
+/// Le query includono sempre Piastra.Disegno (ThenInclude) perché la UI mostra l'icona disegno
+/// e permette di aprire il file direttamente dalla lista piastre del cliente.
+/// </summary>
 public class ClientePiastraRepository(PlateArchiveDbContext db) : IClientePiastraRepository
 {
     public async Task<ClientePiastra?> GetByIdAsync(int id) =>
@@ -58,5 +64,13 @@ public class ClientePiastraRepository(PlateArchiveDbContext db) : IClientePiastr
             db.ClientiPiastre.Remove(entity);
             await db.SaveChangesAsync();
         }
+    }
+
+    public async Task SetStatoAsync(int idClientePiastra, StatoClientePiastra stato)
+    {
+        var entity = await db.ClientiPiastre.FindAsync(idClientePiastra);
+        if (entity is null) return;
+        entity.Stato = stato;
+        await db.SaveChangesAsync();
     }
 }

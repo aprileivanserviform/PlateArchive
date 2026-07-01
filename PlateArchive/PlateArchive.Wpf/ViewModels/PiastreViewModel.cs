@@ -1,15 +1,31 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media.Imaging;
+using Microsoft.Win32;
 using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
 using PlateArchive.Data.Repositories.Interfaces;
 using PlateArchive.Services;
 using PlateArchive.Wpf.Commands;
+using PlateArchive.Wpf.Services;
 
 namespace PlateArchive.Wpf.ViewModels;
 
+/// <summary>
+/// ViewModel della schermata Piastre — entità centrale del sistema.
+/// Layout: lista con 4 filtri (ricerca, stato, categoria, formato) | pannello destra.
+/// <para>
+/// Il pannello destra mostra alternativamente:
+/// - <b>Form creazione/modifica</b> quando <see cref="IsFormVisible"/> = true
+/// - <b>Dettaglio piastra</b> quando <see cref="IsDetailVisible"/> = true
+/// </para>
+/// Il dettaglio include macchine compatibili, clienti associati e il disegno tecnico (1:1).
+/// Il disegno è associabile via drag &amp; drop. Le piastre SpecialeCliente hanno un
+/// cliente esclusivo e il file viene archiviato in Clienti\{CodiceCliente}\.
+/// </summary>
 public class PiastreViewModel : ViewModelBase
 {
     private readonly IPiastraRepository          _piastreRepo;
@@ -18,28 +34,61 @@ public class PiastreViewModel : ViewModelBase
     private readonly IMacchinaStandardRepository _macchineRepo;
     private readonly IDisegnoRepository          _disegniRepo;
     private readonly IFileArchivioService        _fileArchivio;
+    private readonly ICategoriaPiastraRepository _categorieRepo;
+    private readonly IFormatoMacchinaRepository  _formatiRepo;
+    private readonly IClienteRepository          _clientiRepo;
 
     private readonly ObservableCollection<Piastra> _tutti = [];
+    private List<Cliente> _tuttiClienti = [];
 
-    private string    _filtroRicerca          = string.Empty;
-    private string    _filtroStatoSelezionato = "Tutti";
+    private string    _filtroRicerca = string.Empty;
     private Piastra?  _piastraSelezionata;
     private bool      _isFormVisible;
     private bool      _isModifica;
     private int       _idPiastraInModifica;
 
-    // Campi form
-    private string       _formCodicePiastra  = string.Empty;
-    private string       _formCodiceArticolo = string.Empty;
-    private string       _formDescrizione    = string.Empty;
-    private StatoPiastra _formStato          = StatoPiastra.Attiva;
-    private string       _formNote           = string.Empty;
-    private string?      _erroreCodiceDuplicato;
-    private string?      _percorsoDisegnoPendente;
+    // ── Form campi ────────────────────────────────────────────────────────────
+    private string             _formCodicePiastra        = string.Empty;
+    private string             _formCodiceArticolo       = string.Empty;
+    private string             _formDescrizione          = string.Empty;
+    private StatoPiastra       _formStato                = StatoPiastra.Attiva;
+    private TipoPiastra        _formTipo                 = TipoPiastra.Standard;
+    private CategoriaPiastra?  _formCategoriaSelezionata;
+    private FormatoMacchina?   _formFormatoSelezionato;
+    private string             _formLarghezza            = string.Empty;
+    private string             _formAltezza              = string.Empty;
+    private string             _formSpessore             = string.Empty;
+    private string             _formDurezza              = string.Empty;
+    private string             _formPeso                 = string.Empty;
+    private string             _formNote                 = string.Empty;
+    private string?            _erroreCodiceDuplicato;
+    private string?            _erroreDisegno;
+    private string?            _percorsoDisegnoPendente;
+    private bool                _isCodicePiastraNonValido;
+    private bool                _isClienteEsclusivoNonValido;
 
-    // Aggiungi macchina compatibile
+    // ── Form: metadati disegno associato (modifica in-place nel dettaglio) ────
+    private string       _formRevisioneDisegno = string.Empty;
+    private string       _formFormatoDisegno   = string.Empty;
+    private StatoDisegno _formStatoDisegno     = StatoDisegno.DaVerificare;
+    private string       _formNoteDisegno      = string.Empty;
+
+    // ── Form: cliente esclusivo (solo per SpecialeCliente) ────────────────────
+    private Cliente? _formClienteEsclusivo;
+    private string   _filtroClienteEsclusivo     = string.Empty;
+    private string   _formFiltroClienteAssociato = string.Empty;
+
+    // ── Pannello aggiungi macchina ─────────────────────────────────────────────
     private bool              _isAggiungiMacchinaVisible;
     private MacchinaStandard? _macchinaCompatibileDaAggiungere;
+
+    // ── Pannello aggiungi cliente associato ───────────────────────────────────
+    private bool          _isAggiungiClienteVisible;
+    private Cliente?      _clienteSelezionato;
+    private List<Cliente> _tuttiClientiDisponibili = [];
+    private string        _filtroCliente           = string.Empty;
+
+    private Task _loadDettaglioTask = Task.CompletedTask;
 
     public PiastreViewModel(
         IPiastraRepository          piastreRepo,
@@ -47,7 +96,10 @@ public class PiastreViewModel : ViewModelBase
         IClientePiastraRepository   clientiPiastreRepo,
         IMacchinaStandardRepository macchineRepo,
         IDisegnoRepository          disegniRepo,
-        IFileArchivioService        fileArchivio)
+        IFileArchivioService        fileArchivio,
+        ICategoriaPiastraRepository categorieRepo,
+        IFormatoMacchinaRepository  formatiRepo,
+        IClienteRepository          clientiRepo)
     {
         _piastreRepo        = piastreRepo;
         _compatRepo         = compatRepo;
@@ -55,21 +107,52 @@ public class PiastreViewModel : ViewModelBase
         _macchineRepo       = macchineRepo;
         _disegniRepo        = disegniRepo;
         _fileArchivio       = fileArchivio;
+        _categorieRepo      = categorieRepo;
+        _formatiRepo        = formatiRepo;
+        _clientiRepo        = clientiRepo;
+
+        // Registra tutti i filtri colonna → riesegui AggiornaFiltro al cambio
+        foreach (var f in new[] {
+            FiltroCodice, FiltroDescrizione, FiltroArtGestionale,
+            FiltroCategoria, FiltroFormato, FiltroTipo, FiltroStato,
+            FiltroLarghezza, FiltroAltezza, FiltroSpessore, FiltroDurezza, FiltroPeso,
+            FiltroDataCreazione, FiltroDataModifica })
+        {
+            f.Cambiato += AggiornaFiltro;
+        }
 
         NuovaCommand                    = new RelayCommand(_ => ApriFormNuova());
-        ModificaCommand                 = new RelayCommand(_ => ApriFormModifica(),             _ => PiastraSelezionata is not null);
+        ModificaCommand                 = new RelayCommand(_ => ApriFormModifica(),                          _ => PiastraSelezionata is not null);
         SalvaCommand                    = new RelayCommand(async _ => await SalvaAsync());
         AnnullaFormCommand              = new RelayCommand(_ => ChiudiForm());
-        AggiungiMacchinaCommand         = new RelayCommand(async _ => await ApriAggiungiMacchinaAsync(), _ => PiastraSelezionata is not null);
+        EliminaCommand                  = new RelayCommand(async _ => await EliminaAsync(),                  _ => PiastraSelezionata is not null);
+        SfogliaFileFormCommand          = new RelayCommand(_ => SfogliaFileForm());
+        AggiungiMacchinaCommand         = new RelayCommand(async _ => await ApriAggiungiMacchinaAsync(),     _ => PiastraSelezionata is not null);
         ConfermaAggiungiMacchinaCommand = new RelayCommand(async _ => await ConfermaAggiungiMacchinaAsync(), _ => MacchinaCompatibileDaAggiungere is not null);
         AnnullaAggiungiMacchinaCommand  = new RelayCommand(_ => ChiudiAggiungiMacchina());
         RimuoviCompatibilitaCommand     = new RelayCommand(async p => await RimuoviCompatibilitaAsync(p));
-        AprirDisegnoCommand             = new RelayCommand(_ => AprirDisegno(), _ => !string.IsNullOrEmpty(PiastraSelezionata?.Disegno?.PercorsoFile));
-
-        _ = LoadAsync();
+        AprirDisegnoCommand             = new RelayCommand(_ => AprirDisegno(),  _ => DisegnoCorrente is not null);
+        RimuoviDisegnoCommand           = new RelayCommand(async _ => await RimuoviDisegnoAsync(), _ => DisegnoCorrente is not null);
+        SalvaDisegnoCommand             = new RelayCommand(async _ => await SalvaDisegnoAsync(), _ => DisegnoCorrente is not null);
+        AggiungiClienteCommand          = new RelayCommand(async _ => await ApriAggiungiClienteAsync(),      _ => PiastraSelezionata is not null);
+        ConfermaAggiungiClienteCommand  = new RelayCommand(async _ => await ConfermaAggiungiClienteAsync(),  _ => ClienteSelezionato is not null);
+        AnnullaAggiungiClienteCommand   = new RelayCommand(_ => ChiudiAggiungiCliente());
+        RimuoviClienteCommand               = new RelayCommand(async p => await RimuoviClienteAsync(p));
+        SelezionaClienteCommand             = new RelayCommand(p => ClienteSelezionato = (Cliente)p!);
+        RimuoviClienteSelezionatoCommand    = new RelayCommand(_ => ClienteSelezionato = null);
+        SelezionaClienteEsclusivoCommand        = new RelayCommand(p => FormClienteEsclusivo = (Cliente)p!);
+        RimuoviClienteEsclusivoCommand          = new RelayCommand(_ => FormClienteEsclusivo = null);
+        SelezionaClienteAssociatoFormCommand    = new RelayCommand(p => AggiungiClienteAssociatoForm((Cliente)p!));
+        RimuoviClienteAssociatoFormCommand      = new RelayCommand(p => RimuoviClienteAssociatoForm((Cliente)p!));
+        SfogliaFileDettaglioCommand             = new RelayCommand(async _ => await SfogliaFileDettaglioAsync(), _ => PiastraSelezionata is not null && DisegnoCorrente is null);
     }
 
-    // ─── Proprietà lista ─────────────────────────────────────────
+    // ─── Lookup per i ComboBox del form ──────────────────────────────────────
+
+    public ObservableCollection<CategoriaPiastra> CategoriePiastre { get; } = [];
+    public ObservableCollection<FormatoMacchina>  FormatiMacchine  { get; } = [];
+
+    // ─── Filtri lista ─────────────────────────────────────────────────────────
 
     public string FiltroRicerca
     {
@@ -77,15 +160,28 @@ public class PiastreViewModel : ViewModelBase
         set { if (SetField(ref _filtroRicerca, value)) AggiornaFiltro(); }
     }
 
-    public string FiltroStatoSelezionato
-    {
-        get => _filtroStatoSelezionato;
-        set { if (SetField(ref _filtroStatoSelezionato, value)) AggiornaFiltro(); }
-    }
+    // Filtri per colonna (assegnati come Header delle DataGridColumn in code-behind)
+    public FiltroColonna FiltroCodice        { get; } = new("Codice",          FiltroColonnaTipo.Testo);
+    public FiltroColonna FiltroDescrizione   { get; } = new("Descrizione",     FiltroColonnaTipo.Testo);
+    public FiltroColonna FiltroArtGestionale { get; } = new("Art. gestionale", FiltroColonnaTipo.Testo);
+    public FiltroColonna FiltroCategoria     { get; } = new("Categoria",       FiltroColonnaTipo.Enum);
+    public FiltroColonna FiltroFormato       { get; } = new("Formato",         FiltroColonnaTipo.Enum);
+    public FiltroColonna FiltroTipo          { get; } = new("Tipo",            FiltroColonnaTipo.Enum);
+    public FiltroColonna FiltroStato         { get; } = new("Stato",           FiltroColonnaTipo.Enum);
+    public FiltroColonna FiltroLarghezza     { get; } = new("Larghezza",       FiltroColonnaTipo.Numerico);
+    public FiltroColonna FiltroAltezza       { get; } = new("Altezza",         FiltroColonnaTipo.Numerico);
+    public FiltroColonna FiltroSpessore      { get; } = new("Spessore",        FiltroColonnaTipo.Numerico);
+    public FiltroColonna FiltroDurezza       { get; } = new("Durezza",         FiltroColonnaTipo.Numerico);
+    public FiltroColonna FiltroPeso          { get; } = new("Peso",            FiltroColonnaTipo.Numerico);
+    public FiltroColonna FiltroDataCreazione { get; } = new("Data creazione",  FiltroColonnaTipo.Data);
+    public FiltroColonna FiltroDataModifica  { get; } = new("Ultima modifica", FiltroColonnaTipo.Data);
 
-    public IEnumerable<string> StatiFiltro { get; } = ["Tutti", "Attiva", "Obsoleta", "Da verificare"];
+    public IEnumerable<StatoPiastra> StatiPiastra { get; } = Enum.GetValues<StatoPiastra>();
+    public IEnumerable<TipoPiastra>  TipiPiastra  { get; } = Enum.GetValues<TipoPiastra>();
 
     public ObservableCollection<Piastra> PiastreFiltrate { get; } = [];
+
+    // ─── Selezione ───────────────────────────────────────────────────────────
 
     public Piastra? PiastraSelezionata
     {
@@ -94,24 +190,113 @@ public class PiastreViewModel : ViewModelBase
         {
             if (SetField(ref _piastraSelezionata, value))
             {
+                ErroreDisegno = null;
                 OnPropertyChanged(nameof(IsDetailVisible));
-                OnPropertyChanged(nameof(IsDisegnoPresente));
-                OnPropertyChanged(nameof(IsDisegnoAssente));
-                _ = LoadDettaglioAsync();
+                OnPropertyChanged(nameof(IsPannelloDxVisible));
+                if (IsAggiungiMacchinaVisible) ChiudiAggiungiMacchina();
+                if (IsAggiungiClienteVisible)  ChiudiAggiungiCliente();
+                if (IsFormVisible && IsModifica && value is not null)
+                    ApriFormModifica();
+                _loadDettaglioTask = LoadDettaglioAsync();
             }
         }
     }
 
-    // ─── Proprietà pannello dettaglio ────────────────────────────
+    public string? ErroreDisegno
+    {
+        get => _erroreDisegno;
+        set
+        {
+            if (SetField(ref _erroreDisegno, value))
+                OnPropertyChanged(nameof(IsErroreDisegnoVisible));
+        }
+    }
+
+    public bool IsErroreDisegnoVisible => !string.IsNullOrEmpty(_erroreDisegno);
+
+    // ─── Pannello dettaglio ───────────────────────────────────────────────────
 
     public ObservableCollection<PiastraMacchinaCompatibile> MacchineCompatibili { get; } = [];
     public ObservableCollection<ClientePiastra>             ClientiAssociati    { get; } = [];
     public ObservableCollection<MacchinaStandard>           MacchineDisponibili { get; } = [];
+    public ObservableCollection<Cliente>                    ClientiSuggeriti    { get; } = [];
 
-    public bool IsDisegnoPresente => PiastraSelezionata?.Disegno is not null;
-    public bool IsDisegnoAssente  => PiastraSelezionata?.Disegno is null;
+    private Disegno?       _disegnoCorrente;
+    private BitmapSource?  _anteprimaDisegno;
+    private bool           _isCaricamentoAnteprima;
+    public Disegno? DisegnoCorrente
+    {
+        get => _disegnoCorrente;
+        set
+        {
+            if (SetField(ref _disegnoCorrente, value))
+            {
+                OnPropertyChanged(nameof(IsDisegnoPresente));
+                OnPropertyChanged(nameof(IsDisegnoAssente));
+                OnPropertyChanged(nameof(IsFormDisegnoPresente));
+                OnPropertyChanged(nameof(IsFormDisegnoAssente));
+                OnPropertyChanged(nameof(IsNoAnteprima));
+            }
+        }
+    }
 
-    // ─── Aggiungi macchina compatibile ───────────────────────────
+    public bool IsDisegnoPresente     => DisegnoCorrente is not null;
+    public bool IsDisegnoAssente      => DisegnoCorrente is null;
+    // Nel form: in modifica mostra il disegno esistente; in creazione mostra sempre la drop zone
+    public bool IsFormDisegnoPresente => IsModifica && DisegnoCorrente is not null;
+    public bool IsFormDisegnoAssente  => !IsModifica || DisegnoCorrente is null;
+
+    public BitmapSource? AnteprimaDisegno
+    {
+        get => _anteprimaDisegno;
+        set
+        {
+            if (SetField(ref _anteprimaDisegno, value))
+            {
+                OnPropertyChanged(nameof(IsAnteprimaVisible));
+                OnPropertyChanged(nameof(IsNoAnteprima));
+            }
+        }
+    }
+    public bool IsAnteprimaVisible => _anteprimaDisegno is not null;
+
+    public bool IsCaricamentoAnteprima
+    {
+        get => _isCaricamentoAnteprima;
+        private set { if (SetField(ref _isCaricamentoAnteprima, value)) OnPropertyChanged(nameof(IsNoAnteprima)); }
+    }
+    public bool IsNoAnteprima => !IsAnteprimaVisible && !IsCaricamentoAnteprima && DisegnoCorrente is not null;
+
+    // ─── Metadati disegno (modifica in-place nel dettaglio) ───────────────────
+
+    public string FormRevisioneDisegno
+    {
+        get => _formRevisioneDisegno;
+        set => SetField(ref _formRevisioneDisegno, value);
+    }
+
+    public string FormFormatoDisegno
+    {
+        get => _formFormatoDisegno;
+        set => SetField(ref _formFormatoDisegno, value);
+    }
+
+    public StatoDisegno FormStatoDisegno
+    {
+        get => _formStatoDisegno;
+        set => SetField(ref _formStatoDisegno, value);
+    }
+
+    public string FormNoteDisegno
+    {
+        get => _formNoteDisegno;
+        set => SetField(ref _formNoteDisegno, value);
+    }
+
+    public IEnumerable<StatoDisegno> StatiDisegno       { get; } = Enum.GetValues<StatoDisegno>();
+    public IEnumerable<string>       FormatiDisponibili { get; } = ["DWG", "DXF", "PDF", "STP", "STEP", "IGS"];
+
+    // ─── Pannello aggiungi macchina compatibile ───────────────────────────────
 
     public bool IsAggiungiMacchinaVisible
     {
@@ -125,30 +310,106 @@ public class PiastreViewModel : ViewModelBase
         set => SetField(ref _macchinaCompatibileDaAggiungere, value);
     }
 
-    // ─── Proprietà form ──────────────────────────────────────────
+    // ─── Pannello aggiungi cliente associato ──────────────────────────────────
+
+    public bool IsAggiungiClienteVisible
+    {
+        get => _isAggiungiClienteVisible;
+        set => SetField(ref _isAggiungiClienteVisible, value);
+    }
+
+    public Cliente? ClienteSelezionato
+    {
+        get => _clienteSelezionato;
+        set
+        {
+            if (SetField(ref _clienteSelezionato, value))
+            {
+                if (value is not null)
+                {
+                    _filtroCliente = string.Empty;
+                    OnPropertyChanged(nameof(FiltroCliente));
+                    ClientiSuggeriti.Clear();
+                    OnPropertyChanged(nameof(IsClienteSuggerimentiVisible));
+                }
+                OnPropertyChanged(nameof(IsClienteSelezionatoVisible));
+                OnPropertyChanged(nameof(IsClienteSearchVisible));
+            }
+        }
+    }
+
+    public string FiltroCliente
+    {
+        get => _filtroCliente;
+        set { if (SetField(ref _filtroCliente, value)) AggiornaClientiSuggeriti(); }
+    }
+
+    public bool IsClienteSelezionatoVisible  => ClienteSelezionato is not null;
+    public bool IsClienteSearchVisible       => ClienteSelezionato is null;
+    public bool IsClienteSuggerimentiVisible => ClientiSuggeriti.Count > 0;
+
+    // ─── Stato pannello destra ────────────────────────────────────────────────
 
     public bool IsFormVisible
     {
         get => _isFormVisible;
-        set { if (SetField(ref _isFormVisible, value)) OnPropertyChanged(nameof(IsDetailVisible)); }
+        set
+        {
+            if (SetField(ref _isFormVisible, value))
+            {
+                OnPropertyChanged(nameof(IsDetailVisible));
+                OnPropertyChanged(nameof(IsPannelloDxVisible));
+            }
+        }
     }
 
     public bool IsModifica
     {
         get => _isModifica;
-        set { if (SetField(ref _isModifica, value)) OnPropertyChanged(nameof(FormTitolo)); }
+        set
+        {
+            if (SetField(ref _isModifica, value))
+            {
+                OnPropertyChanged(nameof(FormTitolo));
+                OnPropertyChanged(nameof(IsFormDisegnoPresente));
+                OnPropertyChanged(nameof(IsFormDisegnoAssente));
+            }
+        }
     }
 
-    public bool IsDetailVisible => PiastraSelezionata is not null && !IsFormVisible;
+    public bool   IsDetailVisible     => PiastraSelezionata is not null && !IsFormVisible;
+    public bool   IsPannelloDxVisible => IsDetailVisible || IsFormVisible;
+    public string FormTitolo          => IsModifica ? "Modifica piastra" : "Nuova piastra";
 
-    public string FormTitolo => IsModifica ? "Modifica piastra" : "Nuova piastra";
-
-    public IEnumerable<StatoPiastra> StatiPiastra { get; } = Enum.GetValues<StatoPiastra>();
+    // ─── Campi form creazione/modifica ────────────────────────────────────────
 
     public string FormCodicePiastra
     {
         get => _formCodicePiastra;
-        set { if (SetField(ref _formCodicePiastra, value)) ControllaDuplicato(value); }
+        set
+        {
+            if (SetField(ref _formCodicePiastra, value))
+            {
+                ControllaDuplicato(value);
+                if (IsCodicePiastraNonValido && !string.IsNullOrWhiteSpace(value))
+                    IsCodicePiastraNonValido = false;
+            }
+        }
+    }
+
+    /// <summary>True quando "Salva" è stato premuto senza aver compilato il codice piastra.</summary>
+    public bool IsCodicePiastraNonValido
+    {
+        get => _isCodicePiastraNonValido;
+        set => SetField(ref _isCodicePiastraNonValido, value);
+    }
+
+    /// <summary>True quando "Salva" è stato premuto senza aver selezionato il cliente esclusivo
+    /// richiesto per le piastre di tipo SpecialeCliente.</summary>
+    public bool IsClienteEsclusivoNonValido
+    {
+        get => _isClienteEsclusivoNonValido;
+        set => SetField(ref _isClienteEsclusivoNonValido, value);
     }
 
     public string FormCodiceArticolo
@@ -167,6 +428,118 @@ public class PiastreViewModel : ViewModelBase
     {
         get => _formStato;
         set => SetField(ref _formStato, value);
+    }
+
+    public TipoPiastra FormTipo
+    {
+        get => _formTipo;
+        set
+        {
+            if (SetField(ref _formTipo, value))
+            {
+                if (value == TipoPiastra.Standard)
+                {
+                    FormClienteEsclusivo        = null;
+                    IsClienteEsclusivoNonValido = false;
+                }
+                OnPropertyChanged(nameof(IsClienteEsclusivoVisible));
+                OnPropertyChanged(nameof(IsAssociazioneClientiVisible));
+            }
+        }
+    }
+
+    /// <summary>True se la sezione "cliente esclusivo" deve essere visibile nel form.</summary>
+    public bool IsClienteEsclusivoVisible    => FormTipo == TipoPiastra.SpecialeCliente;
+    /// <summary>True se la sezione "associa a clienti" (Standard) deve essere visibile nel form.</summary>
+    public bool IsAssociazioneClientiVisible => FormTipo == TipoPiastra.Standard;
+
+    // ── Typeahead cliente esclusivo nel form ──────────────────────────────────
+
+    public ObservableCollection<Cliente> ClientiEsclusiviSuggeriti      { get; } = [];
+    public ObservableCollection<Cliente> FormClientiDaAssociare          { get; } = [];
+    public ObservableCollection<Cliente> FormClientiAssociatiSuggeriti   { get; } = [];
+
+    public Cliente? FormClienteEsclusivo
+    {
+        get => _formClienteEsclusivo;
+        set
+        {
+            if (SetField(ref _formClienteEsclusivo, value))
+            {
+                if (value is not null)
+                {
+                    _filtroClienteEsclusivo = string.Empty;
+                    OnPropertyChanged(nameof(FiltroClienteEsclusivo));
+                    ClientiEsclusiviSuggeriti.Clear();
+                    OnPropertyChanged(nameof(IsClientiEsclusiviSuggerimentiVisible));
+                    IsClienteEsclusivoNonValido = false;
+                }
+                OnPropertyChanged(nameof(IsClienteEsclusivoSelezionatoVisible));
+                OnPropertyChanged(nameof(IsClienteEsclusivoSearchVisible));
+            }
+        }
+    }
+
+    public string FiltroClienteEsclusivo
+    {
+        get => _filtroClienteEsclusivo;
+        set { if (SetField(ref _filtroClienteEsclusivo, value)) AggiornaClientiEsclusiviSuggeriti(); }
+    }
+
+    public bool IsClienteEsclusivoSelezionatoVisible   => FormClienteEsclusivo is not null;
+    public bool IsClienteEsclusivoSearchVisible         => FormClienteEsclusivo is null;
+    public bool IsClientiEsclusiviSuggerimentiVisible   => ClientiEsclusiviSuggeriti.Count > 0;
+
+    // ── Typeahead clienti da associare (Standard) ─────────────────────────────
+
+    public string FormFiltroClienteAssociato
+    {
+        get => _formFiltroClienteAssociato;
+        set { if (SetField(ref _formFiltroClienteAssociato, value)) AggiornaFormClientiAssociatiSuggeriti(); }
+    }
+
+    public bool IsFormClientiAssociatiSuggerimentiVisible => FormClientiAssociatiSuggeriti.Count > 0;
+
+    public CategoriaPiastra? FormCategoriaSelezionata
+    {
+        get => _formCategoriaSelezionata;
+        set => SetField(ref _formCategoriaSelezionata, value);
+    }
+
+    public FormatoMacchina? FormFormatoSelezionato
+    {
+        get => _formFormatoSelezionato;
+        set => SetField(ref _formFormatoSelezionato, value);
+    }
+
+    public string FormLarghezza
+    {
+        get => _formLarghezza;
+        set => SetField(ref _formLarghezza, value);
+    }
+
+    public string FormAltezza
+    {
+        get => _formAltezza;
+        set => SetField(ref _formAltezza, value);
+    }
+
+    public string FormSpessore
+    {
+        get => _formSpessore;
+        set => SetField(ref _formSpessore, value);
+    }
+
+    public string FormDurezza
+    {
+        get => _formDurezza;
+        set => SetField(ref _formDurezza, value);
+    }
+
+    public string FormPeso
+    {
+        get => _formPeso;
+        set => SetField(ref _formPeso, value);
     }
 
     public string FormNote
@@ -205,22 +578,55 @@ public class PiastreViewModel : ViewModelBase
     public bool    IsDisegnoPendenteAssente => string.IsNullOrEmpty(_percorsoDisegnoPendente);
     public string? NomeFilePendente         => Path.GetFileName(_percorsoDisegnoPendente);
 
-    // ─── Comandi ─────────────────────────────────────────────────
+    // ─── Comandi ─────────────────────────────────────────────────────────────
 
     public ICommand NuovaCommand                    { get; }
     public ICommand ModificaCommand                 { get; }
     public ICommand SalvaCommand                    { get; }
     public ICommand AnnullaFormCommand              { get; }
+    public ICommand EliminaCommand                  { get; }
+    public ICommand SfogliaFileFormCommand          { get; }
     public ICommand AggiungiMacchinaCommand         { get; }
     public ICommand ConfermaAggiungiMacchinaCommand { get; }
     public ICommand AnnullaAggiungiMacchinaCommand  { get; }
     public ICommand RimuoviCompatibilitaCommand     { get; }
     public ICommand AprirDisegnoCommand             { get; }
+    public ICommand RimuoviDisegnoCommand           { get; }
+    public ICommand SalvaDisegnoCommand             { get; }
+    public ICommand AggiungiClienteCommand              { get; }
+    public ICommand ConfermaAggiungiClienteCommand      { get; }
+    public ICommand AnnullaAggiungiClienteCommand       { get; }
+    public ICommand RimuoviClienteCommand               { get; }
+    public ICommand SelezionaClienteCommand             { get; }
+    public ICommand RimuoviClienteSelezionatoCommand    { get; }
+    public ICommand SelezionaClienteEsclusivoCommand        { get; }
+    public ICommand RimuoviClienteEsclusivoCommand          { get; }
+    public ICommand SelezionaClienteAssociatoFormCommand    { get; }
+    public ICommand RimuoviClienteAssociatoFormCommand      { get; }
+    public ICommand SfogliaFileDettaglioCommand             { get; }
 
-    // ─── Caricamento ─────────────────────────────────────────────
+    // ─── Inizializzazione navigazione ─────────────────────────────────────────
+
+    public override Task OnNavigatedAsync() => LoadAsync();
+
+    // ─── Caricamento ─────────────────────────────────────────────────────────
 
     private async Task LoadAsync()
     {
+        var categorie = await _categorieRepo.GetAllAsync();
+        foreach (var c in categorie) CategoriePiastre.Add(c);
+
+        var formati = await _formatiRepo.GetAllAsync();
+        foreach (var f in formati) FormatiMacchine.Add(f);
+
+        // Popola i valori disponibili nei filtri enum
+        FiltroCategoria.ValoriEnum.AddRange(CategoriePiastre.Select(c => c.Descrizione));
+        FiltroFormato.ValoriEnum.AddRange(FormatiMacchine.Select(f => f.NomeFormato));
+        FiltroTipo.ValoriEnum.AddRange(Enum.GetNames<TipoPiastra>());
+        FiltroStato.ValoriEnum.AddRange(Enum.GetNames<StatoPiastra>());
+
+        _tuttiClienti = (await _clientiRepo.GetAllAsync()).ToList();
+
         var piastre = await _piastreRepo.GetAllAsync();
         foreach (var p in piastre) _tutti.Add(p);
         AggiornaFiltro();
@@ -230,41 +636,82 @@ public class PiastreViewModel : ViewModelBase
     {
         MacchineCompatibili.Clear();
         ClientiAssociati.Clear();
+        DisegnoCorrente  = null;
+        AnteprimaDisegno = null;
+
         if (PiastraSelezionata is null) return;
 
         var id = PiastraSelezionata.IdPiastra;
-        var (macchine, clienti) = (
-            await _compatRepo.GetByPiastraAsync(id),
-            await _clientiPiastreRepo.GetByPiastraAsync(id));
+        var macchine = await _compatRepo.GetByPiastraAsync(id);
+        var clienti  = await _clientiPiastreRepo.GetByPiastraAsync(id);
+        var disegno  = await _disegniRepo.GetByPiastraAsync(id);
 
         foreach (var m in macchine) MacchineCompatibili.Add(m);
         foreach (var c in clienti)  ClientiAssociati.Add(c);
+        DisegnoCorrente = disegno;
+        CaricaFormDisegno();
+
+        if (disegno is not null)
+        {
+            IsCaricamentoAnteprima = true;
+            try   { AnteprimaDisegno = await DwgThumbnailReader.EstraiAnteprimaAsync(disegno.PercorsoFile); }
+            finally { IsCaricamentoAnteprima = false; }
+        }
     }
+
+    /// <summary>Ricarica l'elenco piastre dal repository e riseleziona la piastra indicata.
+    /// Usata dopo il flusso "Importa disegno" (drop sulla tabella generale), che può
+    /// creare una nuova piastra al volo o modificarne una esistente.</summary>
+    public async Task RicaricaEApriPiastraAsync(int? idPiastra)
+    {
+        _tutti.Clear();
+        var piastre = await _piastreRepo.GetAllAsync();
+        foreach (var p in piastre) _tutti.Add(p);
+        AggiornaFiltro();
+
+        if (idPiastra.HasValue)
+            PiastraSelezionata = _tutti.FirstOrDefault(p => p.IdPiastra == idPiastra.Value);
+    }
+
+    // ─── Filtro lista ─────────────────────────────────────────────────────────
 
     private void AggiornaFiltro()
     {
-        StatoPiastra? statoFiltro = FiltroStatoSelezionato switch
-        {
-            "Attiva"        => StatoPiastra.Attiva,
-            "Obsoleta"      => StatoPiastra.Obsoleta,
-            "Da verificare" => StatoPiastra.DaVerificare,
-            _               => null
-        };
-
         var f = FiltroRicerca.Trim().ToLower();
+
         PiastreFiltrate.Clear();
         foreach (var p in _tutti.Where(p =>
-            (statoFiltro is null || p.Stato == statoFiltro)
-            && (string.IsNullOrEmpty(f)
+            // Ricerca testo globale (barra di ricerca in cima)
+            (string.IsNullOrEmpty(f)
                 || p.CodicePiastra.ToLower().Contains(f)
                 || (p.CodiceArticoloGestionale?.ToLower().Contains(f) ?? false)
-                || (p.Descrizione?.ToLower().Contains(f) ?? false))))
+                || (p.Descrizione?.ToLower().Contains(f) ?? false))
+            // Filtri per colonna
+            && FiltroCodice.ApplicaA(p.CodicePiastra)
+            && FiltroDescrizione.ApplicaA(p.Descrizione)
+            && FiltroArtGestionale.ApplicaA(p.CodiceArticoloGestionale)
+            && FiltroCategoria.ApplicaA(p.Categoria?.Descrizione)
+            && FiltroFormato.ApplicaA(p.Formato?.NomeFormato)
+            && FiltroTipo.ApplicaA(p.TipoPiastra.ToString())
+            && FiltroStato.ApplicaA(p.Stato.ToString())
+            && FiltroLarghezza.ApplicaA(p.LarghezzaMm.HasValue
+                ? p.LarghezzaMm.Value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) : null)
+            && FiltroAltezza.ApplicaA(p.AltezzaMm.HasValue
+                ? p.AltezzaMm.Value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) : null)
+            && FiltroSpessore.ApplicaA(p.SpessoreMm.HasValue
+                ? p.SpessoreMm.Value.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) : null)
+            && FiltroDurezza.ApplicaA(p.Durezza.HasValue
+                ? p.Durezza.Value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) : null)
+            && FiltroPeso.ApplicaA(p.Peso.HasValue
+                ? p.Peso.Value.ToString("F3", System.Globalization.CultureInfo.InvariantCulture) : null)
+            && FiltroDataCreazione.ApplicaA(p.DataCreazione.ToString("yyyy-MM-dd"))
+            && FiltroDataModifica.ApplicaA(p.DataUltimaModifica.ToString("yyyy-MM-dd"))))
         {
             PiastreFiltrate.Add(p);
         }
     }
 
-    // ─── Controllo duplicato codice ──────────────────────────────
+    // ─── Validazione duplicato codice ─────────────────────────────────────────
 
     private void ControllaDuplicato(string codice)
     {
@@ -277,12 +724,13 @@ public class PiastreViewModel : ViewModelBase
             : null;
     }
 
-    // ─── Gestione form ───────────────────────────────────────────
+    // ─── Gestione form creazione/modifica ─────────────────────────────────────
 
     private void ApriFormNuova()
     {
         _idPiastraInModifica = 0;
-        IsModifica = false;
+        IsModifica    = false;
+        DisegnoCorrente = null;
         ResetForm();
         IsFormVisible = true;
     }
@@ -290,13 +738,26 @@ public class PiastreViewModel : ViewModelBase
     private void ApriFormModifica()
     {
         if (PiastraSelezionata is null) return;
-        _idPiastraInModifica = PiastraSelezionata.IdPiastra;
-        FormCodicePiastra  = PiastraSelezionata.CodicePiastra;
-        FormCodiceArticolo = PiastraSelezionata.CodiceArticoloGestionale ?? string.Empty;
-        FormDescrizione    = PiastraSelezionata.Descrizione               ?? string.Empty;
-        FormStato          = PiastraSelezionata.Stato;
-        FormNote           = PiastraSelezionata.Note                      ?? string.Empty;
-        ErroreCodiceDuplicato = null;
+        _idPiastraInModifica     = PiastraSelezionata.IdPiastra;
+        FormCodicePiastra        = PiastraSelezionata.CodicePiastra;
+        FormCodiceArticolo       = PiastraSelezionata.CodiceArticoloGestionale  ?? string.Empty;
+        FormDescrizione          = PiastraSelezionata.Descrizione                ?? string.Empty;
+        FormStato                = PiastraSelezionata.Stato;
+        FormTipo                 = PiastraSelezionata.TipoPiastra;
+        FormCategoriaSelezionata = CategoriePiastre.FirstOrDefault(c => c.IdCategoriaPiastra == PiastraSelezionata.IdCategoriaPiastra);
+        FormFormatoSelezionato   = FormatiMacchine.FirstOrDefault(f => f.IdFormato == PiastraSelezionata.IdFormato);
+        FormLarghezza            = PiastraSelezionata.LarghezzaMm?.ToString("F1")  ?? string.Empty;
+        FormAltezza              = PiastraSelezionata.AltezzaMm?.ToString("F1")    ?? string.Empty;
+        FormSpessore             = PiastraSelezionata.SpessoreMm?.ToString("F2")   ?? string.Empty;
+        FormDurezza              = PiastraSelezionata.Durezza?.ToString("F1")      ?? string.Empty;
+        FormPeso                 = PiastraSelezionata.Peso?.ToString("F3")         ?? string.Empty;
+        FormNote                 = PiastraSelezionata.Note                          ?? string.Empty;
+        FormClienteEsclusivo     = PiastraSelezionata.IdClienteEsclusivo.HasValue
+            ? _tuttiClienti.FirstOrDefault(c => c.IdCliente == PiastraSelezionata.IdClienteEsclusivo)
+            : null;
+        ErroreCodiceDuplicato        = null;
+        IsCodicePiastraNonValido     = false;
+        IsClienteEsclusivoNonValido  = false;
         IsModifica    = true;
         IsFormVisible = true;
     }
@@ -305,19 +766,39 @@ public class PiastreViewModel : ViewModelBase
     {
         IsFormVisible = false;
         ResetForm();
+        if (PiastraSelezionata is not null)
+            _loadDettaglioTask = LoadDettaglioAsync();
     }
 
     private void ResetForm()
     {
         FormCodicePiastra = FormCodiceArticolo = FormDescrizione = FormNote = string.Empty;
-        FormStato         = StatoPiastra.Attiva;
-        ErroreCodiceDuplicato   = null;
-        PercorsoDisegnoPendente = null;
+        FormLarghezza = FormAltezza = FormSpessore = FormDurezza = FormPeso = string.Empty;
+        FormStato                = StatoPiastra.Attiva;
+        FormTipo                 = TipoPiastra.Standard;
+        FormCategoriaSelezionata = CategoriePiastre.FirstOrDefault(c => c.Codice == "STD");
+        FormFormatoSelezionato   = null;
+        FormClienteEsclusivo     = null;
+        ErroreCodiceDuplicato    = null;
+        PercorsoDisegnoPendente  = null;
+        IsCodicePiastraNonValido    = false;
+        IsClienteEsclusivoNonValido = false;
+        _filtroClienteEsclusivo         = string.Empty;
+        _formFiltroClienteAssociato     = string.Empty;
+        OnPropertyChanged(nameof(FiltroClienteEsclusivo));
+        OnPropertyChanged(nameof(FormFiltroClienteAssociato));
+        ClientiEsclusiviSuggeriti.Clear();
+        FormClientiDaAssociare.Clear();
+        FormClientiAssociatiSuggeriti.Clear();
+        OnPropertyChanged(nameof(IsClientiEsclusiviSuggerimentiVisible));
+        OnPropertyChanged(nameof(IsFormClientiAssociatiSuggerimentiVisible));
     }
 
     private async Task SalvaAsync()
     {
-        if (string.IsNullOrWhiteSpace(FormCodicePiastra)) return;
+        IsCodicePiastraNonValido    = string.IsNullOrWhiteSpace(FormCodicePiastra);
+        IsClienteEsclusivoNonValido = FormTipo == TipoPiastra.SpecialeCliente && FormClienteEsclusivo is null;
+        if (IsCodicePiastraNonValido || IsClienteEsclusivoNonValido) return;
         if (IsErroreVisible) return;
 
         Piastra piastraSalvata;
@@ -329,6 +810,18 @@ public class PiastreViewModel : ViewModelBase
             p.CodiceArticoloGestionale = N(FormCodiceArticolo);
             p.Descrizione              = N(FormDescrizione);
             p.Stato                    = FormStato;
+            p.TipoPiastra              = FormTipo;
+            p.IdClienteEsclusivo       = FormClienteEsclusivo?.IdCliente;
+            p.ClienteEsclusivo         = FormClienteEsclusivo;
+            p.IdCategoriaPiastra       = FormCategoriaSelezionata?.IdCategoriaPiastra;
+            p.Categoria                = FormCategoriaSelezionata;
+            p.IdFormato                = FormFormatoSelezionato?.IdFormato;
+            p.Formato                  = FormFormatoSelezionato;
+            p.LarghezzaMm              = ParseDecimal(FormLarghezza);
+            p.AltezzaMm                = ParseDecimal(FormAltezza);
+            p.SpessoreMm               = ParseDecimal(FormSpessore);
+            p.Durezza                  = ParseDecimal(FormDurezza);
+            p.Peso                     = ParseDecimal(FormPeso);
             p.Note                     = N(FormNote);
             await _piastreRepo.UpdateAsync(p);
             piastraSalvata = p;
@@ -341,6 +834,18 @@ public class PiastreViewModel : ViewModelBase
                 CodiceArticoloGestionale = N(FormCodiceArticolo),
                 Descrizione              = N(FormDescrizione),
                 Stato                    = FormStato,
+                TipoPiastra              = FormTipo,
+                IdClienteEsclusivo       = FormClienteEsclusivo?.IdCliente,
+                ClienteEsclusivo         = FormClienteEsclusivo,
+                IdCategoriaPiastra       = FormCategoriaSelezionata?.IdCategoriaPiastra,
+                Categoria                = FormCategoriaSelezionata,
+                IdFormato                = FormFormatoSelezionato?.IdFormato,
+                Formato                  = FormFormatoSelezionato,
+                LarghezzaMm              = ParseDecimal(FormLarghezza),
+                AltezzaMm                = ParseDecimal(FormAltezza),
+                SpessoreMm               = ParseDecimal(FormSpessore),
+                Durezza                  = ParseDecimal(FormDurezza),
+                Peso                     = ParseDecimal(FormPeso),
                 Note                     = N(FormNote)
             };
             await _piastreRepo.AddAsync(nuova);
@@ -348,25 +853,92 @@ public class PiastreViewModel : ViewModelBase
             piastraSalvata = nuova;
         }
 
-        // Associa il disegno trascinato nel form (se presente)
         var filePendente = _percorsoDisegnoPendente;
+        if (!string.IsNullOrEmpty(filePendente))
+            await AssociaDisegnoAsync(piastraSalvata, filePendente);
+
+        // Associa i clienti selezionati nel form (solo in creazione; in modifica si usa il pannello dettaglio)
+        if (!IsModifica)
+        {
+            var clientiDaAssociare = FormClientiDaAssociare.ToList();
+            // Per SpecialeCliente, il cliente esclusivo viene incluso anche come associazione
+            if (FormTipo == TipoPiastra.SpecialeCliente && FormClienteEsclusivo is not null
+                && !clientiDaAssociare.Contains(FormClienteEsclusivo))
+                clientiDaAssociare.Add(FormClienteEsclusivo);
+
+            foreach (var cliente in clientiDaAssociare)
+            {
+                var cp = new ClientePiastra
+                {
+                    IdCliente        = cliente.IdCliente,
+                    IdPiastra        = piastraSalvata.IdPiastra,
+                    DataAssociazione = DateTime.UtcNow,
+                    Stato            = Core.Enums.StatoClientePiastra.Attiva,
+                    Cliente          = cliente,
+                    Piastra          = piastraSalvata
+                };
+                await _clientiPiastreRepo.AddAsync(cp);
+            }
+        }
+
         AggiornaFiltro();
         ChiudiForm();
         PiastraSelezionata = piastraSalvata;
-
-        if (!string.IsNullOrEmpty(filePendente))
-            await AssociaDisegnoAsync(piastraSalvata, filePendente);
     }
 
-    // ─── Aggiungi / rimuovi macchina compatibile ─────────────────
+    // ─── Eliminazione logica ──────────────────────────────────────────────────
+
+    private async Task EliminaAsync()
+    {
+        if (PiastraSelezionata is null) return;
+
+        var hasClienti = await _piastreRepo.HasClientiAssociatiAsync(PiastraSelezionata.IdPiastra);
+        if (hasClienti)
+        {
+            MessageBox.Show(
+                $"Impossibile eliminare '{PiastraSelezionata.CodicePiastra}':\nè associata ad almeno un cliente.",
+                "Eliminazione non consentita",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        var hasMacchine = MacchineCompatibili.Count > 0;
+        var testo = hasMacchine
+            ? $"La piastra '{PiastraSelezionata.CodicePiastra}' è associata a {MacchineCompatibili.Count} macchina/e compatibile/i.\n\nEliminarla comunque?"
+            : $"Eliminare la piastra '{PiastraSelezionata.CodicePiastra}'?";
+
+        var conferma = MessageBox.Show(
+            testo,
+            "Conferma eliminazione",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question,
+            MessageBoxResult.No);
+
+        if (conferma != MessageBoxResult.Yes) return;
+
+        await _piastreRepo.EliminaLogicamenteAsync(PiastraSelezionata.IdPiastra);
+        _tutti.Remove(PiastraSelezionata);
+        PiastraSelezionata = null;
+        AggiornaFiltro();
+    }
+
+    // ─── Aggiungi / rimuovi macchina compatibile ──────────────────────────────
 
     private async Task ApriAggiungiMacchinaAsync()
     {
-        var tutte = await _macchineRepo.GetAllAsync();
+        var tutte       = await _macchineRepo.GetAllAsync();
         var idGiaCompat = MacchineCompatibili.Select(c => c.IdMacchinaStandard).ToHashSet();
+        var idFormatoPiastra = PiastraSelezionata?.IdFormato;
+
         MacchineDisponibili.Clear();
-        foreach (var m in tutte.Where(m => m.Attiva && !idGiaCompat.Contains(m.IdMacchinaStandard)))
+        foreach (var m in tutte.Where(m =>
+            m.Attiva
+            && !idGiaCompat.Contains(m.IdMacchinaStandard)
+            && (idFormatoPiastra is null || m.IdFormato == idFormatoPiastra)))
+        {
             MacchineDisponibili.Add(m);
+        }
         MacchinaCompatibileDaAggiungere = null;
         IsAggiungiMacchinaVisible = true;
     }
@@ -394,34 +966,76 @@ public class PiastreViewModel : ViewModelBase
     private async Task RimuoviCompatibilitaAsync(object? param)
     {
         if (param is not PiastraMacchinaCompatibile c) return;
+
+        var conferma = MessageBox.Show(
+            $"Rimuovere la compatibilità con '{c.MacchinaStandard?.NomeMacchina}'?",
+            "Conferma rimozione",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question,
+            MessageBoxResult.No);
+
+        if (conferma != MessageBoxResult.Yes) return;
+
         await _compatRepo.DeleteAsync(c.IdCompatibilita);
         await LoadDettaglioAsync();
     }
 
-    // ─── Apertura file disegno ───────────────────────────────────
+    // ─── Gestione disegno (1:1) ───────────────────────────────────────────────
 
     private void AprirDisegno()
     {
-        var percorso = PiastraSelezionata?.Disegno?.PercorsoFile;
+        var percorso = DisegnoCorrente?.PercorsoFile;
         if (string.IsNullOrEmpty(percorso)) return;
+
+        ErroreDisegno = null;
+
+        if (!File.Exists(percorso))
+        {
+            ErroreDisegno = $"File non trovato: {percorso}";
+            return;
+        }
+
         try
         {
             Process.Start(new ProcessStartInfo(percorso) { UseShellExecute = true });
         }
-        catch { /* file non raggiungibile — TASK-12 gestirà il feedback UI */ }
+        catch (Exception ex)
+        {
+            ErroreDisegno = $"Impossibile aprire il file: {ex.Message}";
+        }
     }
 
-    // ─── Associazione disegno via drag & drop ────────────────────
-
+    /// <summary>
+    /// Associa un file alla piastra (1:1).
+    /// Se la piastra ha già un disegno, sovrascrive il percorso del record esistente.
+    /// Se è nuovo, archivia il file nella cartella corretta e crea il record Disegno.
+    /// </summary>
     public async Task AssociaDisegnoAsync(Piastra piastra, string percorsoFile)
     {
-        // Copia nella cartella condivisa se configurata; altrimenti usa il percorso originale
-        var percorsoEffettivo = await _fileArchivio.ArchiviaDisegnoAsync(percorsoFile, piastra.CodicePiastra)
-                                ?? percorsoFile;
+        await _loadDettaglioTask;
+
+        var disegnoEsistente = await _disegniRepo.GetByPiastraAsync(piastra.IdPiastra);
+
+        var codiceCliente = piastra.IdClienteEsclusivo.HasValue
+            ? _tuttiClienti.FirstOrDefault(c => c.IdCliente == piastra.IdClienteEsclusivo)?.CodiceClienteGestionale
+            : null;
+
+        var percorsoEffettivo = await _fileArchivio.ArchiviaDisegnoAsync(
+            percorsoFile, piastra.CodicePiastra, piastra.TipoPiastra, codiceCliente)
+            ?? percorsoFile;
 
         var formato = Path.GetExtension(percorsoEffettivo).TrimStart('.').ToUpper();
 
-        if (piastra.Disegno is null)
+        if (disegnoEsistente is not null)
+        {
+            disegnoEsistente.NomeFile               = Path.GetFileName(percorsoEffettivo);
+            disegnoEsistente.PercorsoFile           = percorsoEffettivo;
+            disegnoEsistente.Formato                = formato;
+            disegnoEsistente.Stato                  = StatoDisegno.DaVerificare;
+            disegnoEsistente.DataUltimaModificaFile = DateTime.UtcNow;
+            await _disegniRepo.UpdateAsync(disegnoEsistente);
+        }
+        else
         {
             var nuovoDisegno = new Disegno
             {
@@ -430,28 +1044,224 @@ public class PiastreViewModel : ViewModelBase
                 NomeFile               = Path.GetFileName(percorsoEffettivo),
                 PercorsoFile           = percorsoEffettivo,
                 Formato                = formato,
-                Stato                  = StatoDisegno.DaVerificare,
+                Stato                  = StatoDisegno.Attivo,
                 DataUltimaModificaFile = DateTime.UtcNow
             };
             await _disegniRepo.AddAsync(nuovoDisegno);
-            piastra.Disegno = nuovoDisegno;
-        }
-        else
-        {
-            piastra.Disegno.NomeFile               = Path.GetFileName(percorsoEffettivo);
-            piastra.Disegno.PercorsoFile           = percorsoEffettivo;
-            piastra.Disegno.Formato                = formato;
-            piastra.Disegno.DataUltimaModificaFile = DateTime.UtcNow;
-            await _disegniRepo.UpdateAsync(piastra.Disegno);
         }
 
         if (PiastraSelezionata == piastra)
-        {
-            OnPropertyChanged(nameof(PiastraSelezionata));
-            OnPropertyChanged(nameof(IsDisegnoPresente));
-            OnPropertyChanged(nameof(IsDisegnoAssente));
-        }
+            await LoadDettaglioAsync();
     }
 
-    private static string? N(string s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+    private async Task RimuoviDisegnoAsync()
+    {
+        if (DisegnoCorrente is null) return;
+
+        var conferma = MessageBox.Show(
+            $"Rimuovere il disegno '{DisegnoCorrente.NomeFile}' da questa piastra?\n\nIl file fisico non verrà eliminato.",
+            "Conferma rimozione",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question,
+            MessageBoxResult.No);
+
+        if (conferma != MessageBoxResult.Yes) return;
+
+        await _disegniRepo.DeleteAsync(DisegnoCorrente.IdDisegno);
+        await LoadDettaglioAsync();
+    }
+
+    private void CaricaFormDisegno()
+    {
+        if (DisegnoCorrente is null)
+        {
+            FormRevisioneDisegno = FormFormatoDisegno = FormNoteDisegno = string.Empty;
+            FormStatoDisegno     = StatoDisegno.DaVerificare;
+            return;
+        }
+        FormRevisioneDisegno = DisegnoCorrente.Revisione ?? string.Empty;
+        FormFormatoDisegno   = DisegnoCorrente.Formato   ?? string.Empty;
+        FormStatoDisegno     = DisegnoCorrente.Stato;
+        FormNoteDisegno      = DisegnoCorrente.Note      ?? string.Empty;
+    }
+
+    private async Task SalvaDisegnoAsync()
+    {
+        if (DisegnoCorrente is null) return;
+
+        DisegnoCorrente.Revisione = N(FormRevisioneDisegno);
+        DisegnoCorrente.Formato   = N(FormFormatoDisegno);
+        DisegnoCorrente.Stato     = FormStatoDisegno;
+        DisegnoCorrente.Note      = N(FormNoteDisegno);
+
+        await _disegniRepo.UpdateAsync(DisegnoCorrente);
+    }
+
+    // ─── Aggiungi / rimuovi cliente associato ─────────────────────────────────
+
+    private async Task ApriAggiungiClienteAsync()
+    {
+        var tutti          = await _clientiRepo.GetAllAsync();
+        var idGiaAssociati = ClientiAssociati.Select(cp => cp.IdCliente).ToHashSet();
+
+        _tuttiClientiDisponibili = tutti.Where(c => !idGiaAssociati.Contains(c.IdCliente)).ToList();
+
+        ClienteSelezionato       = null;
+        _filtroCliente           = string.Empty;
+        OnPropertyChanged(nameof(FiltroCliente));
+        ClientiSuggeriti.Clear();
+        OnPropertyChanged(nameof(IsClienteSuggerimentiVisible));
+        IsAggiungiClienteVisible = true;
+    }
+
+    private async Task ConfermaAggiungiClienteAsync()
+    {
+        if (PiastraSelezionata is null || ClienteSelezionato is null) return;
+
+        var esiste = await _clientiPiastreRepo.ExistsAsync(ClienteSelezionato.IdCliente, PiastraSelezionata.IdPiastra);
+        if (esiste) { ChiudiAggiungiCliente(); return; }
+
+        var nuova = new ClientePiastra
+        {
+            IdCliente         = ClienteSelezionato.IdCliente,
+            IdPiastra         = PiastraSelezionata.IdPiastra,
+            DataAssociazione  = DateTime.UtcNow,
+            Stato             = Core.Enums.StatoClientePiastra.Attiva,
+            Cliente           = ClienteSelezionato,
+            Piastra           = PiastraSelezionata
+        };
+        await _clientiPiastreRepo.AddAsync(nuova);
+        ChiudiAggiungiCliente();
+        await LoadDettaglioAsync();
+    }
+
+    private void ChiudiAggiungiCliente()
+    {
+        IsAggiungiClienteVisible = false;
+        ClienteSelezionato       = null;
+        _filtroCliente           = string.Empty;
+        OnPropertyChanged(nameof(FiltroCliente));
+        ClientiSuggeriti.Clear();
+        OnPropertyChanged(nameof(IsClienteSuggerimentiVisible));
+        _tuttiClientiDisponibili = [];
+    }
+
+    private async Task RimuoviClienteAsync(object? param)
+    {
+        if (param is not ClientePiastra cp) return;
+
+        var conferma = MessageBox.Show(
+            $"Rimuovere l'associazione con '{cp.Cliente?.RagioneSociale}'?",
+            "Conferma rimozione",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question,
+            MessageBoxResult.No);
+
+        if (conferma != MessageBoxResult.Yes) return;
+
+        await _clientiPiastreRepo.DeleteAsync(cp.IdClientePiastra);
+        await LoadDettaglioAsync();
+    }
+
+    // ─── Typeahead cliente associato ──────────────────────────────────────────
+
+    private void AggiornaClientiSuggeriti()
+    {
+        ClientiSuggeriti.Clear();
+        var f = _filtroCliente.Trim().ToLower();
+        if (!string.IsNullOrEmpty(f))
+        {
+            foreach (var c in _tuttiClientiDisponibili
+                .Where(c => c.CodiceClienteGestionale.ToLower().Contains(f)
+                         || c.RagioneSociale.ToLower().Contains(f))
+                .Take(8))
+                ClientiSuggeriti.Add(c);
+        }
+        OnPropertyChanged(nameof(IsClienteSuggerimentiVisible));
+    }
+
+    // ─── Typeahead cliente esclusivo (nel form) ───────────────────────────────
+
+    private void AggiornaClientiEsclusiviSuggeriti()
+    {
+        ClientiEsclusiviSuggeriti.Clear();
+        var f = _filtroClienteEsclusivo.Trim().ToLower();
+        if (!string.IsNullOrEmpty(f))
+        {
+            foreach (var c in _tuttiClienti
+                .Where(c => c.CodiceClienteGestionale.ToLower().Contains(f)
+                         || c.RagioneSociale.ToLower().Contains(f))
+                .Take(8))
+                ClientiEsclusiviSuggeriti.Add(c);
+        }
+        OnPropertyChanged(nameof(IsClientiEsclusiviSuggerimentiVisible));
+    }
+
+    // ─── Typeahead clienti da associare nel form (Standard) ──────────────────
+
+    private void AggiornaFormClientiAssociatiSuggeriti()
+    {
+        FormClientiAssociatiSuggeriti.Clear();
+        var f = _formFiltroClienteAssociato.Trim().ToLower();
+        if (!string.IsNullOrEmpty(f))
+        {
+            var idGiaAggiunti = FormClientiDaAssociare.Select(c => c.IdCliente).ToHashSet();
+            foreach (var c in _tuttiClienti
+                .Where(c => !idGiaAggiunti.Contains(c.IdCliente)
+                         && (c.CodiceClienteGestionale.ToLower().Contains(f)
+                          || c.RagioneSociale.ToLower().Contains(f)))
+                .Take(8))
+                FormClientiAssociatiSuggeriti.Add(c);
+        }
+        OnPropertyChanged(nameof(IsFormClientiAssociatiSuggerimentiVisible));
+    }
+
+    private void AggiungiClienteAssociatoForm(Cliente cliente)
+    {
+        if (FormClientiDaAssociare.Contains(cliente)) return;
+        FormClientiDaAssociare.Add(cliente);
+        _formFiltroClienteAssociato = string.Empty;
+        OnPropertyChanged(nameof(FormFiltroClienteAssociato));
+        FormClientiAssociatiSuggeriti.Clear();
+        OnPropertyChanged(nameof(IsFormClientiAssociatiSuggerimentiVisible));
+    }
+
+    private void RimuoviClienteAssociatoForm(Cliente cliente)
+    {
+        FormClientiDaAssociare.Remove(cliente);
+    }
+
+    // ─── Sfoglia file nel form ────────────────────────────────────────────────
+
+    private void SfogliaFileForm()
+    {
+        var dlg = new OpenFileDialog
+        {
+            Title  = "Seleziona file disegno",
+            Filter = "File disegno|*.dwg;*.dxf;*.pdf;*.stp;*.step;*.igs|Tutti i file|*.*"
+        };
+        if (dlg.ShowDialog() == true)
+            PercorsoDisegnoPendente = dlg.FileName;
+    }
+
+    private async Task SfogliaFileDettaglioAsync()
+    {
+        if (PiastraSelezionata is null) return;
+        var dlg = new OpenFileDialog
+        {
+            Title  = "Seleziona file disegno",
+            Filter = "File disegno|*.dwg;*.dxf;*.pdf;*.stp;*.step;*.igs|Tutti i file|*.*"
+        };
+        if (dlg.ShowDialog() == true)
+            await AssociaDisegnoAsync(PiastraSelezionata, dlg.FileName);
+    }
+
+    // ─── Utility ─────────────────────────────────────────────────────────────
+
+    private static string?  N(string s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+
+    private static decimal? ParseDecimal(string s) =>
+        decimal.TryParse(s.Replace(',', '.'),
+            System.Globalization.NumberStyles.Any,
+            System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : null;
 }

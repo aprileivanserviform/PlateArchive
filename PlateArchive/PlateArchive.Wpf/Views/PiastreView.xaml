@@ -1,28 +1,41 @@
 <UserControl x:Class="PlateArchive.Wpf.Views.PiastreView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:PlateArchive.Wpf.ViewModels"
+             xmlns:conv="clr-namespace:PlateArchive.Wpf.Converters"
+             xmlns:b="clr-namespace:PlateArchive.Wpf.Behaviors">
 
     <UserControl.Resources>
-        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
 
-        <Style x:Key="PrimaryBtn" TargetType="Button">
-            <Setter Property="Background"      Value="#1E2A3B"/>
-            <Setter Property="Foreground"      Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding"         Value="14,7"/>
-            <Setter Property="Cursor"          Value="Hand"/>
+        <!-- Converter enum ↔ bool per i RadioButton nel popup filtro -->
+        <conv:EnumToBoolConverter x:Key="EnumToBool"/>
+
+        <!-- ── Stile RadioButton operatore filtro ─────────────────────────────── -->
+        <Style x:Key="FilterOp" TargetType="RadioButton">
+            <Setter Property="Focusable"      Value="False"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
             <Setter Property="Template">
                 <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center"/>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Root"
+                                Background="Transparent"
+                                Padding="12,6"
+                                Cursor="Hand">
+                            <TextBlock x:Name="Lbl"
+                                       Text="{TemplateBinding Content}"
+                                       FontSize="{StaticResource FontSize.Caption}"
+                                       Foreground="{DynamicResource Brush.TextPrimary}"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#263340"/>
+                                <Setter TargetName="Root" Property="Background"
+                                        Value="{DynamicResource Brush.ItemHover}"/>
                             </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Background" Value="#BDBDBD"/>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Root" Property="Background"
+                                        Value="{DynamicResource Brush.Primary}"/>
+                                <Setter TargetName="Lbl"  Property="Foreground"
+                                        Value="{DynamicResource Brush.OnPrimary}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -30,143 +43,474 @@
             </Setter>
         </Style>
 
-        <Style x:Key="SecondaryBtn" TargetType="Button">
-            <Setter Property="Padding"     Value="12,6"/>
-            <Setter Property="FontSize"    Value="12"/>
-            <Setter Property="Cursor"      Value="Hand"/>
-            <Setter Property="BorderBrush" Value="#BDBDBD"/>
-            <Setter Property="Background"  Value="White"/>
+        <!-- Variante "Rimuovi filtro" (nessun highlight attivo, testo secondario) -->
+        <Style x:Key="FilterOp.Remove" TargetType="RadioButton" BasedOn="{StaticResource FilterOp}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Root"
+                                Background="Transparent"
+                                Padding="12,6"
+                                Cursor="Hand">
+                            <TextBlock x:Name="Lbl"
+                                       Text="{TemplateBinding Content}"
+                                       FontSize="{StaticResource FontSize.Caption}"
+                                       Foreground="{DynamicResource Brush.TextSecondary}"
+                                       FontWeight="{StaticResource FontWeight.SemiBold}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background"
+                                        Value="{DynamicResource Brush.ItemHover}"/>
+                                <Setter TargetName="Lbl"  Property="Foreground"
+                                        Value="{DynamicResource Brush.TextPrimary}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
-        <Style x:Key="DangerBtn" TargetType="Button">
-            <Setter Property="Padding"         Value="8,4"/>
-            <Setter Property="FontSize"        Value="11"/>
-            <Setter Property="Cursor"          Value="Hand"/>
-            <Setter Property="Background"      Value="#FFEBEE"/>
-            <Setter Property="Foreground"      Value="#C62828"/>
-            <Setter Property="BorderBrush"     Value="#EF9A9A"/>
-            <Setter Property="BorderThickness" Value="1"/>
+        <!-- ── Stile ToggleButton icona filtro nell'header ────────────────────── -->
+        <Style x:Key="FilterToggle" TargetType="ToggleButton">
+            <Setter Property="Focusable"      Value="False"/>
+            <Setter Property="Background"     Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding"        Value="3"/>
+            <Setter Property="Cursor"         Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderThickness="0"
+                                CornerRadius="{StaticResource Radius.XS}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center"
+                                              HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background"
+                                        Value="{DynamicResource Brush.ItemHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Root" Property="Background"
+                                        Value="{DynamicResource Brush.PrimarySubtle}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
-        <Style x:Key="FieldLabel" TargetType="TextBlock">
-            <Setter Property="FontSize"   Value="11"/>
-            <Setter Property="Foreground" Value="#757575"/>
-            <Setter Property="Margin"     Value="0,0,0,3"/>
-        </Style>
-        <Style x:Key="FieldBox" TargetType="TextBox">
-            <Setter Property="Padding"     Value="7,5"/>
-            <Setter Property="BorderBrush" Value="#BDBDBD"/>
-            <Setter Property="Margin"      Value="0,0,0,10"/>
-        </Style>
-        <Style x:Key="SectionTitle" TargetType="TextBlock">
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="FontSize"   Value="12"/>
-            <Setter Property="Foreground" Value="#424242"/>
-            <Setter Property="Margin"     Value="0,0,0,6"/>
-        </Style>
+        <!-- ── DataTemplate header colonna con filtro popup ──────────────────── -->
+        <!--
+            DataContext = FiltroColonna (impostato via code-behind: ColXxx.Header = vm.FiltroXxx)
+        -->
+        <DataTemplate x:Key="FiltroColonnaHeader" DataType="{x:Type vm:FiltroColonna}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Titolo colonna -->
+                <TextBlock Grid.Column="0"
+                           Text="{Binding Titolo}"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"/>
+
+                <!-- Bottone funnel (icona filtro) -->
+                <ToggleButton x:Name="FilterBtn"
+                              Grid.Column="1"
+                              IsChecked="{Binding IsPopupOpen, Mode=TwoWay}"
+                              Style="{StaticResource FilterToggle}"
+                              Margin="4,0,0,0"
+                              ToolTip="Filtra questa colonna">
+                    <TextBlock FontFamily="Segoe MDL2 Assets"
+                               Text="&#xE71C;"
+                               FontWeight="Normal">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="FontSize"   Value="11"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Brush.TextDisabled}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsAttivo}" Value="True">
+                                        <Setter Property="Foreground" Value="{DynamicResource Brush.Primary}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </ToggleButton>
+
+                <!-- Popup filtro -->
+                <Popup Grid.Column="1"
+                       IsOpen="{Binding IsPopupOpen, Mode=TwoWay}"
+                       PlacementTarget="{Binding ElementName=FilterBtn}"
+                       Placement="Bottom"
+                       StaysOpen="False"
+                       AllowsTransparency="True"
+                       HorizontalOffset="-4">
+                    <Border Background="{DynamicResource Brush.Surface}"
+                            BorderBrush="{DynamicResource Brush.Border}"
+                            BorderThickness="1"
+                            CornerRadius="{StaticResource Radius.S}"
+                            Effect="{StaticResource Elevation.Shadow.S}"
+                            Padding="0,4"
+                            MinWidth="220">
+                        <StackPanel>
+
+                            <!-- Rimuovi filtro -->
+                            <RadioButton Content="Rimuovi filtro"
+                                         GroupName="{Binding Titolo}"
+                                         IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=Nessuno, Mode=TwoWay}"
+                                         Style="{StaticResource FilterOp.Remove}"/>
+
+                            <Separator Margin="8,2" Opacity="0.5"/>
+
+                            <!-- Operatori solo testo: Contiene / Non contiene -->
+                            <StackPanel Visibility="{Binding MostraContiene, Converter={StaticResource BoolToVis}}">
+                                <RadioButton Content="Contiene"
+                                             GroupName="{Binding Titolo}"
+                                             IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=Contiene, Mode=TwoWay}"
+                                             Style="{StaticResource FilterOp}"/>
+                                <RadioButton Content="Non contiene"
+                                             GroupName="{Binding Titolo}"
+                                             IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=NonContiene, Mode=TwoWay}"
+                                             Style="{StaticResource FilterOp}"/>
+                            </StackPanel>
+
+                            <!-- Uguale / Diverso (tutti i tipi) -->
+                            <RadioButton Content="È uguale a"
+                                         GroupName="{Binding Titolo}"
+                                         IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=UgualeA, Mode=TwoWay}"
+                                         Style="{StaticResource FilterOp}"/>
+                            <RadioButton Content="Non è uguale a"
+                                         GroupName="{Binding Titolo}"
+                                         IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=DiversoDa, Mode=TwoWay}"
+                                         Style="{StaticResource FilterOp}"/>
+
+                            <!-- Operatori comparazione: solo numerico e data -->
+                            <StackPanel Visibility="{Binding MostraComparazione, Converter={StaticResource BoolToVis}}">
+                                <RadioButton Content="È più grande di"
+                                             GroupName="{Binding Titolo}"
+                                             IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=MaggioreDi, Mode=TwoWay}"
+                                             Style="{StaticResource FilterOp}"/>
+                                <RadioButton Content="È più grande o uguale a"
+                                             GroupName="{Binding Titolo}"
+                                             IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=MaggioreUgualeDi, Mode=TwoWay}"
+                                             Style="{StaticResource FilterOp}"/>
+                                <RadioButton Content="È più piccolo di"
+                                             GroupName="{Binding Titolo}"
+                                             IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=MinoreDi, Mode=TwoWay}"
+                                             Style="{StaticResource FilterOp}"/>
+                                <RadioButton Content="È più piccolo o uguale a"
+                                             GroupName="{Binding Titolo}"
+                                             IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=MinoreUgualeDi, Mode=TwoWay}"
+                                             Style="{StaticResource FilterOp}"/>
+                                <RadioButton Content="Da/a"
+                                             GroupName="{Binding Titolo}"
+                                             IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=Tra, Mode=TwoWay}"
+                                             Style="{StaticResource FilterOp}"/>
+                            </StackPanel>
+
+                            <!-- Vuoto / Non vuoto (tutti i tipi) -->
+                            <RadioButton Content="È vuoto"
+                                         GroupName="{Binding Titolo}"
+                                         IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=Vuoto, Mode=TwoWay}"
+                                         Style="{StaticResource FilterOp}"/>
+                            <RadioButton Content="Non è vuoto"
+                                         GroupName="{Binding Titolo}"
+                                         IsChecked="{Binding Operatore, Converter={StaticResource EnumToBool}, ConverterParameter=NonVuoto, Mode=TwoWay}"
+                                         Style="{StaticResource FilterOp}"/>
+
+                            <!-- Input valore (visibile quando l'operatore lo richiede) -->
+                            <StackPanel Visibility="{Binding MostraInput, Converter={StaticResource BoolToVis}}"
+                                        Margin="8,6,8,4">
+                                <!-- Input testo / numerico / data -->
+                                <TextBox Visibility="{Binding MostraTextInput, Converter={StaticResource BoolToVis}}"
+                                         Text="{Binding Valore1, UpdateSourceTrigger=PropertyChanged}"
+                                         MinWidth="188" Margin="0,0,0,2"/>
+                                <!-- Secondo valore per "Da/a" -->
+                                <TextBox Visibility="{Binding IsTra, Converter={StaticResource BoolToVis}}"
+                                         Text="{Binding Valore2, UpdateSourceTrigger=PropertyChanged}"
+                                         MinWidth="188" Margin="0,4,0,2"/>
+                                <!-- Picker enum: ComboBox con i valori disponibili -->
+                                <ComboBox Visibility="{Binding MostraEnumInput, Converter={StaticResource BoolToVis}}"
+                                          ItemsSource="{Binding ValoriEnum}"
+                                          SelectedItem="{Binding Valore1, Mode=TwoWay}"
+                                          MinWidth="188"/>
+                            </StackPanel>
+
+                        </StackPanel>
+                    </Border>
+                </Popup>
+            </Grid>
+        </DataTemplate>
+
     </UserControl.Resources>
 
-    <DockPanel Background="#F0F2F5">
+    <DockPanel Background="{DynamicResource Brush.Background}">
 
         <!-- ── Header ─────────────────────────────────────────── -->
-        <Border DockPanel.Dock="Top" Background="White" Padding="24,14"
-                BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource Brush.Surface}"
+                Padding="24,14"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,0,0,1">
             <DockPanel>
                 <Button DockPanel.Dock="Right"
                         Content="+ Nuova piastra"
                         Command="{Binding NuovaCommand}"
-                        Style="{StaticResource PrimaryBtn}"/>
-
-                <StackPanel DockPanel.Dock="Left">
-                    <TextBlock Text="Piastre" FontSize="20" FontWeight="SemiBold"
-                               Foreground="#212121" Margin="0,0,0,10"/>
-                    <DockPanel>
-                        <ComboBox DockPanel.Dock="Right"
-                                  ItemsSource="{Binding StatiFiltro}"
-                                  SelectedItem="{Binding FiltroStatoSelezionato}"
-                                  Width="130" Margin="10,0,0,0"
-                                  VerticalAlignment="Center"/>
-                        <TextBox Text="{Binding FiltroRicerca, UpdateSourceTrigger=PropertyChanged}"
-                                 Padding="8,6" BorderBrush="#BDBDBD" FontSize="13"/>
-                    </DockPanel>
-                </StackPanel>
+                        Margin="12,0,0,0"/>
+                <TextBlock Text="Piastre"
+                           Style="{StaticResource TextBlock.Title}"
+                           VerticalAlignment="Center"
+                           Margin="0,0,0,0"/>
+                <!-- Ricerca globale (manteniamo la barra testo; i filtri per colonna
+                     sono accessibili dall'icona funnel nell'intestazione di ogni colonna) -->
+                <TextBox DockPanel.Dock="Right"
+                         Text="{Binding FiltroRicerca, UpdateSourceTrigger=PropertyChanged}"
+                         Width="220"
+                         VerticalAlignment="Center"
+                         Margin="0,0,16,0"/>
             </DockPanel>
         </Border>
 
         <!-- ── Body ───────────────────────────────────────────── -->
         <Grid Margin="24,20,24,24">
             <Grid.ColumnDefinitions>
+                <!-- Tabella: occupa tutto lo spazio disponibile -->
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="20"/>
-                <ColumnDefinition Width="380"/>
+                <!-- Pannello destra: Auto → si riduce a 0 quando Collapsed -->
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
             <!-- Lista piastre -->
-            <Border Grid.Column="0" Background="White"
-                    BorderBrush="#E0E0E0" BorderThickness="1">
+            <Border Grid.Column="0"
+                    Background="{DynamicResource Brush.Surface}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="1">
                 <Grid>
                     <DataGrid x:Name="PiastreDataGrid"
+                              b:DataGridColumnLayout.Chiave="Piastre.Lista"
                               ItemsSource="{Binding PiastreFiltrate}"
                               SelectedItem="{Binding PiastraSelezionata, Mode=TwoWay}"
-                              AutoGenerateColumns="False" CanUserAddRows="False"
-                              IsReadOnly="True" HeadersVisibility="Column"
-                              SelectionMode="Single" GridLinesVisibility="Horizontal"
-                              Background="White" AlternatingRowBackground="#FAFAFA"
-                              BorderThickness="0" RowHeight="34" ColumnHeaderHeight="34"
+                              CanUserAddRows="False" IsReadOnly="True"
+                              RowHeight="36"
                               AllowDrop="True"
                               DragOver="DataGrid_DragOver"
                               DragLeave="DataGrid_DragLeave"
                               Drop="DataGrid_Drop">
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow" BasedOn="{StaticResource DataGridRow.Base}">
+                                <EventSetter Event="MouseDoubleClick" Handler="Row_MouseDoubleClick"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Disegno.Stato}" Value="DaVerificare">
+                                        <Setter Property="Background" Value="{DynamicResource Brush.WarningSurface}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Codice"
-                                               Binding="{Binding CodicePiastra}"
-                                               Width="140"/>
-                            <DataGridTextColumn Header="Art. Gestionale"
-                                               Binding="{Binding CodiceArticoloGestionale}"
-                                               Width="130"/>
-                            <DataGridTextColumn Header="Descrizione"
-                                               Binding="{Binding Descrizione}"
-                                               Width="*"/>
-                            <DataGridTextColumn Header="Stato"
-                                               Binding="{Binding Stato}"
-                                               Width="90"/>
+
+                            <!-- ⚠ Icona: nessun disegno associato -->
+                            <DataGridTemplateColumn Width="30" Header="" CanUserSort="False">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE7BA;"
+                                                   FontSize="12"
+                                                   Foreground="{DynamicResource Brush.Warning}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   ToolTip="Nessun disegno associato">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Disegno}" Value="{x:Null}">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <!-- Codice -->
+                            <DataGridTextColumn x:Name="ColCodice"
+                                                Binding="{Binding CodicePiastra}"
+                                                Width="120"
+                                                SortMemberPath="CodicePiastra"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Descrizione -->
+                            <DataGridTextColumn x:Name="ColDescrizione"
+                                                Binding="{Binding Descrizione}"
+                                                Width="180"
+                                                SortMemberPath="Descrizione"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Articolo gestionale -->
+                            <DataGridTextColumn x:Name="ColArtGestionale"
+                                                Binding="{Binding CodiceArticoloGestionale}"
+                                                Width="130"
+                                                SortMemberPath="CodiceArticoloGestionale"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Categoria -->
+                            <DataGridTextColumn x:Name="ColCategoria"
+                                                Binding="{Binding Categoria.Descrizione}"
+                                                Width="90"
+                                                SortMemberPath="Categoria.Descrizione"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Formato macchina -->
+                            <DataGridTextColumn x:Name="ColFormato"
+                                                Binding="{Binding Formato.NomeFormato}"
+                                                Width="75"
+                                                SortMemberPath="Formato.NomeFormato"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Tipo piastra -->
+                            <DataGridTextColumn x:Name="ColTipo"
+                                                Binding="{Binding TipoPiastra}"
+                                                Width="90"
+                                                SortMemberPath="TipoPiastra"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Stato -->
+                            <DataGridTextColumn x:Name="ColStato"
+                                                Binding="{Binding Stato}"
+                                                Width="80"
+                                                SortMemberPath="Stato"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Larghezza -->
+                            <DataGridTextColumn x:Name="ColLarghezza"
+                                                Binding="{Binding LarghezzaMm, StringFormat='{}{0:F1}', TargetNullValue='—'}"
+                                                Width="68"
+                                                SortMemberPath="LarghezzaMm"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Altezza -->
+                            <DataGridTextColumn x:Name="ColAltezza"
+                                                Binding="{Binding AltezzaMm, StringFormat='{}{0:F1}', TargetNullValue='—'}"
+                                                Width="60"
+                                                SortMemberPath="AltezzaMm"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Spessore -->
+                            <DataGridTextColumn x:Name="ColSpessore"
+                                                Binding="{Binding SpessoreMm, StringFormat='{}{0:F2}', TargetNullValue='—'}"
+                                                Width="68"
+                                                SortMemberPath="SpessoreMm"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Durezza -->
+                            <DataGridTextColumn x:Name="ColDurezza"
+                                                Binding="{Binding Durezza, StringFormat='{}{0:F1}', TargetNullValue='—'}"
+                                                Width="60"
+                                                SortMemberPath="Durezza"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Peso -->
+                            <DataGridTextColumn x:Name="ColPeso"
+                                                Binding="{Binding Peso, StringFormat='{}{0:F3}', TargetNullValue='—'}"
+                                                Width="65"
+                                                SortMemberPath="Peso"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Data creazione -->
+                            <DataGridTextColumn x:Name="ColDataCreazione"
+                                                Binding="{Binding DataCreazione, StringFormat='dd/MM/yyyy'}"
+                                                Width="100"
+                                                SortMemberPath="DataCreazione"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
+                            <!-- Ultima modifica -->
+                            <DataGridTextColumn x:Name="ColDataModifica"
+                                                Binding="{Binding DataUltimaModifica, StringFormat='dd/MM/yyyy'}"
+                                                Width="110"
+                                                SortMemberPath="DataUltimaModifica"
+                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
+
                         </DataGrid.Columns>
                     </DataGrid>
 
                     <!-- Overlay drag & drop -->
                     <Border x:Name="DataGridDropOverlay"
                             Visibility="Collapsed" IsHitTestVisible="False"
-                            Background="#CC1565C0" BorderBrush="#1565C0" BorderThickness="3">
+                            Background="{DynamicResource Brush.Overlay}"
+                            BorderBrush="{DynamicResource Brush.Primary}"
+                            BorderThickness="3">
                         <TextBlock Text="Rilascia il file sulla piastra"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   Foreground="White" FontSize="14" TextWrapping="Wrap"
-                                   Padding="20" FontWeight="SemiBold"/>
+                                   Foreground="{DynamicResource Brush.OnPrimary}"
+                                   FontSize="{StaticResource FontSize.BodyLarge}"
+                                   TextWrapping="Wrap"
+                                   Padding="20"
+                                   FontWeight="{StaticResource FontWeight.SemiBold}"/>
                     </Border>
                 </Grid>
             </Border>
 
-            <!-- Pannello destra: dettaglio OPPURE form -->
-            <Grid Grid.Column="2">
+            <!-- Pannello destra: si comprime a 0px quando non c'è nulla da mostrare
+                 (nessuna piastra selezionata e nessun form aperto). -->
+            <Grid Grid.Column="1"
+                  Margin="20,0,0,0"
+                  Width="560"
+                  Visibility="{Binding IsPannelloDxVisible, Converter={StaticResource BoolToVis}}">
 
                 <!-- ── Form creazione/modifica ─────────────────── -->
-                <Border Visibility="{Binding IsFormVisible, Converter={StaticResource BoolToVis}}"
-                        Background="White" BorderBrush="#E0E0E0" BorderThickness="1"
+                <ScrollViewer Visibility="{Binding IsFormVisible, Converter={StaticResource BoolToVis}}"
+                              VerticalScrollBarVisibility="Auto">
+                <Border Background="{DynamicResource Brush.Surface}"
+                        BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource Radius.M}"
                         Padding="20" VerticalAlignment="Top">
                     <StackPanel>
                         <TextBlock Text="{Binding FormTitolo}"
-                                   FontSize="14" FontWeight="SemiBold" Margin="0,0,0,16"/>
+                                   Style="{StaticResource TextBlock.Subtitle}"
+                                   Margin="0,0,0,16"/>
 
                         <!-- Errore codice duplicato -->
-                        <Border Background="#FFEBEE" BorderBrush="#EF9A9A" BorderThickness="1"
+                        <Border Background="{DynamicResource Brush.ErrorSurface}"
+                                BorderBrush="{DynamicResource Brush.Error}"
+                                BorderThickness="1"
+                                CornerRadius="{StaticResource Radius.S}"
                                 Padding="10,8" Margin="0,0,0,12"
                                 Visibility="{Binding IsErroreVisible, Converter={StaticResource BoolToVis}}">
                             <TextBlock Text="{Binding ErroreCodiceDuplicato}"
-                                       TextWrapping="Wrap" FontSize="12" Foreground="#C62828"/>
+                                       TextWrapping="Wrap"
+                                       FontSize="{StaticResource FontSize.Caption}"
+                                       Foreground="{DynamicResource Brush.Error}"/>
                         </Border>
 
                         <TextBlock Text="Codice piastra *" Style="{StaticResource FieldLabel}"/>
-                        <TextBox Text="{Binding FormCodicePiastra, UpdateSourceTrigger=PropertyChanged}"
-                                 Style="{StaticResource FieldBox}"/>
+                        <TextBox Text="{Binding FormCodicePiastra, UpdateSourceTrigger=PropertyChanged}">
+                            <TextBox.Style>
+                                <Style TargetType="TextBox" BasedOn="{StaticResource FieldBox}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCodicePiastraNonValido}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Error}"/>
+                                            <Setter Property="BorderThickness" Value="2"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
+                        <TextBlock Text="Campo obbligatorio."
+                                   FontSize="{StaticResource FontSize.Caption}"
+                                   Foreground="{DynamicResource Brush.Error}"
+                                   Margin="0,-8,0,10"
+                                   Visibility="{Binding IsCodicePiastraNonValido, Converter={StaticResource BoolToVis}}"/>
 
                         <TextBlock Text="Codice articolo gestionale" Style="{StaticResource FieldLabel}"/>
                         <TextBox Text="{Binding FormCodiceArticolo, UpdateSourceTrigger=PropertyChanged}"
@@ -179,107 +523,385 @@
                         <TextBlock Text="Stato" Style="{StaticResource FieldLabel}"/>
                         <ComboBox ItemsSource="{Binding StatiPiastra}"
                                   SelectedItem="{Binding FormStato}"
-                                  Margin="0,0,0,10" Padding="7,5"/>
+                                  Margin="0,0,0,10"/>
+
+                        <TextBlock Text="Tipo piastra" Style="{StaticResource FieldLabel}"/>
+                        <ComboBox ItemsSource="{Binding TipiPiastra}"
+                                  SelectedItem="{Binding FormTipo}"
+                                  Margin="0,0,0,10"/>
+
+                        <!-- Cliente esclusivo — visibile solo per SpecialeCliente -->
+                        <StackPanel Visibility="{Binding IsClienteEsclusivoVisible, Converter={StaticResource BoolToVis}}"
+                                    Margin="0,0,0,10">
+                            <TextBlock Text="Cliente esclusivo *" Style="{StaticResource FieldLabel}"/>
+
+                            <Border Visibility="{Binding IsClienteEsclusivoSelezionatoVisible, Converter={StaticResource BoolToVis}}"
+                                    Background="{DynamicResource Brush.PrimarySubtle}"
+                                    BorderBrush="{DynamicResource Brush.Primary}"
+                                    BorderThickness="1"
+                                    CornerRadius="{StaticResource Radius.S}"
+                                    Padding="8,5" Margin="0,0,0,4">
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right"
+                                            Style="{StaticResource Button.Icon}"
+                                            Command="{Binding RimuoviClienteEsclusivoCommand}"
+                                            Margin="6,0,0,0">
+                                        <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets"
+                                                   FontSize="10" FontWeight="Normal"/>
+                                    </Button>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock FontWeight="{StaticResource FontWeight.SemiBold}"
+                                                   Text="{Binding FormClienteEsclusivo.RagioneSociale}"/>
+                                        <TextBlock Text="{Binding FormClienteEsclusivo.CodiceClienteGestionale}"
+                                                   FontSize="{StaticResource FontSize.Caption}"
+                                                   Foreground="{DynamicResource Brush.TextSecondary}"/>
+                                    </StackPanel>
+                                </DockPanel>
+                            </Border>
+
+                            <Grid Visibility="{Binding IsClienteEsclusivoSearchVisible, Converter={StaticResource BoolToVis}}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBox Grid.Row="0"
+                                         Text="{Binding FiltroClienteEsclusivo, UpdateSourceTrigger=PropertyChanged}">
+                                    <TextBox.Style>
+                                        <Style TargetType="TextBox" BasedOn="{StaticResource FieldBox}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsClienteEsclusivoNonValido}" Value="True">
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Error}"/>
+                                                    <Setter Property="BorderThickness" Value="2"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBox.Style>
+                                </TextBox>
+                                <Border Grid.Row="1"
+                                        Visibility="{Binding IsClientiEsclusiviSuggerimentiVisible, Converter={StaticResource BoolToVis}}"
+                                        Background="{DynamicResource Brush.Surface}"
+                                        BorderBrush="{DynamicResource Brush.Border}"
+                                        BorderThickness="1"
+                                        CornerRadius="{StaticResource Radius.S}"
+                                        Margin="0,2,0,0">
+                                    <ItemsControl ItemsSource="{Binding ClientiEsclusiviSuggeriti}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource Button.Ghost}"
+                                                        HorizontalContentAlignment="Left"
+                                                        HorizontalAlignment="Stretch"
+                                                        Command="{Binding DataContext.SelezionaClienteEsclusivoCommand,
+                                                                  RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Padding="8,5">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding CodiceClienteGestionale}"
+                                                                   FontWeight="{StaticResource FontWeight.SemiBold}"
+                                                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                                                   MinWidth="60" Margin="0,0,8,0"/>
+                                                        <TextBlock Text="{Binding RagioneSociale}"/>
+                                                    </StackPanel>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Border>
+                            </Grid>
+                            <TextBlock Text="Cliente obbligatorio per una piastra Speciale Cliente."
+                                       FontSize="{StaticResource FontSize.Caption}"
+                                       Foreground="{DynamicResource Brush.Error}"
+                                       Margin="0,4,0,0"
+                                       Visibility="{Binding IsClienteEsclusivoNonValido, Converter={StaticResource BoolToVis}}"/>
+                        </StackPanel>
+
+                        <TextBlock Text="Formato macchina" Style="{StaticResource FieldLabel}"/>
+                        <ComboBox ItemsSource="{Binding FormatiMacchine}"
+                                  SelectedItem="{Binding FormFormatoSelezionato}"
+                                  DisplayMemberPath="NomeFormato"
+                                  Margin="0,0,0,10"/>
+
+                        <!-- Categoria e Peso -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Categoria" Style="{StaticResource FieldLabel}"/>
+                                <ComboBox ItemsSource="{Binding CategoriePiastre}"
+                                          SelectedItem="{Binding FormCategoriaSelezionata}"
+                                          DisplayMemberPath="Descrizione"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Peso (kg)" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding FormPeso, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Misure -->
+                        <TextBlock Text="Misure (mm)" Style="{StaticResource FieldLabel}"/>
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Larghezza" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding FormLarghezza, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Altezza" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding FormAltezza, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="4">
+                                <TextBlock Text="Spessore" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding FormSpessore, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="6">
+                                <TextBlock Text="Durezza" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding FormDurezza, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                        </Grid>
 
                         <TextBlock Text="Note" Style="{StaticResource FieldLabel}"/>
                         <TextBox Text="{Binding FormNote, UpdateSourceTrigger=PropertyChanged}"
                                  Style="{StaticResource FieldBox}"
                                  AcceptsReturn="True" Height="60"/>
 
-                        <!-- Drop zone disegno nel form -->
-                        <TextBlock Text="Disegno" Style="{StaticResource FieldLabel}" Margin="0,4,0,4"/>
-                        <Grid AllowDrop="True"
-                              DragOver="FormDisegno_DragOver"
-                              DragLeave="FormDisegno_DragLeave"
-                              Drop="FormDisegno_Drop"
-                              Margin="0,0,0,16" MinHeight="56">
-                            <Rectangle Stroke="#BDBDBD" StrokeDashArray="5,3"
-                                       StrokeThickness="1.5" Fill="#F5F7FA"
-                                       RadiusX="3" RadiusY="3"/>
-                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
-                                        Margin="8">
-                                <TextBlock Text="Trascina qui DWG / DXF / PDF"
-                                           FontSize="11" Foreground="#9E9E9E"
-                                           HorizontalAlignment="Center"
-                                           Visibility="{Binding IsDisegnoPendenteAssente,
-                                               Converter={StaticResource BoolToVis}}"/>
-                                <TextBlock Text="{Binding NomeFilePendente}"
-                                           FontSize="12" FontWeight="SemiBold"
-                                           Foreground="#1565C0" HorizontalAlignment="Center"
-                                           Visibility="{Binding IsDisegnoPendenteVisible,
-                                               Converter={StaticResource BoolToVis}}"/>
-                                <TextBlock Text="(verrà associato al salvataggio)"
-                                           FontSize="10" Foreground="#9E9E9E"
-                                           HorizontalAlignment="Center"
-                                           Visibility="{Binding IsDisegnoPendenteVisible,
-                                               Converter={StaticResource BoolToVis}}"/>
-                            </StackPanel>
-                            <Border x:Name="FormDisegnoOverlay"
-                                    Visibility="Collapsed" IsHitTestVisible="False"
-                                    Background="#CC1565C0" BorderBrush="#1565C0" BorderThickness="2">
-                                <TextBlock Text="Rilascia per allegare il disegno"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                                           Foreground="White" FontSize="12" FontWeight="SemiBold"/>
-                            </Border>
-                        </Grid>
+                        <!-- Associa a clienti (solo per piastre Standard) -->
+                        <StackPanel Visibility="{Binding IsAssociazioneClientiVisible, Converter={StaticResource BoolToVis}}"
+                                    Margin="0,4,0,10">
+                            <TextBlock Text="Associa a clienti (opzionale)" Style="{StaticResource FieldLabel}"/>
+                            <ItemsControl ItemsSource="{Binding FormClientiDaAssociare}"
+                                          Margin="0,0,0,4">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource Brush.PrimarySubtle}"
+                                                BorderBrush="{DynamicResource Brush.Primary}"
+                                                BorderThickness="1"
+                                                CornerRadius="{StaticResource Radius.S}"
+                                                Padding="7,3" Margin="0,2,4,2">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding RagioneSociale}"
+                                                           FontSize="{StaticResource FontSize.Caption}"
+                                                           VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                                <Button Style="{StaticResource Button.Icon}"
+                                                        Command="{Binding DataContext.RimuoviClienteAssociatoFormCommand,
+                                                                  RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Padding="2">
+                                                    <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets"
+                                                               FontSize="9" FontWeight="Normal"/>
+                                                </Button>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBox Grid.Row="0"
+                                         Text="{Binding FormFiltroClienteAssociato, UpdateSourceTrigger=PropertyChanged}"/>
+                                <Border Grid.Row="1"
+                                        Visibility="{Binding IsFormClientiAssociatiSuggerimentiVisible, Converter={StaticResource BoolToVis}}"
+                                        Background="{DynamicResource Brush.Surface}"
+                                        BorderBrush="{DynamicResource Brush.Border}"
+                                        BorderThickness="1"
+                                        CornerRadius="{StaticResource Radius.S}"
+                                        Margin="0,2,0,0">
+                                    <ItemsControl ItemsSource="{Binding FormClientiAssociatiSuggeriti}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource Button.Ghost}"
+                                                        HorizontalContentAlignment="Left"
+                                                        HorizontalAlignment="Stretch"
+                                                        Command="{Binding DataContext.SelezionaClienteAssociatoFormCommand,
+                                                                  RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Padding="8,5">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="{Binding CodiceClienteGestionale}"
+                                                                   FontWeight="{StaticResource FontWeight.SemiBold}"
+                                                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                                                   MinWidth="60" Margin="0,0,8,0"/>
+                                                        <TextBlock Text="{Binding RagioneSociale}"/>
+                                                    </StackPanel>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Border>
+                            </Grid>
+                        </StackPanel>
 
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,0">
+                        <!-- Sezione disegno nel form -->
+                        <TextBlock Text="Disegno" Style="{StaticResource FieldLabel}" Margin="0,4,0,4"/>
+                        <Border Background="{DynamicResource Brush.SurfaceAlt}"
+                                BorderBrush="{DynamicResource Brush.Border}"
+                                BorderThickness="1"
+                                CornerRadius="{StaticResource Radius.S}"
+                                Padding="8,6" Margin="0,0,0,8"
+                                Visibility="{Binding IsFormDisegnoPresente, Converter={StaticResource BoolToVis}}">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <Button Style="{StaticResource Button.Icon}"
+                                            ToolTip="Apri" Margin="0,0,2,0"
+                                            Command="{Binding AprirDisegnoCommand}">
+                                        <TextBlock Text="&#xE78B;" FontFamily="Segoe MDL2 Assets" FontWeight="Normal"/>
+                                    </Button>
+                                    <Button Style="{StaticResource Button.IconDanger}"
+                                            ToolTip="Rimuovi"
+                                            Command="{Binding RimuoviDisegnoCommand}">
+                                        <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"/>
+                                    </Button>
+                                </StackPanel>
+                                <TextBlock Text="{Binding DisegnoCorrente.NomeFile}"
+                                           FontWeight="{StaticResource FontWeight.SemiBold}"
+                                           VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"/>
+                            </DockPanel>
+                        </Border>
+
+                        <StackPanel Visibility="{Binding IsFormDisegnoAssente, Converter={StaticResource BoolToVis}}"
+                                    Margin="0,0,0,8">
+                            <Grid AllowDrop="True"
+                                  DragOver="FormDisegno_DragOver"
+                                  DragLeave="FormDisegno_DragLeave"
+                                  Drop="FormDisegno_Drop"
+                                  Margin="0,0,0,6" MinHeight="56">
+                                <Border Background="{DynamicResource Brush.SurfaceAlt}"
+                                        BorderBrush="{DynamicResource Brush.Border}"
+                                        BorderThickness="1.5"
+                                        CornerRadius="{StaticResource Radius.S}"/>
+                                <Rectangle Stroke="{DynamicResource Brush.Border}"
+                                           StrokeDashArray="5,3"
+                                           StrokeThickness="1.5"
+                                           Fill="{DynamicResource Brush.SurfaceAlt}"
+                                           RadiusX="4" RadiusY="4"/>
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8">
+                                    <TextBlock Text="Trascina qui DWG / DXF / PDF"
+                                               FontSize="{StaticResource FontSize.Caption}"
+                                               Foreground="{DynamicResource Brush.TextDisabled}"
+                                               HorizontalAlignment="Center"
+                                               Visibility="{Binding IsDisegnoPendenteAssente, Converter={StaticResource BoolToVis}}"/>
+                                    <TextBlock Text="{Binding NomeFilePendente}"
+                                               FontSize="{StaticResource FontSize.Body}"
+                                               FontWeight="{StaticResource FontWeight.SemiBold}"
+                                               Foreground="{DynamicResource Brush.Primary}"
+                                               HorizontalAlignment="Center"
+                                               Visibility="{Binding IsDisegnoPendenteVisible, Converter={StaticResource BoolToVis}}"/>
+                                    <TextBlock Text="(verrà archiviato al salvataggio)"
+                                               FontSize="{StaticResource FontSize.Caption}"
+                                               Foreground="{DynamicResource Brush.TextDisabled}"
+                                               HorizontalAlignment="Center"
+                                               Visibility="{Binding IsDisegnoPendenteVisible, Converter={StaticResource BoolToVis}}"/>
+                                </StackPanel>
+                                <Border x:Name="FormDisegnoOverlay"
+                                        Visibility="Collapsed" IsHitTestVisible="False"
+                                        Background="{DynamicResource Brush.Overlay}"
+                                        BorderBrush="{DynamicResource Brush.Primary}"
+                                        BorderThickness="2"
+                                        CornerRadius="{StaticResource Radius.S}">
+                                    <TextBlock Text="Rilascia per allegare il disegno"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource Brush.OnPrimary}"
+                                               FontSize="{StaticResource FontSize.Body}"
+                                               FontWeight="{StaticResource FontWeight.SemiBold}"/>
+                                </Border>
+                            </Grid>
+                            <DockPanel>
+                                <Button DockPanel.Dock="Left"
+                                        Content="Sfoglia file..."
+                                        Command="{Binding SfogliaFileFormCommand}"
+                                        Style="{StaticResource Button.Secondary}"/>
+                                <TextBlock Text="oppure trascina sopra"
+                                           FontSize="{StaticResource FontSize.Caption}"
+                                           Foreground="{DynamicResource Brush.TextDisabled}"
+                                           VerticalAlignment="Center"
+                                           Margin="10,0,0,0"/>
+                            </DockPanel>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal">
                             <Button Content="Salva"
                                     Command="{Binding SalvaCommand}"
-                                    Style="{StaticResource PrimaryBtn}"
                                     Margin="0,0,10,0"/>
                             <Button Content="Annulla"
                                     Command="{Binding AnnullaFormCommand}"
-                                    Style="{StaticResource SecondaryBtn}"/>
+                                    Style="{StaticResource Button.Secondary}"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
+                </ScrollViewer>
 
                 <!-- ── Dettaglio piastra selezionata ──────────── -->
                 <ScrollViewer Visibility="{Binding IsDetailVisible, Converter={StaticResource BoolToVis}}"
                               VerticalScrollBarVisibility="Auto">
-                    <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1"
+                    <Border Background="{DynamicResource Brush.Surface}"
+                            BorderBrush="{DynamicResource Brush.Border}"
+                            BorderThickness="1"
+                            CornerRadius="{StaticResource Radius.M}"
                             Padding="20">
                         <StackPanel>
                             <!-- Header dettaglio -->
                             <DockPanel Margin="0,0,0,16">
-                                <StackPanel DockPanel.Dock="Left">
-                                    <TextBlock Text="{Binding PiastraSelezionata.CodicePiastra}"
-                                               FontSize="15" FontWeight="SemiBold" Foreground="#212121"/>
-                                    <TextBlock Text="{Binding PiastraSelezionata.Descrizione}"
-                                               FontSize="11" Foreground="#757575" Margin="0,2,0,0"/>
-                                </StackPanel>
                                 <Button DockPanel.Dock="Right"
                                         Content="Modifica"
                                         Command="{Binding ModificaCommand}"
-                                        Style="{StaticResource SecondaryBtn}"
+                                        Style="{StaticResource Button.Secondary}"
                                         VerticalAlignment="Top"/>
+                                <StackPanel VerticalAlignment="Top">
+                                    <TextBlock Text="{Binding PiastraSelezionata.CodicePiastra}"
+                                               Style="{StaticResource TextBlock.BodyLarge}"
+                                               FontWeight="{StaticResource FontWeight.SemiBold}"/>
+                                    <TextBlock Text="{Binding PiastraSelezionata.Descrizione}"
+                                               Style="{StaticResource TextBlock.Caption}"
+                                               Margin="0,2,0,0"/>
+                                </StackPanel>
                             </DockPanel>
 
                             <!-- Info base -->
-                            <Border Background="#F5F7FA" Padding="12,10" Margin="0,0,0,16">
+                            <Border Style="{StaticResource Card.Subtle}" Padding="12,10" Margin="0,0,0,8">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Text="Stato" FontSize="10" Foreground="#9E9E9E"/>
-                                        <TextBlock Text="{Binding PiastraSelezionata.Stato}"
-                                                   FontSize="13" Margin="0,0,0,8"/>
-                                        <TextBlock Text="Art. gestionale" FontSize="10" Foreground="#9E9E9E"/>
-                                        <TextBlock Text="{Binding PiastraSelezionata.CodiceArticoloGestionale, FallbackValue='—'}"
-                                                   FontSize="13"/>
+                                        <TextBlock Text="Stato" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock Text="{Binding PiastraSelezionata.Stato}" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Formato" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock Text="{Binding PiastraSelezionata.Formato.NomeFormato, FallbackValue='—'}" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Categoria" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock Text="{Binding PiastraSelezionata.Categoria.Descrizione, FallbackValue='—'}" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Art. gestionale" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock Text="{Binding PiastraSelezionata.CodiceArticoloGestionale, FallbackValue='—'}"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="1">
-                                        <TextBlock Text="Creato il" FontSize="10" Foreground="#9E9E9E"/>
-                                        <TextBlock FontSize="13" Margin="0,0,0,8">
+                                        <TextBlock Text="Peso (kg)" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock Text="{Binding PiastraSelezionata.Peso, StringFormat='{}{0:F3}', FallbackValue='—', TargetNullValue='—'}" Margin="0,0,0,8"/>
+                                        <TextBlock Text="Creato il" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock Margin="0,0,0,8">
                                             <TextBlock.Text>
                                                 <Binding Path="PiastraSelezionata.DataCreazione" StringFormat="dd/MM/yyyy"/>
                                             </TextBlock.Text>
                                         </TextBlock>
-                                        <TextBlock Text="Ultima modifica" FontSize="10" Foreground="#9E9E9E"/>
-                                        <TextBlock FontSize="13">
+                                        <TextBlock Text="Ultima modifica" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock>
                                             <TextBlock.Text>
                                                 <Binding Path="PiastraSelezionata.DataUltimaModifica" StringFormat="dd/MM/yyyy"/>
                                             </TextBlock.Text>
@@ -288,107 +910,255 @@
                                 </Grid>
                             </Border>
 
-                            <!-- Sezione Disegno -->
-                            <TextBlock Text="Disegno" Style="{StaticResource SectionTitle}"/>
+                            <!-- Misure -->
+                            <Border Style="{StaticResource Card.Subtle}" Padding="12,10" Margin="0,0,0,16">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Larghezza" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock>
+                                            <TextBlock.Text>
+                                                <Binding Path="PiastraSelezionata.LarghezzaMm"
+                                                         StringFormat="{}{0:F1} mm"
+                                                         FallbackValue="—" TargetNullValue="—"/>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Altezza" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock>
+                                            <TextBlock.Text>
+                                                <Binding Path="PiastraSelezionata.AltezzaMm"
+                                                         StringFormat="{}{0:F1} mm"
+                                                         FallbackValue="—" TargetNullValue="—"/>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Spessore" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock>
+                                            <TextBlock.Text>
+                                                <Binding Path="PiastraSelezionata.SpessoreMm"
+                                                         StringFormat="{}{0:F2} mm"
+                                                         FallbackValue="—" TargetNullValue="—"/>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="3">
+                                        <TextBlock Text="Durezza" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock>
+                                            <TextBlock.Text>
+                                                <Binding Path="PiastraSelezionata.Durezza"
+                                                         StringFormat="{}{0:F1}"
+                                                         FallbackValue="—" TargetNullValue="—"/>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
 
-                            <!-- Drop zone disegno (file DWG/DXF/PDF) -->
-                            <Grid Margin="0,0,0,16"
-                                  AllowDrop="True"
-                                  DragOver="DisegnoSection_DragOver"
-                                  DragLeave="DisegnoSection_DragLeave"
-                                  Drop="DisegnoSection_Drop">
+                            <!-- Disegno tecnico -->
+                            <TextBlock Text="Disegno tecnico"
+                                       Style="{StaticResource SectionTitle}"
+                                       Margin="0,0,0,6"/>
+
+                            <Border Background="{DynamicResource Brush.SurfaceAlt}"
+                                    BorderBrush="{DynamicResource Brush.Border}"
+                                    BorderThickness="1"
+                                    CornerRadius="{StaticResource Radius.S}"
+                                    Padding="10,8" Margin="0,0,0,4"
+                                    Visibility="{Binding IsDisegnoPresente, Converter={StaticResource BoolToVis}}">
                                 <StackPanel>
-                                    <!-- Disegno presente -->
-                                    <Border Visibility="{Binding IsDisegnoPresente, Converter={StaticResource BoolToVis}}"
-                                            Background="#F5F7FA" Padding="12,10">
-                                        <DockPanel>
-                                            <Button DockPanel.Dock="Right"
-                                                    Content="Apri file"
-                                                    Command="{Binding AprirDisegnoCommand}"
-                                                    Style="{StaticResource SecondaryBtn}"
-                                                    VerticalAlignment="Center"
-                                                    Margin="8,0,0,0"/>
-                                            <StackPanel DockPanel.Dock="Left">
-                                                <TextBlock Text="{Binding PiastraSelezionata.Disegno.CodiceDisegno}"
-                                                           FontSize="13" FontWeight="SemiBold"/>
-                                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                                    <TextBlock Text="Rev. " FontSize="11" Foreground="#757575"/>
-                                                    <TextBlock Text="{Binding PiastraSelezionata.Disegno.Revisione, FallbackValue='—'}"
-                                                               FontSize="11" Foreground="#757575"/>
-                                                    <TextBlock Text=" · " FontSize="11" Foreground="#757575"/>
-                                                    <TextBlock Text="{Binding PiastraSelezionata.Disegno.Stato}"
-                                                               FontSize="11" Foreground="#757575"/>
-                                                </StackPanel>
-                                                <TextBlock Text="{Binding PiastraSelezionata.Disegno.PercorsoFile}"
-                                                           FontSize="10" Foreground="#9E9E9E" Margin="0,2,0,0"
-                                                           TextTrimming="CharacterEllipsis"/>
-                                            </StackPanel>
-                                        </DockPanel>
-                                    </Border>
-
-                                    <!-- Disegno assente -->
-                                    <Border Visibility="{Binding IsDisegnoAssente, Converter={StaticResource BoolToVis}}"
-                                            Background="#F5F7FA" Padding="12,10" MinHeight="44">
-                                        <TextBlock Text="Nessun disegno associato. Trascina qui un file DWG/DXF/PDF."
-                                                   FontSize="12" Foreground="#9E9E9E"
+                                    <DockPanel Margin="0,0,0,8">
+                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                            <Button Style="{StaticResource Button.Icon}"
+                                                    ToolTip="Apri" Margin="0,0,2,0"
+                                                    Command="{Binding AprirDisegnoCommand}">
+                                                <TextBlock Text="&#xE78B;" FontFamily="Segoe MDL2 Assets" FontWeight="Normal"/>
+                                            </Button>
+                                            <Button Style="{StaticResource Button.IconDanger}"
+                                                    ToolTip="Rimuovi"
+                                                    Command="{Binding RimuoviDisegnoCommand}">
+                                                <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"/>
+                                            </Button>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding DisegnoCorrente.NomeFile}"
+                                                   FontWeight="{StaticResource FontWeight.SemiBold}"
+                                                   TextTrimming="CharacterEllipsis"
                                                    VerticalAlignment="Center"/>
-                                    </Border>
+                                    </DockPanel>
+
+                                    <!-- Formato + Revisione -->
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="Formato" Style="{StaticResource TextBlock.Caption}"/>
+                                            <ComboBox ItemsSource="{Binding FormatiDisponibili}"
+                                                      Text="{Binding FormFormatoDisegno, UpdateSourceTrigger=PropertyChanged}"
+                                                      IsEditable="True"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Revisione" Style="{StaticResource TextBlock.Caption}"/>
+                                            <TextBox Text="{Binding FormRevisioneDisegno, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- Stato -->
+                                    <StackPanel Margin="0,0,0,8">
+                                        <TextBlock Text="Stato" Style="{StaticResource TextBlock.Caption}"/>
+                                        <ComboBox ItemsSource="{Binding StatiDisegno}"
+                                                  SelectedItem="{Binding FormStatoDisegno}"/>
+                                    </StackPanel>
+
+                                    <!-- Note -->
+                                    <StackPanel Margin="0,0,0,8">
+                                        <TextBlock Text="Note" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBox Text="{Binding FormNoteDisegno, UpdateSourceTrigger=PropertyChanged}"
+                                                 AcceptsReturn="True" Height="50"/>
+                                    </StackPanel>
+
+                                    <Button Content="Salva metadati disegno"
+                                            Command="{Binding SalvaDisegnoCommand}"
+                                            Style="{StaticResource Button.Secondary}"
+                                            HorizontalAlignment="Left"/>
                                 </StackPanel>
+                            </Border>
 
-                                <!-- Overlay drag attivo -->
-                                <Border x:Name="DisegnoSectionOverlay"
-                                        Visibility="Collapsed" IsHitTestVisible="False"
-                                        Background="#CC1565C0" BorderBrush="#1565C0" BorderThickness="2">
-                                    <TextBlock Text="Rilascia per associare il disegno"
+                            <!-- Drop zone (nessun disegno) -->
+                            <StackPanel Visibility="{Binding IsDisegnoAssente, Converter={StaticResource BoolToVis}}"
+                                        Margin="0,0,0,4">
+                                <Grid AllowDrop="True"
+                                      DragOver="DettaglioDisegno_DragOver"
+                                      DragLeave="DettaglioDisegno_DragLeave"
+                                      Drop="DettaglioDisegno_Drop"
+                                      Margin="0,0,0,6" MinHeight="56">
+                                    <Rectangle Stroke="{DynamicResource Brush.Border}"
+                                               StrokeDashArray="5,3"
+                                               StrokeThickness="1.5"
+                                               Fill="{DynamicResource Brush.SurfaceAlt}"
+                                               RadiusX="4" RadiusY="4"/>
+                                    <TextBlock Text="Trascina qui DWG / DXF / PDF"
+                                               FontSize="{StaticResource FontSize.Caption}"
+                                               Foreground="{DynamicResource Brush.TextDisabled}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                                    <Border x:Name="DettaglioDisegnoOverlay"
+                                            Visibility="Collapsed" IsHitTestVisible="False"
+                                            Background="{DynamicResource Brush.Overlay}"
+                                            BorderBrush="{DynamicResource Brush.Primary}"
+                                            BorderThickness="2"
+                                            CornerRadius="{StaticResource Radius.S}">
+                                        <TextBlock Text="Rilascia per allegare il disegno"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource Brush.OnPrimary}"
+                                                   FontSize="{StaticResource FontSize.Body}"
+                                                   FontWeight="{StaticResource FontWeight.SemiBold}"/>
+                                    </Border>
+                                </Grid>
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Left"
+                                            Content="Sfoglia file..."
+                                            Command="{Binding SfogliaFileDettaglioCommand}"
+                                            Style="{StaticResource Button.Secondary}"/>
+                                    <TextBlock Text="oppure trascina sopra"
+                                               FontSize="{StaticResource FontSize.Caption}"
+                                               Foreground="{DynamicResource Brush.TextDisabled}"
+                                               VerticalAlignment="Center"
+                                               Margin="10,0,0,0"/>
+                                </DockPanel>
+                            </StackPanel>
+
+                            <!-- Errore apertura file -->
+                            <Border Background="{DynamicResource Brush.ErrorSurface}"
+                                    BorderBrush="{DynamicResource Brush.Error}"
+                                    BorderThickness="1"
+                                    CornerRadius="{StaticResource Radius.S}"
+                                    Padding="10,8" Margin="0,0,0,12"
+                                    Visibility="{Binding IsErroreDisegnoVisible, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="{Binding ErroreDisegno}"
+                                           TextWrapping="Wrap"
+                                           FontSize="{StaticResource FontSize.Caption}"
+                                           Foreground="{DynamicResource Brush.Error}"/>
+                            </Border>
+
+                            <!-- Anteprima disegno DWG -->
+                            <Border Visibility="{Binding IsDisegnoPresente, Converter={StaticResource BoolToVis}}"
+                                    Background="{DynamicResource Brush.SurfaceVariant}"
+                                    BorderBrush="{DynamicResource Brush.Border}"
+                                    BorderThickness="1"
+                                    CornerRadius="{StaticResource Radius.S}"
+                                    Margin="0,0,0,8"
+                                    MaxHeight="220" MinHeight="64">
+                                <Grid>
+                                    <Image Source="{Binding AnteprimaDisegno}"
+                                           Stretch="Uniform"
+                                           RenderOptions.BitmapScalingMode="HighQuality"
+                                           Margin="4"
+                                           Visibility="{Binding IsAnteprimaVisible, Converter={StaticResource BoolToVis}}"/>
+                                    <TextBlock Text="Caricamento anteprima..."
                                                HorizontalAlignment="Center" VerticalAlignment="Center"
-                                               Foreground="White" FontSize="12" FontWeight="SemiBold"/>
-                                </Border>
-                            </Grid>
+                                               FontSize="{StaticResource FontSize.Caption}"
+                                               Opacity="0.5"
+                                               Visibility="{Binding IsCaricamentoAnteprima, Converter={StaticResource BoolToVis}}"/>
+                                    <TextBlock Text="Anteprima non disponibile"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               FontSize="{StaticResource FontSize.Caption}"
+                                               Opacity="0.5"
+                                               Visibility="{Binding IsNoAnteprima, Converter={StaticResource BoolToVis}}"/>
+                                </Grid>
+                            </Border>
 
-                            <!-- Sezione Macchine compatibili -->
+                            <Separator Margin="0,4,0,8"/>
+
+                            <!-- Macchine compatibili -->
                             <DockPanel Margin="0,0,0,6">
                                 <Button DockPanel.Dock="Right"
                                         Content="+ Aggiungi"
                                         Command="{Binding AggiungiMacchinaCommand}"
-                                        Style="{StaticResource SecondaryBtn}"
-                                        FontSize="11" Padding="8,4"/>
-                                <TextBlock Text="Macchine compatibili" Style="{StaticResource SectionTitle}"
+                                        Style="{StaticResource Button.Secondary}"/>
+                                <TextBlock Text="Macchine compatibili"
+                                           Style="{StaticResource SectionTitle}"
                                            VerticalAlignment="Center" Margin="0"/>
                             </DockPanel>
 
-                            <!-- Inline: aggiungi macchina compatibile -->
                             <Border Visibility="{Binding IsAggiungiMacchinaVisible, Converter={StaticResource BoolToVis}}"
-                                    Background="#E3F2FD" BorderBrush="#90CAF9" BorderThickness="1"
+                                    Style="{StaticResource Card.Accent}"
                                     Padding="12,10" Margin="0,0,0,8">
                                 <StackPanel>
-                                    <TextBlock Text="Seleziona macchina:" FontSize="11" Foreground="#1565C0"
+                                    <TextBlock Text="Seleziona macchina:"
+                                               FontSize="{StaticResource FontSize.Caption}"
+                                               Foreground="{DynamicResource Brush.Primary}"
                                                Margin="0,0,0,6"/>
                                     <ComboBox ItemsSource="{Binding MacchineDisponibili}"
                                               SelectedItem="{Binding MacchinaCompatibileDaAggiungere}"
                                               DisplayMemberPath="NomeMacchina"
-                                              Margin="0,0,0,8" Padding="7,5"/>
+                                              Margin="0,0,0,8"/>
                                     <StackPanel Orientation="Horizontal">
                                         <Button Content="Conferma"
                                                 Command="{Binding ConfermaAggiungiMacchinaCommand}"
-                                                Style="{StaticResource PrimaryBtn}"
-                                                FontSize="11" Padding="10,5"
                                                 Margin="0,0,8,0"/>
                                         <Button Content="Annulla"
                                                 Command="{Binding AnnullaAggiungiMacchinaCommand}"
-                                                Style="{StaticResource SecondaryBtn}"
-                                                FontSize="11" Padding="10,5"/>
+                                                Style="{StaticResource Button.Secondary}"/>
                                     </StackPanel>
                                 </StackPanel>
                             </Border>
 
-                            <!-- DataGrid macchine compatibili -->
-                            <Border BorderBrush="#E0E0E0" BorderThickness="1"
-                                    Margin="0,0,0,16" MaxHeight="180">
+                            <Border BorderBrush="{DynamicResource Brush.Border}"
+                                    BorderThickness="1"
+                                    Margin="0,0,0,4" MaxHeight="180">
                                 <DataGrid ItemsSource="{Binding MacchineCompatibili}"
-                                          AutoGenerateColumns="False" CanUserAddRows="False"
-                                          IsReadOnly="True" HeadersVisibility="Column"
-                                          Background="White" BorderThickness="0"
-                                          RowHeight="28" ColumnHeaderHeight="28">
+                                          CanUserAddRows="False" IsReadOnly="True"
+                                          RowHeight="30" ColumnHeaderHeight="30">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="Macchina"
                                                            Binding="{Binding MacchinaStandard.NomeMacchina}"
@@ -396,16 +1166,17 @@
                                         <DataGridTextColumn Header="Codice"
                                                            Binding="{Binding MacchinaStandard.CodiceMacchina}"
                                                            Width="110"/>
-                                        <DataGridTemplateColumn Header="" Width="60">
+                                        <DataGridTemplateColumn Header="" Width="44">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
-                                                    <Button Content="Rimuovi"
-                                                            FontSize="10" Padding="6,3"
-                                                            Style="{StaticResource DangerBtn}"
+                                                    <Button Style="{StaticResource Button.IconDanger}"
+                                                            ToolTip="Rimuovi"
                                                             Command="{Binding DataContext.RimuoviCompatibilitaCommand,
                                                                       RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                            CommandParameter="{Binding}"
-                                                            Cursor="Hand"/>
+                                                            CommandParameter="{Binding}">
+                                                        <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"
+                                                                   Foreground="{DynamicResource Brush.Error}"/>
+                                                    </Button>
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
@@ -413,14 +1184,107 @@
                                 </DataGrid>
                             </Border>
 
-                            <!-- Sezione Clienti associati -->
-                            <TextBlock Text="Clienti associati" Style="{StaticResource SectionTitle}"/>
-                            <Border BorderBrush="#E0E0E0" BorderThickness="1" MaxHeight="160">
+                            <Separator Margin="0,4,0,8"/>
+
+                            <!-- Clienti associati -->
+                            <DockPanel Margin="0,0,0,6">
+                                <Button DockPanel.Dock="Right"
+                                        Content="+ Aggiungi"
+                                        Command="{Binding AggiungiClienteCommand}"
+                                        Style="{StaticResource Button.Secondary}"/>
+                                <TextBlock Text="Clienti associati"
+                                           Style="{StaticResource SectionTitle}"
+                                           VerticalAlignment="Center" Margin="0"/>
+                            </DockPanel>
+
+                            <Border Visibility="{Binding IsAggiungiClienteVisible, Converter={StaticResource BoolToVis}}"
+                                    Style="{StaticResource Card.Accent}"
+                                    Padding="12,10" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="Seleziona cliente:"
+                                               FontSize="{StaticResource FontSize.Caption}"
+                                               Foreground="{DynamicResource Brush.Primary}"
+                                               Margin="0,0,0,6"/>
+
+                                    <Border Visibility="{Binding IsClienteSelezionatoVisible, Converter={StaticResource BoolToVis}}"
+                                            Background="{DynamicResource Brush.PrimarySubtle}"
+                                            BorderBrush="{DynamicResource Brush.Primary}"
+                                            BorderThickness="1"
+                                            CornerRadius="{StaticResource Radius.S}"
+                                            Padding="8,5" Margin="0,0,0,8">
+                                        <DockPanel>
+                                            <Button DockPanel.Dock="Right"
+                                                    Style="{StaticResource Button.Icon}"
+                                                    Command="{Binding RimuoviClienteSelezionatoCommand}"
+                                                    Margin="6,0,0,0">
+                                                <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets"
+                                                           FontSize="10" FontWeight="Normal"/>
+                                            </Button>
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock FontWeight="{StaticResource FontWeight.SemiBold}"
+                                                           Text="{Binding ClienteSelezionato.RagioneSociale}"/>
+                                                <TextBlock Text="{Binding ClienteSelezionato.CodiceClienteGestionale}"
+                                                           FontSize="{StaticResource FontSize.Caption}"
+                                                           Foreground="{DynamicResource Brush.TextSecondary}"/>
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </Border>
+
+                                    <Grid Visibility="{Binding IsClienteSearchVisible, Converter={StaticResource BoolToVis}}"
+                                          Margin="0,0,0,8">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <TextBox Grid.Row="0"
+                                                 Text="{Binding FiltroCliente, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <Border Grid.Row="1"
+                                                Visibility="{Binding IsClienteSuggerimentiVisible, Converter={StaticResource BoolToVis}}"
+                                                Background="{DynamicResource Brush.Surface}"
+                                                BorderBrush="{DynamicResource Brush.Border}"
+                                                BorderThickness="1"
+                                                CornerRadius="{StaticResource Radius.S}"
+                                                Margin="0,2,0,0">
+                                            <ItemsControl ItemsSource="{Binding ClientiSuggeriti}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Button Style="{StaticResource Button.Ghost}"
+                                                                HorizontalContentAlignment="Left"
+                                                                HorizontalAlignment="Stretch"
+                                                                Command="{Binding DataContext.SelezionaClienteCommand,
+                                                                          RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                CommandParameter="{Binding}"
+                                                                Padding="8,5">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="{Binding CodiceClienteGestionale}"
+                                                                           FontWeight="{StaticResource FontWeight.SemiBold}"
+                                                                           Foreground="{DynamicResource Brush.TextSecondary}"
+                                                                           MinWidth="60" Margin="0,0,8,0"/>
+                                                                <TextBlock Text="{Binding RagioneSociale}"/>
+                                                            </StackPanel>
+                                                        </Button>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </Border>
+                                    </Grid>
+
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Content="Conferma"
+                                                Command="{Binding ConfermaAggiungiClienteCommand}"
+                                                Margin="0,0,8,0"/>
+                                        <Button Content="Annulla"
+                                                Command="{Binding AnnullaAggiungiClienteCommand}"
+                                                Style="{StaticResource Button.Secondary}"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <Border BorderBrush="{DynamicResource Brush.Border}"
+                                    BorderThickness="1" MaxHeight="160">
                                 <DataGrid ItemsSource="{Binding ClientiAssociati}"
-                                          AutoGenerateColumns="False" CanUserAddRows="False"
-                                          IsReadOnly="True" HeadersVisibility="Column"
-                                          Background="White" BorderThickness="0"
-                                          RowHeight="28" ColumnHeaderHeight="28">
+                                          CanUserAddRows="False" IsReadOnly="True"
+                                          RowHeight="30" ColumnHeaderHeight="30">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="Cliente"
                                                            Binding="{Binding Cliente.RagioneSociale}"
@@ -428,6 +1292,20 @@
                                         <DataGridTextColumn Header="Macchina"
                                                            Binding="{Binding ClienteMacchina.MacchinaStandard.NomeMacchina}"
                                                            Width="120"/>
+                                        <DataGridTemplateColumn Header="" Width="44">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <Button Style="{StaticResource Button.IconDanger}"
+                                                            ToolTip="Rimuovi"
+                                                            Command="{Binding DataContext.RimuoviClienteCommand,
+                                                                      RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                            CommandParameter="{Binding}">
+                                                        <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"
+                                                                   Foreground="{DynamicResource Brush.Error}"/>
+                                                    </Button>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Border>

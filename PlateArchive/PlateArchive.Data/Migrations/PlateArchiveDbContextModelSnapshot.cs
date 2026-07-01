@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PlateArchive.Data;
 
@@ -15,36 +16,57 @@ namespace PlateArchive.Data.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.0");
+            modelBuilder
+                .HasAnnotation("ProductVersion", "8.0.0")
+                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+
+            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("PlateArchive.Core.Models.CategoriaPiastra", b =>
+                {
+                    b.Property<int>("IdCategoriaPiastra")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdCategoriaPiastra"));
+
+                    b.Property<string>("Codice")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Descrizione")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Ordine")
+                        .HasColumnType("int");
+
+                    b.HasKey("IdCategoriaPiastra");
+
+                    b.HasIndex("Codice")
+                        .IsUnique();
+
+                    b.ToTable("CategoriePiastre");
+                });
 
             modelBuilder.Entity("PlateArchive.Core.Models.Cliente", b =>
                 {
                     b.Property<int>("IdCliente")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdCliente"));
 
                     b.Property<string>("CodiceClienteGestionale")
                         .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("CodiceFiscale")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("DataUltimaSincronizzazione")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Note")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PartitaIVA")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("RagioneSociale")
                         .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("StatoCliente")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("IdCliente");
 
@@ -58,40 +80,36 @@ namespace PlateArchive.Data.Migrations
                 {
                     b.Property<int>("IdClienteMacchina")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdClienteMacchina"));
 
                     b.Property<bool>("Attiva")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("ClienteIdCliente")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("bit");
 
                     b.Property<string>("CodiceInternoCliente")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("DataAssociazione")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("IdCliente")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.Property<int>("IdMacchinaStandard")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("MacchinaStandardIdMacchinaStandard")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.Property<string>("Matricola")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Note")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("IdClienteMacchina");
 
-                    b.HasIndex("ClienteIdCliente");
+                    b.HasIndex("IdCliente");
 
-                    b.HasIndex("MacchinaStandardIdMacchinaStandard");
+                    b.HasIndex("IdMacchinaStandard");
 
                     b.ToTable("ClientiMacchine");
                 });
@@ -100,39 +118,33 @@ namespace PlateArchive.Data.Migrations
                 {
                     b.Property<int>("IdClientePiastra")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
-                    b.Property<int>("ClienteIdCliente")
-                        .HasColumnType("INTEGER");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdClientePiastra"));
 
                     b.Property<DateTime>("DataAssociazione")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("IdCliente")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.Property<int?>("IdClienteMacchina")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.Property<int>("IdPiastra")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.Property<string>("Note")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("PiastraIdPiastra")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Stato")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.HasKey("IdClientePiastra");
 
-                    b.HasIndex("ClienteIdCliente");
-
                     b.HasIndex("IdClienteMacchina");
 
-                    b.HasIndex("PiastraIdPiastra");
+                    b.HasIndex("IdPiastra");
 
                     b.HasIndex("IdCliente", "IdPiastra")
                         .IsUnique();
@@ -144,82 +156,117 @@ namespace PlateArchive.Data.Migrations
                 {
                     b.Property<int>("IdDisegno")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdDisegno"));
 
                     b.Property<string>("CodiceDisegno")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("DataUltimaModificaFile")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Formato")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("IdPiastra")
-                        .HasColumnType("INTEGER");
+                    b.Property<int?>("IdPiastra")
+                        .HasColumnType("int");
 
                     b.Property<string>("NomeFile")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Note")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PercorsoFile")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Revisione")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Stato")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.Property<string>("VaultId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("IdDisegno");
 
                     b.HasIndex("IdPiastra")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[IdPiastra] IS NOT NULL");
 
                     b.ToTable("Disegni");
+                });
+
+            modelBuilder.Entity("PlateArchive.Core.Models.FormatoMacchina", b =>
+                {
+                    b.Property<int>("IdFormato")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdFormato"));
+
+                    b.Property<bool>("IsEliminata")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("NomeFormato")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("IdFormato");
+
+                    b.ToTable("FormatiMacchine");
                 });
 
             modelBuilder.Entity("PlateArchive.Core.Models.MacchinaStandard", b =>
                 {
                     b.Property<int>("IdMacchinaStandard")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdMacchinaStandard"));
+
+                    b.Property<decimal?>("AltezzaMm")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<bool>("Attiva")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("bit");
 
                     b.Property<string>("CodiceMacchina")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("Famiglia")
-                        .HasColumnType("TEXT");
+                    b.Property<int?>("IdFormato")
+                        .HasColumnType("int");
 
-                    b.Property<string>("Formato")
-                        .HasColumnType("TEXT");
+                    b.Property<int?>("IdProduttore")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("LarghezzaMm")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("NomeMacchina")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Note")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Produttore")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Versione")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("IdMacchinaStandard");
 
                     b.HasIndex("CodiceMacchina")
                         .IsUnique();
+
+                    b.HasIndex("IdFormato");
+
+                    b.HasIndex("IdProduttore");
 
                     b.ToTable("MacchineStandard");
                 });
@@ -228,38 +275,76 @@ namespace PlateArchive.Data.Migrations
                 {
                     b.Property<int>("IdPiastra")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdPiastra"));
+
+                    b.Property<decimal?>("AltezzaMm")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("CodiceArticoloGestionale")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("CodicePiastra")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("DataCreazione")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("DataUltimaModifica")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Descrizione")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("Durezza")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("IdCategoriaPiastra")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdClienteEsclusivo")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdFormato")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsEliminata")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("LarghezzaMm")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Note")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("Peso")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("SpessoreMm")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("Stato")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
+
+                    b.Property<int>("TipoPiastra")
+                        .HasColumnType("int");
 
                     b.HasKey("IdPiastra");
 
                     b.HasIndex("CodiceArticoloGestionale")
                         .IsUnique()
-                        .HasFilter("\"CodiceArticoloGestionale\" IS NOT NULL");
+                        .HasFilter("[CodiceArticoloGestionale] IS NOT NULL");
 
                     b.HasIndex("CodicePiastra")
                         .IsUnique();
+
+                    b.HasIndex("IdCategoriaPiastra");
+
+                    b.HasIndex("IdClienteEsclusivo");
+
+                    b.HasIndex("IdFormato");
 
                     b.ToTable("Piastre");
                 });
@@ -268,40 +353,34 @@ namespace PlateArchive.Data.Migrations
                 {
                     b.Property<int>("IdCompatibilita")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdCompatibilita"));
 
                     b.Property<bool>("Attiva")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("bit");
 
                     b.Property<DateTime?>("DataVerifica")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("datetime2");
 
                     b.Property<int?>("FonteDato")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.Property<int>("IdMacchinaStandard")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.Property<int>("IdPiastra")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("MacchinaStandardIdMacchinaStandard")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("int");
 
                     b.Property<string>("Note")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("PiastraIdPiastra")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UtenteVerifica")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("IdCompatibilita");
 
-                    b.HasIndex("MacchinaStandardIdMacchinaStandard");
-
-                    b.HasIndex("PiastraIdPiastra");
+                    b.HasIndex("IdMacchinaStandard");
 
                     b.HasIndex("IdPiastra", "IdMacchinaStandard")
                         .IsUnique();
@@ -309,17 +388,40 @@ namespace PlateArchive.Data.Migrations
                     b.ToTable("PiastreMacchineCompatibili");
                 });
 
+            modelBuilder.Entity("PlateArchive.Core.Models.ProduttoreMacchina", b =>
+                {
+                    b.Property<int>("IdProduttore")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdProduttore"));
+
+                    b.Property<bool>("IsEliminata")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("NomeProduttore")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("IdProduttore");
+
+                    b.ToTable("ProduttoriMacchine");
+                });
+
             modelBuilder.Entity("PlateArchive.Core.Models.ClienteMacchina", b =>
                 {
                     b.HasOne("PlateArchive.Core.Models.Cliente", "Cliente")
                         .WithMany("Macchine")
-                        .HasForeignKey("ClienteIdCliente")
+                        .HasForeignKey("IdCliente")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("PlateArchive.Core.Models.MacchinaStandard", "MacchinaStandard")
                         .WithMany("ClientiAssociati")
-                        .HasForeignKey("MacchinaStandardIdMacchinaStandard")
+                        .HasForeignKey("IdMacchinaStandard")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -332,18 +434,17 @@ namespace PlateArchive.Data.Migrations
                 {
                     b.HasOne("PlateArchive.Core.Models.Cliente", "Cliente")
                         .WithMany("Piastre")
-                        .HasForeignKey("ClienteIdCliente")
+                        .HasForeignKey("IdCliente")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("PlateArchive.Core.Models.ClienteMacchina", "ClienteMacchina")
                         .WithMany()
-                        .HasForeignKey("IdClienteMacchina")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .HasForeignKey("IdClienteMacchina");
 
                     b.HasOne("PlateArchive.Core.Models.Piastra", "Piastra")
                         .WithMany("ClientiAssociati")
-                        .HasForeignKey("PiastraIdPiastra")
+                        .HasForeignKey("IdPiastra")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -359,23 +460,60 @@ namespace PlateArchive.Data.Migrations
                     b.HasOne("PlateArchive.Core.Models.Piastra", "Piastra")
                         .WithOne("Disegno")
                         .HasForeignKey("PlateArchive.Core.Models.Disegno", "IdPiastra")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Piastra");
+                });
+
+            modelBuilder.Entity("PlateArchive.Core.Models.MacchinaStandard", b =>
+                {
+                    b.HasOne("PlateArchive.Core.Models.FormatoMacchina", "Formato")
+                        .WithMany("Macchine")
+                        .HasForeignKey("IdFormato");
+
+                    b.HasOne("PlateArchive.Core.Models.ProduttoreMacchina", "Produttore")
+                        .WithMany("Macchine")
+                        .HasForeignKey("IdProduttore")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Formato");
+
+                    b.Navigation("Produttore");
+                });
+
+            modelBuilder.Entity("PlateArchive.Core.Models.Piastra", b =>
+                {
+                    b.HasOne("PlateArchive.Core.Models.CategoriaPiastra", "Categoria")
+                        .WithMany()
+                        .HasForeignKey("IdCategoriaPiastra")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("PlateArchive.Core.Models.Cliente", "ClienteEsclusivo")
+                        .WithMany()
+                        .HasForeignKey("IdClienteEsclusivo");
+
+                    b.HasOne("PlateArchive.Core.Models.FormatoMacchina", "Formato")
+                        .WithMany("Piastre")
+                        .HasForeignKey("IdFormato");
+
+                    b.Navigation("Categoria");
+
+                    b.Navigation("ClienteEsclusivo");
+
+                    b.Navigation("Formato");
                 });
 
             modelBuilder.Entity("PlateArchive.Core.Models.PiastraMacchinaCompatibile", b =>
                 {
                     b.HasOne("PlateArchive.Core.Models.MacchinaStandard", "MacchinaStandard")
                         .WithMany("PiastreCompatibili")
-                        .HasForeignKey("MacchinaStandardIdMacchinaStandard")
+                        .HasForeignKey("IdMacchinaStandard")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("PlateArchive.Core.Models.Piastra", "Piastra")
                         .WithMany("MacchineCompatibili")
-                        .HasForeignKey("PiastraIdPiastra")
+                        .HasForeignKey("IdPiastra")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -385,6 +523,13 @@ namespace PlateArchive.Data.Migrations
                 });
 
             modelBuilder.Entity("PlateArchive.Core.Models.Cliente", b =>
+                {
+                    b.Navigation("Macchine");
+
+                    b.Navigation("Piastre");
+                });
+
+            modelBuilder.Entity("PlateArchive.Core.Models.FormatoMacchina", b =>
                 {
                     b.Navigation("Macchine");
 
@@ -405,6 +550,11 @@ namespace PlateArchive.Data.Migrations
                     b.Navigation("Disegno");
 
                     b.Navigation("MacchineCompatibili");
+                });
+
+            modelBuilder.Entity("PlateArchive.Core.Models.ProduttoreMacchina", b =>
+                {
+                    b.Navigation("Macchine");
                 });
 #pragma warning restore 612, 618
         }

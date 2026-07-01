@@ -1,0 +1,223 @@
+<Window x:Class="PlateArchive.Wpf.Views.PiastraDettaglioWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Caratteristiche piastra"
+        Width="480" SizeToContent="Height"
+        MaxHeight="820"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Style="{StaticResource Window.Base}">
+
+    <DockPanel Margin="24">
+
+        <!-- ── Header ─────────────────────────────────────────── -->
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,16">
+            <TextBlock Style="{StaticResource TextBlock.Title}">
+                <Run Text="{Binding Piastra.CodicePiastra, FallbackValue='—'}"/>
+            </TextBlock>
+            <TextBlock Text="{Binding Piastra.Descrizione, TargetNullValue='', FallbackValue=''}"
+                       Foreground="{DynamicResource Brush.TextSecondary}"
+                       TextWrapping="Wrap"
+                       Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <!-- ── Pulsante chiusura ─────────────────────────────── -->
+        <StackPanel DockPanel.Dock="Bottom"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,16,0,0">
+            <Button Content="Chiudi"
+                    Click="Chiudi_Click"
+                    Style="{StaticResource Button.Secondary}"/>
+        </StackPanel>
+
+        <!-- ── Corpo (scrollabile) ──────────────────────────────── -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <!-- Stato / Tipo / Categoria / Formato -->
+                <Border Style="{StaticResource Card.Subtle}" Padding="12,10" Margin="0,0,0,10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Stato" Style="{StaticResource TextBlock.Caption}"/>
+                            <TextBlock Text="{Binding Piastra.Stato, FallbackValue='—'}" Margin="0,0,0,8"/>
+                            <TextBlock Text="Categoria" Style="{StaticResource TextBlock.Caption}"/>
+                            <TextBlock Text="{Binding Piastra.Categoria.Descrizione, FallbackValue='—', TargetNullValue='—'}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="Tipo piastra" Style="{StaticResource TextBlock.Caption}"/>
+                            <TextBlock Text="{Binding Piastra.TipoPiastra, FallbackValue='—'}" Margin="0,0,0,8"/>
+                            <TextBlock Text="Formato macchina" Style="{StaticResource TextBlock.Caption}"/>
+                            <TextBlock Text="{Binding Piastra.Formato.NomeFormato, FallbackValue='—', TargetNullValue='—'}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Codice articolo gestionale -->
+                <Border Style="{StaticResource Card.Subtle}" Padding="12,10" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock Text="Codice articolo gestionale" Style="{StaticResource TextBlock.Caption}"/>
+                        <TextBlock Text="{Binding Piastra.CodiceArticoloGestionale, FallbackValue='—', TargetNullValue='—'}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Misure -->
+                <TextBlock Text="Misure (mm)" Style="{StaticResource SectionTitle}" Margin="0,0,0,6"/>
+                <Border Style="{StaticResource Card.Subtle}" Padding="12,10" Margin="0,0,0,10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Larghezza" Style="{StaticResource TextBlock.Caption}"/>
+                            <TextBlock>
+                                <TextBlock.Text>
+                                    <Binding Path="Piastra.LarghezzaMm" StringFormat="{}{0:F1}"
+                                             FallbackValue="—" TargetNullValue="—"/>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="Altezza" Style="{StaticResource TextBlock.Caption}"/>
+                            <TextBlock>
+                                <TextBlock.Text>
+                                    <Binding Path="Piastra.AltezzaMm" StringFormat="{}{0:F1}"
+                                             FallbackValue="—" TargetNullValue="—"/>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Spessore" Style="{StaticResource TextBlock.Caption}"/>
+                            <TextBlock>
+                                <TextBlock.Text>
+                                    <Binding Path="Piastra.SpessoreMm" StringFormat="{}{0:F2}"
+                                             FallbackValue="—" TargetNullValue="—"/>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </StackPanel>
+                        <StackPanel Grid.Column="3">
+                            <TextBlock Text="Durezza" Style="{StaticResource TextBlock.Caption}"/>
+                            <TextBlock>
+                                <TextBlock.Text>
+                                    <Binding Path="Piastra.Durezza" StringFormat="{}{0:F1}"
+                                             FallbackValue="—" TargetNullValue="—"/>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </StackPanel>
+                        <StackPanel Grid.Column="4">
+                            <TextBlock Text="Peso (kg)" Style="{StaticResource TextBlock.Caption}"/>
+                            <TextBlock>
+                                <TextBlock.Text>
+                                    <Binding Path="Piastra.Peso" StringFormat="{}{0:F3}"
+                                             FallbackValue="—" TargetNullValue="—"/>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Note -->
+                <TextBlock Text="Note" Style="{StaticResource SectionTitle}" Margin="0,0,0,6"/>
+                <Border Style="{StaticResource Card.Subtle}" Padding="12,10" Margin="0,0,0,10">
+                    <TextBlock Text="{Binding Piastra.Note, FallbackValue='—', TargetNullValue='Nessuna nota.'}"
+                               TextWrapping="Wrap"/>
+                </Border>
+
+                <!-- Disegno tecnico -->
+                <TextBlock Text="Disegno tecnico" Style="{StaticResource SectionTitle}" Margin="0,4,0,6"/>
+
+                <Border Background="{DynamicResource Brush.SurfaceAlt}"
+                        BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource Radius.S}"
+                        Padding="10,8" Margin="0,0,0,8"
+                        Visibility="{Binding IsDisegnoPresente, Converter={StaticResource BoolToVis}}">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right"
+                                Style="{StaticResource Button.Icon}"
+                                ToolTip="Apri"
+                                Command="{Binding AprirDisegnoCommand}">
+                            <TextBlock Text="&#xE78B;" FontFamily="Segoe MDL2 Assets" FontWeight="Normal"/>
+                        </Button>
+                        <StackPanel>
+                            <TextBlock Text="{Binding Piastra.Disegno.NomeFile}"
+                                       FontWeight="{StaticResource FontWeight.SemiBold}"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                <TextBlock Text="{Binding Piastra.Disegno.Formato}"
+                                           FontSize="{StaticResource FontSize.Caption}"
+                                           Foreground="{DynamicResource Brush.TextSecondary}"
+                                           Margin="0,0,8,0"/>
+                                <TextBlock Text="Rev."
+                                           FontSize="{StaticResource FontSize.Caption}"
+                                           Foreground="{DynamicResource Brush.TextSecondary}"
+                                           Margin="0,0,2,0"/>
+                                <TextBlock Text="{Binding Piastra.Disegno.Revisione}"
+                                           FontSize="{StaticResource FontSize.Caption}"
+                                           Foreground="{DynamicResource Brush.TextSecondary}"
+                                           Margin="0,0,8,0"/>
+                                <TextBlock Text="{Binding Piastra.Disegno.Stato}"
+                                           FontSize="{StaticResource FontSize.Caption}"
+                                           Foreground="{DynamicResource Brush.TextSecondary}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <TextBlock Text="Nessun disegno associato"
+                           Foreground="{DynamicResource Brush.TextDisabled}"
+                           FontSize="{StaticResource FontSize.Caption}"
+                           Margin="0,0,0,8"
+                           Visibility="{Binding IsDisegnoAssente, Converter={StaticResource BoolToVis}}"/>
+
+                <!-- Errore apertura file -->
+                <Border Background="{DynamicResource Brush.ErrorSurface}"
+                        BorderBrush="{DynamicResource Brush.Error}"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource Radius.S}"
+                        Padding="10,8" Margin="0,0,0,8"
+                        Visibility="{Binding IsErroreDisegnoVisible, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="{Binding ErroreDisegno}"
+                               TextWrapping="Wrap"
+                               FontSize="{StaticResource FontSize.Caption}"
+                               Foreground="{DynamicResource Brush.Error}"/>
+                </Border>
+
+                <!-- Anteprima disegno DWG -->
+                <Border Visibility="{Binding IsDisegnoPresente, Converter={StaticResource BoolToVis}}"
+                        Background="{DynamicResource Brush.SurfaceVariant}"
+                        BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource Radius.S}"
+                        MaxHeight="220" MinHeight="64">
+                    <Grid>
+                        <Image Source="{Binding AnteprimaDisegno}"
+                               Stretch="Uniform"
+                               RenderOptions.BitmapScalingMode="HighQuality"
+                               Margin="4"
+                               Visibility="{Binding IsAnteprimaVisible, Converter={StaticResource BoolToVis}}"/>
+                        <TextBlock Text="Caricamento anteprima..."
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   FontSize="{StaticResource FontSize.Caption}"
+                                   Opacity="0.5"
+                                   Visibility="{Binding IsCaricamentoAnteprima, Converter={StaticResource BoolToVis}}"/>
+                        <TextBlock Text="Anteprima non disponibile"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   FontSize="{StaticResource FontSize.Caption}"
+                                   Opacity="0.5"
+                                   Visibility="{Binding IsNoAnteprima, Converter={StaticResource BoolToVis}}"/>
+                    </Grid>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

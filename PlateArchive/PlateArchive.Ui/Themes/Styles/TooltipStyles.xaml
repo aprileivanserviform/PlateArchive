@@ -1,0 +1,47 @@
+﻿<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Dipendenze self-contained: token Base necessari per {StaticResource ...} -->
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Base/Spacing.xaml"/>
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Base/CornerRadius.xaml"/>
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Base/Typography.xaml"/>
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Base/Elevation.xaml"/>
+    </ResourceDictionary.MergedDictionaries>
+
+
+    <!-- ══════════════════════════════════════════════════
+         TOOLTIP — dark-on-dark e light-on-light friendly
+    ══════════════════════════════════════════════════ -->
+    <Style TargetType="ToolTip">
+        <Setter Property="Background"          Value="{DynamicResource Brush.SurfaceVariant}"/>
+        <Setter Property="Foreground"          Value="{DynamicResource Brush.TextPrimary}"/>
+        <Setter Property="BorderBrush"         Value="{DynamicResource Brush.Border}"/>
+        <Setter Property="BorderThickness"     Value="1"/>
+        <Setter Property="Padding"             Value="10,6"/>
+        <Setter Property="FontFamily"          Value="{StaticResource FontFamily.Base}"/>
+        <Setter Property="FontSize"            Value="{StaticResource FontSize.Caption}"/>
+        <Setter Property="HasDropShadow"       Value="True"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="UseLayoutRounding"   Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToolTip">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{StaticResource Radius.S}"
+                            Padding="{TemplateBinding Padding}"
+                            Effect="{StaticResource Elevation.Shadow.S}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter TextElement.FontFamily="{TemplateBinding FontFamily}"
+                                          TextElement.FontSize="{TemplateBinding FontSize}"
+                                          TextElement.Foreground="{TemplateBinding Foreground}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

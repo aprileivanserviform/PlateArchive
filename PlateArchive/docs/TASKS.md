@@ -1027,6 +1027,54 @@ else
 
 ---
 
+## TASK-14 — Miglioramenti UI (branch feat/ui-improvements)
+
+### T-14.1 — Fix PiastreView: header e colonne
+**Stato:** `[x]` Completato
+
+- Titolo "Piastre" e pulsante "+ Nuova piastra" sulla stessa riga (DockPanel con Margin)
+- Filtri (ricerca + Categoria + Formato + Stato) spostati in seconda riga sotto il titolo
+- Rimossa colonna "Art. Gestionale" dalla DataGrid (rimane nel pannello dettaglio)
+- Larghezza colonna "Categoria": 75 → 95 (evita "Categori/a")
+- Larghezza colonna "Formato": 65 → 80 (evita "Format/o")
+- Larghezza colonna "Categoria ComboBox filtro": 100 → 110 per coerenza
+
+### T-14.2 — Vista Formati Macchina (nuova)
+**Stato:** `[x]` Completato
+
+- `FormatiMacchinaViewModel` con CRUD: nuovo, modifica, elimina logica con check associazioni
+- `FormatiMacchinaView.xaml`: lista tabellare a sinistra, form a destra
+- Validazione duplicati in-memory con messaggio errore inline
+- Soft-delete via `EliminaLogicamenteAsync`; blocco se la lookup è usata da macchine/piastre
+
+### T-14.3 — Sezione "Impostazioni" espandibile nella sidebar
+**Stato:** `[x]` Completato
+
+- Pulsante toggle "▸/▾ Impostazioni" dopo "Disegni" in `MainWindow.xaml`
+- `IsImpostazioniExpanded` + `ImpostazioniArrow` in `MainWindowViewModel`
+- `ToggleImpostazioniCommand` e `NavigateToFormatiMacchinaCommand` aggiunti
+- StackPanel con "Formati macchina" visibile quando espanso (rientrato di 10 px)
+
+### T-14.4 — MacchineView: associazione bidirezionale piastre
+**Stato:** `[x]` Completato
+
+- `IPiastraRepository` iniettato in `MacchineViewModel`
+- Proprietà: `PiastreDisponibili`, `PiastraCompatibileDaAggiungere`, `IsAggiungiPiastraVisible`
+- Comandi: `AggiungiPiastraCommand`, `ConfermaAggiungiPiastraCommand`, `AnnullaAggiungiPiastraCommand`, `RimuoviCompatibilitaCommand`
+- Filtro piastre disponibili per formato macchina (se impostato) con esclusione già-compatibili
+- Pannello dettaglio MacchineView convertito da DockPanel → ScrollViewer + StackPanel
+- Pulsante "+ Aggiungi" accanto al titolo "Piastre compatibili"
+- Panel inline (stile Card.Accent) per selezione piastra, con ItemTemplate CodicePiastra + Descrizione
+- Colonna "Rimuovi" nella DataGrid piastre compatibili
+
+### T-14.5 — DI e wiring App
+**Stato:** `[x]` Completato
+
+- `services.AddTransient<FormatiMacchinaViewModel>()` in `App.xaml.cs`
+- DataTemplate `FormatiMacchinaViewModel → FormatiMacchinaView` in `App.xaml`
+
+---
+
 ## Evolutivi futuri (fuori scope MVP)
 
 | Funzione | Riferimento |

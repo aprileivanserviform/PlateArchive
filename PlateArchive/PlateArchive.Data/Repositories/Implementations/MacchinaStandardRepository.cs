@@ -4,30 +4,52 @@ using PlateArchive.Data.Repositories.Interfaces;
 
 namespace PlateArchive.Data.Repositories.Implementations;
 
+/// <summary>
+/// Repository per la tabella MacchineStandard (catalogo modelli, non unità fisiche).
+/// Nota: MacchinaStandard non ha soft-delete — usa il flag Attiva per disabilitare un modello
+/// senza eliminarlo (le unità cliente esistenti rimangono referenziate).
+/// </summary>
 public class MacchinaStandardRepository(PlateArchiveDbContext db) : IMacchinaStandardRepository
 {
     public async Task<MacchinaStandard?> GetByIdAsync(int id) =>
-        await db.MacchineStandard.FindAsync(id);
+        await db.MacchineStandard
+            .Include(m => m.Formato)
+            .Include(m => m.Produttore)
+            .FirstOrDefaultAsync(m => m.IdMacchinaStandard == id);
 
     public async Task<IEnumerable<MacchinaStandard>> GetAllAsync() =>
-        await db.MacchineStandard.OrderBy(m => m.NomeMacchina).ToListAsync();
+        await db.MacchineStandard
+            .Include(m => m.Formato)
+            .Include(m => m.Produttore)
+            .OrderBy(m => m.NomeMacchina)
+            .ToListAsync();
 
     public async Task<MacchinaStandard?> GetByCodiceMacchinaAsync(string codice) =>
-        await db.MacchineStandard.FirstOrDefaultAsync(m => m.CodiceMacchina == codice);
+        await db.MacchineStandard
+            .Include(m => m.Formato)
+            .Include(m => m.Produttore)
+            .FirstOrDefaultAsync(m => m.CodiceMacchina == codice);
 
     public async Task<IEnumerable<MacchinaStandard>> SearchAsync(string query)
     {
         var q = query.ToLower();
         return await db.MacchineStandard
+            .Include(m => m.Formato)
+            .Include(m => m.Produttore)
             .Where(m => m.NomeMacchina.ToLower().Contains(q)
                      || m.CodiceMacchina.ToLower().Contains(q)
-                     || (m.Famiglia != null && m.Famiglia.ToLower().Contains(q)))
+                     || (m.Formato != null && m.Formato.NomeFormato.ToLower().Contains(q)))
             .OrderBy(m => m.NomeMacchina)
             .ToListAsync();
     }
 
     public async Task<IEnumerable<MacchinaStandard>> GetAttiveAsync() =>
-        await db.MacchineStandard.Where(m => m.Attiva).OrderBy(m => m.NomeMacchina).ToListAsync();
+        await db.MacchineStandard
+            .Include(m => m.Formato)
+            .Include(m => m.Produttore)
+            .Where(m => m.Attiva)
+            .OrderBy(m => m.NomeMacchina)
+            .ToListAsync();
 
     public async Task AddAsync(MacchinaStandard entity)
     {
@@ -43,7 +65,7 @@ public class MacchinaStandardRepository(PlateArchiveDbContext db) : IMacchinaSta
 
     public async Task DeleteAsync(int id)
     {
-        var entity = await GetByIdAsync(id);
+        var entity = await db.MacchineStandard.FindAsync(id);
         if (entity is not null)
         {
             db.MacchineStandard.Remove(entity);

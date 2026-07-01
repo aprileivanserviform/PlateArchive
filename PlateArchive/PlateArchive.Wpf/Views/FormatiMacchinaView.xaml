@@ -1,0 +1,145 @@
+<UserControl x:Class="PlateArchive.Wpf.Views.FormatiMacchinaView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:b="clr-namespace:PlateArchive.Wpf.Behaviors">
+    <!--
+    FormatiMacchinaView — gestione CRUD dei formati macchina (sezione Impostazioni).
+    Layout: Header | Grid orizzontale:
+      - Sinistra: DataGrid lista formati + pulsante "Nuovo formato"
+      - Destra: pannello azioni (IsDetailVisible) OPPURE form (IsFormVisible)
+
+    Il formato è il criterio principale di compatibilità: una piastra e una macchina
+    con lo stesso IdFormato sono compatibili tra loro.
+    -->
+
+    <DockPanel Background="{DynamicResource Brush.Background}">
+
+        <!-- ── Header ─────────────────────────────────────────── -->
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource Brush.Surface}"
+                Padding="24,14"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,0,0,1">
+            <DockPanel>
+                <Button DockPanel.Dock="Right"
+                        Content="+ Nuovo formato"
+                        Command="{Binding NuovoCommand}"/>
+                <TextBlock Text="Formati Macchina"
+                           Style="{StaticResource TextBlock.Title}"
+                           VerticalAlignment="Center"/>
+            </DockPanel>
+        </Border>
+
+        <!-- ── Body ───────────────────────────────────────────── -->
+        <Grid Margin="24,20,24,24">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="320"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Lista formati -->
+            <Border Grid.Column="0"
+                    Background="{DynamicResource Brush.Surface}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="1">
+                <DataGrid b:DataGridColumnLayout.Chiave="Formati.Lista"
+                          ItemsSource="{Binding Formati}"
+                          SelectedItem="{Binding FormatoSelezionato, Mode=TwoWay}"
+                          CanUserAddRows="False" IsReadOnly="True"
+                          RowHeight="36">
+                    <DataGrid.RowStyle>
+                        <Style TargetType="DataGridRow" BasedOn="{StaticResource DataGridRow.Base}">
+                            <Setter Property="Cursor" Value="Hand"/>
+                        </Style>
+                    </DataGrid.RowStyle>
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Formato"
+                                           Binding="{Binding NomeFormato}"
+                                           Width="160"/>
+                        <DataGridTextColumn Header="Note"
+                                           Binding="{Binding Note}"
+                                           Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+
+            <!-- Pannello destra -->
+            <Grid Grid.Column="2">
+
+                <!-- Azioni su formato selezionato (visibile quando non si sta modificando) -->
+                <Border Visibility="{Binding IsDetailVisible, Converter={StaticResource BoolToVis}}"
+                        Background="{DynamicResource Brush.Surface}"
+                        BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource Radius.M}"
+                        Padding="20" VerticalAlignment="Top">
+                    <StackPanel>
+                        <TextBlock Text="{Binding FormatoSelezionato.NomeFormato}"
+                                   Style="{StaticResource TextBlock.Subtitle}"
+                                   Margin="0,0,0,6"/>
+                        <TextBlock Text="{Binding FormatoSelezionato.Note}"
+                                   Style="{StaticResource TextBlock.Caption}"
+                                   Margin="0,0,0,20"
+                                   TextWrapping="Wrap"/>
+                        <Button Content="Modifica"
+                                Command="{Binding ModificaCommand}"
+                                Style="{StaticResource Button.Secondary}"
+                                HorizontalAlignment="Stretch"
+                                Margin="0,0,0,8"/>
+                        <Button Content="Elimina"
+                                Command="{Binding EliminaCommand}"
+                                Style="{StaticResource DangerBtn}"
+                                HorizontalAlignment="Stretch"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Form creazione/modifica -->
+                <Border Visibility="{Binding IsFormVisible, Converter={StaticResource BoolToVis}}"
+                        Background="{DynamicResource Brush.Surface}"
+                        BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource Radius.M}"
+                        Padding="20" VerticalAlignment="Top">
+                    <StackPanel>
+                        <TextBlock Text="{Binding FormTitolo}"
+                                   Style="{StaticResource TextBlock.Subtitle}"
+                                   Margin="0,0,0,16"/>
+
+                        <!-- Errore duplicato -->
+                        <Border Background="{DynamicResource Brush.ErrorSurface}"
+                                BorderBrush="{DynamicResource Brush.Error}"
+                                BorderThickness="1"
+                                CornerRadius="{StaticResource Radius.S}"
+                                Padding="10,8" Margin="0,0,0,12"
+                                Visibility="{Binding IsErroreVisible, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="{Binding Errore}"
+                                       TextWrapping="Wrap"
+                                       FontSize="{StaticResource FontSize.Caption}"
+                                       Foreground="{DynamicResource Brush.Error}"/>
+                        </Border>
+
+                        <TextBlock Text="Nome formato *" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FormNome, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource FieldBox}"/>
+
+                        <TextBlock Text="Note" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FormNote, UpdateSourceTrigger=PropertyChanged}"
+                                 Style="{StaticResource FieldBox}"
+                                 AcceptsReturn="True" Height="60"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <Button Content="Salva"
+                                    Command="{Binding SalvaCommand}"
+                                    Margin="0,0,10,0"/>
+                            <Button Content="Annulla"
+                                    Command="{Binding AnnullaCommand}"
+                                    Style="{StaticResource Button.Secondary}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+            </Grid>
+        </Grid>
+    </DockPanel>
+</UserControl>

@@ -4,6 +4,11 @@ using PlateArchive.Data.Repositories.Interfaces;
 
 namespace PlateArchive.Data.Repositories.Implementations;
 
+/// <summary>
+/// Repository per la tabella N:N PiastreMacchineCompatibili.
+/// Le query filtrano per Attiva = true: una compatibilità sospesa (Attiva = false)
+/// non viene restituita ma il record rimane nel DB per storico.
+/// </summary>
 public class CompatibilitaRepository(PlateArchiveDbContext db) : ICompatibilitaRepository
 {
     public async Task<PiastraMacchinaCompatibile?> GetByIdAsync(int id) =>
@@ -15,12 +20,14 @@ public class CompatibilitaRepository(PlateArchiveDbContext db) : ICompatibilitaR
             .Include(x => x.MacchinaStandard)
             .ToListAsync();
 
+    // Restituisce solo le compatibilità attive — usato nel pannello dettaglio di PiastreViewModel.
     public async Task<IEnumerable<PiastraMacchinaCompatibile>> GetByPiastraAsync(int idPiastra) =>
         await db.PiastreMacchineCompatibili
             .Include(x => x.MacchinaStandard)
             .Where(x => x.IdPiastra == idPiastra && x.Attiva)
             .ToListAsync();
 
+    // Restituisce solo le compatibilità attive — usato nel pannello dettaglio di MacchineViewModel.
     public async Task<IEnumerable<PiastraMacchinaCompatibile>> GetByMacchinaAsync(int idMacchinaStandard) =>
         await db.PiastreMacchineCompatibili
             .Include(x => x.Piastra)

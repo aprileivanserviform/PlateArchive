@@ -1,135 +1,102 @@
 <UserControl x:Class="PlateArchive.Wpf.Views.ClienteDettaglioView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:b="clr-namespace:PlateArchive.Wpf.Behaviors">
+    <!--
+    ClienteDettaglioView — schermata dettaglio di un singolo cliente.
+    Layout: Header (torna indietro + nome cliente) | corpo a tre sezioni:
+      1. Macchine possedute (DataGrid + form inline aggiungi macchina)
+      2. Piastre associate (DataGrid + form inline aggiungi piastra, filtro storico)
+      3. Compatibilità (tabella riepilogativa macchine × piastre, sola lettura)
 
-    <UserControl.Resources>
-        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    PiastraOpzione: wrapper record che aggiunge IsCompatibile → badge colorato nel ComboBox.
+    MostraStoriche: toggle che include/esclude le piastre con stato Obsoleta.
+    -->
 
-        <Style x:Key="LabelStyle" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#757575"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Margin" Value="0,0,0,2"/>
-        </Style>
+    <DockPanel Background="{DynamicResource Brush.Background}">
 
-        <Style x:Key="ValueStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Margin" Value="0,0,0,14"/>
-            <Setter Property="Foreground" Value="#212121"/>
-        </Style>
-
-        <Style x:Key="SmallButtonStyle" TargetType="Button">
-            <Setter Property="Padding" Value="10,5"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="BorderBrush" Value="#BDBDBD"/>
-        </Style>
-
-        <Style x:Key="PrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource SmallButtonStyle}">
-            <Setter Property="Background" Value="#1E2A3B"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#263340"/>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Background" Value="#BDBDBD"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-    </UserControl.Resources>
-
-    <DockPanel Background="#F0F2F5">
-
-        <!-- Header: torna + nome cliente -->
-        <Border DockPanel.Dock="Top" Background="White" Padding="16,12"
-                BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+        <!-- ── Header ─────────────────────────────────────────── -->
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource Brush.Surface}"
+                Padding="24,14"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,0,0,1">
             <DockPanel>
                 <Button DockPanel.Dock="Left"
                         Content="← Clienti"
                         Command="{Binding TornaIndietroCommand}"
-                        Style="{StaticResource SmallButtonStyle}"
+                        Style="{StaticResource Button.Secondary}"
                         Margin="0,0,16,0"/>
                 <TextBlock VerticalAlignment="Center"
-                           FontSize="16" FontWeight="SemiBold" Foreground="#212121">
+                           Style="{StaticResource TextBlock.BodyLarge}"
+                           FontWeight="{StaticResource FontWeight.SemiBold}">
                     <Run Text="{Binding Cliente.RagioneSociale, FallbackValue='Caricamento…'}"/>
                     <Run Text="  "/>
-                    <Run Text="{Binding Cliente.CodiceClienteGestionale}" Foreground="#757575" FontWeight="Normal" FontSize="13"/>
+                    <Run Text="{Binding Cliente.CodiceClienteGestionale}"
+                         Foreground="{DynamicResource Brush.TextSecondary}"
+                         FontWeight="Normal"/>
                 </TextBlock>
             </DockPanel>
         </Border>
 
-        <!-- Tab content -->
-        <TabControl Background="Transparent" BorderThickness="0" Margin="24,20,24,24">
+        <!-- ── Tab content ────────────────────────────────────── -->
+        <TabControl Style="{StaticResource TabControl.Base}" Margin="24,20,24,24">
 
             <!-- Tab 1: Anagrafica -->
-            <TabItem Header="Anagrafica">
+            <TabItem Header="Anagrafica" Style="{StaticResource TabItem.Base}">
                 <ScrollViewer Margin="0,16,0,0" VerticalScrollBarVisibility="Auto">
-                    <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1" Padding="24">
+                    <Border Background="{DynamicResource Brush.Surface}"
+                            BorderBrush="{DynamicResource Brush.Border}"
+                            BorderThickness="1"
+                            CornerRadius="{StaticResource Radius.M}"
+                            Padding="24">
                         <StackPanel MaxWidth="500" HorizontalAlignment="Left">
-                            <TextBlock Text="Dati in sola lettura (fonte DB2)" FontSize="11"
-                                       Foreground="#9E9E9E" Margin="0,0,0,20"/>
+                            <TextBlock Text="Dati in sola lettura (fonte DB2)"
+                                       Style="{StaticResource TextBlock.Caption}"
+                                       Foreground="{DynamicResource Brush.TextDisabled}"
+                                       Margin="0,0,0,20"/>
 
-                            <TextBlock Text="Ragione Sociale" Style="{StaticResource LabelStyle}"/>
-                            <TextBlock Text="{Binding Cliente.RagioneSociale}" Style="{StaticResource ValueStyle}"/>
+                            <TextBlock Text="Ragione Sociale" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Text="{Binding Cliente.RagioneSociale}"
+                                       Style="{StaticResource TextBlock.Body}"
+                                       Margin="0,0,0,14"/>
 
-                            <TextBlock Text="Codice Gestionale" Style="{StaticResource LabelStyle}"/>
-                            <TextBlock Text="{Binding Cliente.CodiceClienteGestionale}" Style="{StaticResource ValueStyle}"/>
+                            <TextBlock Text="Codice Gestionale" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Text="{Binding Cliente.CodiceClienteGestionale}"
+                                       Style="{StaticResource TextBlock.Body}"
+                                       Margin="0,0,0,14"/>
 
-                            <TextBlock Text="Partita IVA" Style="{StaticResource LabelStyle}"/>
-                            <TextBlock Text="{Binding Cliente.PartitaIVA, FallbackValue='—'}" Style="{StaticResource ValueStyle}"/>
-
-                            <TextBlock Text="Codice Fiscale" Style="{StaticResource LabelStyle}"/>
-                            <TextBlock Text="{Binding Cliente.CodiceFiscale, FallbackValue='—'}" Style="{StaticResource ValueStyle}"/>
-
-                            <TextBlock Text="Stato" Style="{StaticResource LabelStyle}"/>
-                            <TextBlock Text="{Binding Cliente.StatoCliente}" Style="{StaticResource ValueStyle}"/>
-
-                            <TextBlock Text="Ultima sincronizzazione" Style="{StaticResource LabelStyle}"/>
-                            <TextBlock Style="{StaticResource ValueStyle}">
-                                <TextBlock.Text>
-                                    <Binding Path="Cliente.DataUltimaSincronizzazione"
-                                             StringFormat="dd/MM/yyyy HH:mm"
-                                             FallbackValue="Mai sincronizzato"/>
-                                </TextBlock.Text>
-                            </TextBlock>
                         </StackPanel>
                     </Border>
                 </ScrollViewer>
             </TabItem>
 
             <!-- Tab 2: Macchine -->
-            <TabItem Header="Macchine">
+            <TabItem Header="Macchine" Style="{StaticResource TabItem.Base}">
                 <DockPanel Margin="0,16,0,0">
 
                     <!-- Toolbar -->
-                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12" LastChildFill="False">
                         <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center"
-                                   FontSize="13" FontWeight="SemiBold" Foreground="#424242"
+                                   Style="{StaticResource TextBlock.Subtitle}"
                                    Text="Macchine associate"/>
                         <Button DockPanel.Dock="Right"
                                 Content="+ Aggiungi"
-                                Command="{Binding AggiungiMacchinaCommand}"
-                                Style="{StaticResource PrimaryButtonStyle}"/>
+                                Command="{Binding AggiungiMacchinaCommand}"/>
                     </DockPanel>
 
                     <!-- Form aggiungi macchina (inline, collassabile) -->
                     <Border DockPanel.Dock="Top"
                             Visibility="{Binding IsAggiungiMacchinaVisible, Converter={StaticResource BoolToVis}}"
-                            Background="White" BorderBrush="#90CAF9" BorderThickness="1"
+                            Background="{DynamicResource Brush.InfoSurface}"
+                            BorderBrush="{DynamicResource Brush.Info}"
+                            BorderThickness="1"
+                            CornerRadius="{StaticResource Radius.S}"
                             Padding="16" Margin="0,0,0,12">
                         <StackPanel>
                             <TextBlock Text="Nuova associazione macchina"
-                                       FontWeight="SemiBold" Margin="0,0,0,12"/>
+                                       Style="{StaticResource TextBlock.Subtitle}"
+                                       Margin="0,0,0,12"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -140,39 +107,48 @@
                                 </Grid.ColumnDefinitions>
 
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Macchina *" FontSize="11" Foreground="#757575" Margin="0,0,0,4"/>
+                                    <TextBlock Text="Macchina *" Style="{StaticResource FieldLabel}"/>
                                     <ComboBox ItemsSource="{Binding MacchineDisponibili}"
                                               SelectedItem="{Binding MacchinaSelezionata}"
-                                              DisplayMemberPath="NomeMacchina"
-                                              Padding="8,6"/>
+                                              DisplayMemberPath="NomeMacchina"/>
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Matricola" FontSize="11" Foreground="#757575" Margin="0,0,0,4"/>
-                                    <TextBox Text="{Binding MatricolaNuova, UpdateSourceTrigger=PropertyChanged}"
-                                             Padding="8,6" BorderBrush="#BDBDBD"/>
+                                    <TextBlock Text="Matricola" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox Text="{Binding MatricolaNuova, UpdateSourceTrigger=PropertyChanged}"/>
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Bottom">
                                     <Button Content="Salva"
                                             Command="{Binding ConfermaAggiungiMacchinaCommand}"
-                                            Style="{StaticResource PrimaryButtonStyle}"
                                             Margin="0,0,8,0"/>
                                     <Button Content="Annulla"
                                             Command="{Binding AnnullaAggiungiMacchinaCommand}"
-                                            Style="{StaticResource SmallButtonStyle}"/>
+                                            Style="{StaticResource Button.Secondary}"/>
                                 </StackPanel>
                             </Grid>
                         </StackPanel>
                     </Border>
 
                     <!-- Lista macchine -->
-                    <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1">
-                        <DataGrid ItemsSource="{Binding Macchine}"
+                    <Border Background="{DynamicResource Brush.Surface}"
+                            BorderBrush="{DynamicResource Brush.Border}"
+                            BorderThickness="1">
+                        <DataGrid b:DataGridColumnLayout.Chiave="ClienteDettaglio.Macchine"
+                                  ItemsSource="{Binding Macchine}"
                                   AutoGenerateColumns="False" CanUserAddRows="False"
                                   IsReadOnly="True" HeadersVisibility="Column"
-                                  Background="White" AlternatingRowBackground="#FAFAFA"
                                   BorderThickness="0" RowHeight="36" ColumnHeaderHeight="34">
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow" BasedOn="{StaticResource DataGridRow.Base}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Attiva}" Value="False">
+                                            <Setter Property="Foreground" Value="{DynamicResource Brush.TextDisabled}"/>
+                                            <Setter Property="FontStyle" Value="Italic"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.RowStyle>
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Macchina"
                                                    Binding="{Binding MacchinaStandard.NomeMacchina}"
@@ -183,18 +159,89 @@
                                 <DataGridTextColumn Header="Codice interno"
                                                    Binding="{Binding CodiceInternoCliente}"
                                                    Width="130"/>
-                                <DataGridCheckBoxColumn Header="Att."
-                                                       Binding="{Binding Attiva}"
-                                                       Width="50"/>
-                                <DataGridTemplateColumn Header="" Width="60">
+                                <DataGridTemplateColumn Header="Stato" Width="90">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <Button Content="Rimuovi" FontSize="11" Padding="6,3"
-                                                    Foreground="#D32F2F" BorderBrush="#FFCDD2"
-                                                    Cursor="Hand"
-                                                    Command="{Binding DataContext.RimuoviMacchinaCommand,
-                                                              RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                    CommandParameter="{Binding}"/>
+                                            <Border Padding="5,2" CornerRadius="3"
+                                                    HorizontalAlignment="Left" Margin="4,0"
+                                                    VerticalAlignment="Center">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="{DynamicResource Brush.SuccessSurface}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Attiva}" Value="False">
+                                                                <Setter Property="Background" Value="{DynamicResource Brush.SurfaceVariant}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock FontSize="11" FontWeight="SemiBold" FontStyle="Normal">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="Attiva"/>
+                                                            <Setter Property="Foreground" Value="{DynamicResource Brush.Success}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Attiva}" Value="False">
+                                                                    <Setter Property="Text" Value="Inattiva"/>
+                                                                    <Setter Property="Foreground" Value="{DynamicResource Brush.TextDisabled}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="" Width="88">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+
+                                                <!-- Disattiva / Riattiva -->
+                                                <Button Command="{Binding DataContext.ToggleAttivaCommand,
+                                                                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                        CommandParameter="{Binding}">
+                                                    <Button.Style>
+                                                        <Style TargetType="Button" BasedOn="{StaticResource Button.Icon}">
+                                                            <Setter Property="ToolTip" Value="Disattiva"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Attiva}" Value="False">
+                                                                    <Setter Property="ToolTip" Value="Riattiva"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" FontWeight="Normal">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <!-- &#xE7B8; = Package (disattiva) -->
+                                                                <Setter Property="Text" Value="&#xE7B8;"/>
+                                                                <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Attiva}" Value="False">
+                                                                        <!-- &#xE777; = Ripristina (riattiva) -->
+                                                                        <Setter Property="Text" Value="&#xE777;"/>
+                                                                        <Setter Property="Foreground" Value="{DynamicResource Brush.Success}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Button>
+
+                                                <!-- Rimuovi -->
+                                                <Button Style="{StaticResource Button.IconDanger}"
+                                                        ToolTip="Rimuovi associazione"
+                                                        Command="{Binding DataContext.RimuoviMacchinaCommand,
+                                                                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                        CommandParameter="{Binding}">
+                                                    <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"
+                                                               FontWeight="Normal"
+                                                               Foreground="{DynamicResource Brush.Error}"/>
+                                                </Button>
+
+                                            </StackPanel>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
@@ -206,25 +253,141 @@
             </TabItem>
 
             <!-- Tab 3: Piastre -->
-            <TabItem Header="Piastre">
+            <TabItem Header="Piastre" Style="{StaticResource TabItem.Base}">
                 <DockPanel Margin="0,16,0,0">
 
                     <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
                         <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center"
-                                   FontSize="13" FontWeight="SemiBold" Foreground="#424242"
+                                   Style="{StaticResource TextBlock.Subtitle}"
                                    Text="Piastre associate"/>
                         <Button DockPanel.Dock="Right"
-                                Content="+ Aggiungi" IsEnabled="False"
-                                Style="{StaticResource PrimaryButtonStyle}"
-                                ToolTip="Disponibile in TASK-10"/>
+                                Content="+ Aggiungi"
+                                Command="{Binding AggiungiPiastraCommand}"/>
+                        <CheckBox DockPanel.Dock="Left"
+                                  Content="Mostra storiche"
+                                  IsChecked="{Binding MostraStoriche}"
+                                  VerticalAlignment="Center"
+                                  Margin="16,0,0,0"
+                                  Foreground="{DynamicResource Brush.TextSecondary}"/>
                     </DockPanel>
 
-                    <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1">
-                        <DataGrid ItemsSource="{Binding Piastre}"
+                    <!-- Form aggiungi piastra (inline, collassabile) -->
+                    <Border DockPanel.Dock="Top"
+                            Visibility="{Binding IsAggiungiPiastraVisible, Converter={StaticResource BoolToVis}}"
+                            Background="{DynamicResource Brush.InfoSurface}"
+                            BorderBrush="{DynamicResource Brush.Info}"
+                            BorderThickness="1"
+                            CornerRadius="{StaticResource Radius.S}"
+                            Padding="16" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Nuova associazione piastra"
+                                       Style="{StaticResource TextBlock.Subtitle}"
+                                       Margin="0,0,0,12"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Selezione piastra -->
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Piastra *" Style="{StaticResource FieldLabel}"/>
+                                    <ComboBox ItemsSource="{Binding PiastreDisponibili}"
+                                              SelectedItem="{Binding PiastraSelezionata}">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <DockPanel>
+                                                    <Border DockPanel.Dock="Left"
+                                                            Background="{DynamicResource Brush.Success}"
+                                                            CornerRadius="2"
+                                                            Padding="5,1" Margin="0,0,7,0"
+                                                            Visibility="{Binding IsCompatibile, Converter={StaticResource BoolToVis}}"
+                                                            VerticalAlignment="Center">
+                                                        <TextBlock Text="✓ compatibile"
+                                                                   FontSize="9" FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource Brush.OnPrimary}"/>
+                                                    </Border>
+                                                    <TextBlock VerticalAlignment="Center">
+                                                        <Run Text="{Binding Piastra.CodicePiastra}" FontWeight="SemiBold"/>
+                                                        <Run Text=" — "/>
+                                                        <Run Text="{Binding Piastra.Descrizione}"/>
+                                                    </TextBlock>
+                                                </DockPanel>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </StackPanel>
+
+                                <!-- Macchina cliente (opzionale) -->
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Macchina cliente (opzionale)" Style="{StaticResource FieldLabel}"/>
+                                    <ComboBox ItemsSource="{Binding Macchine}"
+                                              SelectedItem="{Binding MacchinaPerPiastra}"
+                                              DisplayMemberPath="MacchinaStandard.NomeMacchina"/>
+                                </StackPanel>
+
+                                <!-- Bottoni azione -->
+                                <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Bottom">
+                                    <Button Content="Salva"
+                                            Command="{Binding ConfermaAggiungiPiastraCommand}"
+                                            Margin="0,0,8,0"/>
+                                    <Button Content="Annulla"
+                                            Command="{Binding AnnullaAggiungiPiastraCommand}"
+                                            Style="{StaticResource Button.Secondary}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Errore piastra già associata -->
+                            <Border Background="{DynamicResource Brush.ErrorSurface}"
+                                    BorderBrush="{DynamicResource Brush.Error}"
+                                    BorderThickness="1"
+                                    CornerRadius="{StaticResource Radius.S}"
+                                    Padding="10,7" Margin="0,10,0,0"
+                                    Visibility="{Binding IsErrorePiastraVisible, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="{Binding ErrorePiastraEsistente}"
+                                           FontSize="{StaticResource FontSize.Caption}"
+                                           Foreground="{DynamicResource Brush.Error}"/>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Errore apertura file disegno -->
+                    <Border DockPanel.Dock="Top"
+                            Background="{DynamicResource Brush.ErrorSurface}"
+                            BorderBrush="{DynamicResource Brush.Error}"
+                            BorderThickness="1"
+                            CornerRadius="{StaticResource Radius.S}"
+                            Padding="10,7" Margin="0,0,0,8"
+                            Visibility="{Binding IsErroreDisegnoVisible, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="{Binding ErroreDisegno}"
+                                   FontSize="{StaticResource FontSize.Caption}"
+                                   Foreground="{DynamicResource Brush.Error}"
+                                   TextWrapping="Wrap"/>
+                    </Border>
+
+                    <Border Background="{DynamicResource Brush.Surface}"
+                            BorderBrush="{DynamicResource Brush.Border}"
+                            BorderThickness="1">
+                        <DataGrid b:DataGridColumnLayout.Chiave="ClienteDettaglio.Piastre"
+                                  ItemsSource="{Binding Piastre}"
                                   AutoGenerateColumns="False" CanUserAddRows="False"
                                   IsReadOnly="True" HeadersVisibility="Column"
-                                  Background="White" AlternatingRowBackground="#FAFAFA"
                                   BorderThickness="0" RowHeight="36" ColumnHeaderHeight="34">
+                            <DataGrid.RowStyle>
+                                <Style TargetType="DataGridRow" BasedOn="{StaticResource DataGridRow.Base}">
+                                    <EventSetter Event="MouseDoubleClick" Handler="RigaPiastra_MouseDoubleClick"/>
+                                    <Setter Property="Cursor" Value="Hand"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Stato}" Value="Obsoleta">
+                                            <Setter Property="Foreground" Value="{DynamicResource Brush.TextDisabled}"/>
+                                            <Setter Property="FontStyle" Value="Italic"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.RowStyle>
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Codice Piastra"
                                                    Binding="{Binding Piastra.CodicePiastra}"
@@ -235,24 +398,122 @@
                                 <DataGridTextColumn Header="Macchina"
                                                    Binding="{Binding ClienteMacchina.MacchinaStandard.NomeMacchina}"
                                                    Width="160"/>
-                                <DataGridTextColumn Header="Stato"
-                                                   Binding="{Binding Stato}"
-                                                   Width="100"/>
-                                <DataGridTemplateColumn Header="" Width="120">
+                                <DataGridTemplateColumn Header="Stato" Width="90">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <StackPanel Orientation="Horizontal">
-                                                <Button Content="Apri disegno" FontSize="11" Padding="6,3"
-                                                        Margin="0,0,6,0" Cursor="Hand"
+                                            <Border Padding="5,2" CornerRadius="3"
+                                                    HorizontalAlignment="Left" Margin="4,0"
+                                                    VerticalAlignment="Center">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="{DynamicResource Brush.SuccessSurface}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Stato}" Value="Obsoleta">
+                                                                <Setter Property="Background" Value="{DynamicResource Brush.SurfaceVariant}"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Stato}" Value="Proposta">
+                                                                <Setter Property="Background" Value="{DynamicResource Brush.InfoSurface}"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Stato}" Value="DaVerificare">
+                                                                <Setter Property="Background" Value="{DynamicResource Brush.WarningSurface}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <TextBlock FontSize="11" FontWeight="SemiBold" FontStyle="Normal">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Text" Value="Attiva"/>
+                                                            <Setter Property="Foreground" Value="{DynamicResource Brush.Success}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Stato}" Value="Obsoleta">
+                                                                    <Setter Property="Text" Value="Storica"/>
+                                                                    <Setter Property="Foreground" Value="{DynamicResource Brush.TextDisabled}"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Stato}" Value="Proposta">
+                                                                    <Setter Property="Text" Value="Proposta"/>
+                                                                    <Setter Property="Foreground" Value="{DynamicResource Brush.Info}"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Stato}" Value="DaVerificare">
+                                                                    <Setter Property="Text" Value="Da verif."/>
+                                                                    <Setter Property="Foreground" Value="{DynamicResource Brush.Warning}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="" Width="160">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+
+                                                <!-- Apri caratteristiche (popup) -->
+                                                <Button Style="{StaticResource Button.Icon}"
+                                                        ToolTip="Apri caratteristiche piastra"
+                                                        Click="ApriDettaglioPiastra_Click">
+                                                    <!-- &#xE946; = Info -->
+                                                    <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets"
+                                                               FontWeight="Normal"/>
+                                                </Button>
+
+                                                <!-- Archivia / Riattiva -->
+                                                <Button Command="{Binding DataContext.ToggleStatoPiastraCommand,
+                                                                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                        CommandParameter="{Binding}">
+                                                    <Button.Style>
+                                                        <Style TargetType="Button" BasedOn="{StaticResource Button.Icon}">
+                                                            <Setter Property="ToolTip" Value="Archivia (sposta in storico)"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Stato}" Value="Obsoleta">
+                                                                    <Setter Property="ToolTip" Value="Riattiva"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" FontWeight="Normal">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <!-- &#xE7B8; = Package (archivia) -->
+                                                                <Setter Property="Text" Value="&#xE7B8;"/>
+                                                                <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Stato}" Value="Obsoleta">
+                                                                        <!-- &#xE777; = Ripristina (riattiva) -->
+                                                                        <Setter Property="Text" Value="&#xE777;"/>
+                                                                        <Setter Property="Foreground" Value="{DynamicResource Brush.Success}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Button>
+
+                                                <!-- Apri disegno -->
+                                                <Button Style="{StaticResource Button.Icon}"
+                                                        ToolTip="Apri disegno"
                                                         Command="{Binding DataContext.AprirDisegnoCommand,
                                                                   RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                        CommandParameter="{Binding}"/>
-                                                <Button Content="Rimuovi" FontSize="11" Padding="6,3"
-                                                        Foreground="#D32F2F" BorderBrush="#FFCDD2"
-                                                        Cursor="Hand"
+                                                        CommandParameter="{Binding}">
+                                                    <!-- &#xE78B; = NewWindow -->
+                                                    <TextBlock Text="&#xE78B;" FontFamily="Segoe MDL2 Assets"
+                                                               FontWeight="Normal"/>
+                                                </Button>
+
+                                                <!-- Rimuovi -->
+                                                <Button Style="{StaticResource Button.IconDanger}"
+                                                        ToolTip="Rimuovi associazione"
                                                         Command="{Binding DataContext.RimuoviPiastraCommand,
                                                                   RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                                        CommandParameter="{Binding}"/>
+                                                        CommandParameter="{Binding}">
+                                                    <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"
+                                                               FontWeight="Normal"
+                                                               Foreground="{DynamicResource Brush.Error}"/>
+                                                </Button>
+
                                             </StackPanel>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
@@ -265,17 +526,19 @@
             </TabItem>
 
             <!-- Tab 4: Compatibilità -->
-            <TabItem Header="Compatibilità">
+            <TabItem Header="Compatibilità" Style="{StaticResource TabItem.Base}">
                 <DockPanel Margin="0,16,0,0">
                     <TextBlock DockPanel.Dock="Top"
                                Text="Piastre compatibili con le macchine di questo cliente"
-                               FontSize="13" FontWeight="SemiBold" Foreground="#424242"
+                               Style="{StaticResource TextBlock.Subtitle}"
                                Margin="0,0,0,12"/>
-                    <Border Background="White" BorderBrush="#E0E0E0" BorderThickness="1">
-                        <DataGrid ItemsSource="{Binding Compatibilita}"
+                    <Border Background="{DynamicResource Brush.Surface}"
+                            BorderBrush="{DynamicResource Brush.Border}"
+                            BorderThickness="1">
+                        <DataGrid b:DataGridColumnLayout.Chiave="ClienteDettaglio.Compatibilita"
+                                  ItemsSource="{Binding Compatibilita}"
                                   AutoGenerateColumns="False" CanUserAddRows="False"
                                   IsReadOnly="True" HeadersVisibility="Column"
-                                  Background="White" AlternatingRowBackground="#FAFAFA"
                                   BorderThickness="0" RowHeight="36" ColumnHeaderHeight="34">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Macchina"

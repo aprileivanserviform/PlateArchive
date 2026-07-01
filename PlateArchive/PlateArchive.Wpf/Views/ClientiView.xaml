@@ -1,59 +1,117 @@
 <UserControl x:Class="PlateArchive.Wpf.Views.ClientiView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:b="clr-namespace:PlateArchive.Wpf.Behaviors">
+    <!--
+    ClientiView — lista anagrafica clienti sincronizzati dal gestionale DB2.
+    Layout: Header (titolo + ricerca + sync) | DataGrid clienti
 
-    <DockPanel Background="#F0F2F5">
+    Click su riga → AprirDettaglioCommand → naviga a ClienteDettaglioViewModel.
+    Il pulsante Sincronizza è disabilitato se il servizio DB2 non è configurato (IsDisponibile = false).
+    -->
 
-        <!-- Header: titolo + barra ricerca -->
-        <Border DockPanel.Dock="Top" Background="White" Padding="24,16"
-                BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+    <DockPanel Background="{DynamicResource Brush.Background}">
+
+        <!-- Header: titolo + barra ricerca + sincronizzazione -->
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource Brush.Surface}"
+                Padding="24,16"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,0,0,1">
             <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Text="Clienti"
-                           FontSize="20" FontWeight="SemiBold" Foreground="#212121"
-                           Margin="0,0,0,12"/>
+                <!-- Titolo + bottone Sincronizza sulla stessa riga -->
+                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                    <Button DockPanel.Dock="Right"
+                            Content="{Binding SincronizzaLabel}"
+                            Command="{Binding SincronizzaCommand}"
+                            Style="{StaticResource Button.Primary}"
+                            VerticalAlignment="Center"
+                            IsEnabled="{Binding IsSincronizzando, Converter={StaticResource BoolToVis},
+                                        ConverterParameter=invert}"/>
+                    <TextBlock Text="Clienti"
+                               Style="{StaticResource TextBlock.Title}"
+                               VerticalAlignment="Center"/>
+                </DockPanel>
+
+                <!-- Messaggio esito sincronizzazione -->
+                <Border DockPanel.Dock="Top"
+                        Margin="0,0,0,10" Padding="12,8"
+                        CornerRadius="{StaticResource Radius.S}"
+                        Visibility="{Binding IsEsitoVisible, Converter={StaticResource BoolToVis}}">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding EsitoIsErrore}" Value="True">
+                                    <Setter Property="Background"   Value="{DynamicResource Brush.ErrorSurface}"/>
+                                    <Setter Property="BorderBrush"  Value="{DynamicResource Brush.Error}"/>
+                                    <Setter Property="BorderThickness" Value="1"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding EsitoIsOk}" Value="True">
+                                    <Setter Property="Background"   Value="{DynamicResource Brush.SuccessSurface}"/>
+                                    <Setter Property="BorderBrush"  Value="{DynamicResource Brush.Success}"/>
+                                    <Setter Property="BorderThickness" Value="1"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <TextBlock Text="{Binding EsitoSincronizzazione}"
+                               FontSize="{StaticResource FontSize.Caption}" TextWrapping="Wrap">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding EsitoIsErrore}" Value="True">
+                                        <Setter Property="Foreground" Value="{DynamicResource Brush.Error}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding EsitoIsOk}" Value="True">
+                                        <Setter Property="Foreground" Value="{DynamicResource Brush.Success}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Border>
+
+                <!-- Barra filtri -->
                 <TextBox DockPanel.Dock="Top"
-                         Text="{Binding FiltroRicerca, UpdateSourceTrigger=PropertyChanged}"
-                         Padding="10,7" BorderBrush="#BDBDBD"
-                         FontSize="14"/>
+                         Text="{Binding FiltroRicerca, UpdateSourceTrigger=PropertyChanged}"/>
             </DockPanel>
         </Border>
 
         <!-- Lista clienti -->
-        <Border Background="White" Margin="24,20" BorderBrush="#E0E0E0" BorderThickness="1">
-            <DataGrid ItemsSource="{Binding ClientiFiltrati}"
-                      AutoGenerateColumns="False" CanUserAddRows="False"
-                      IsReadOnly="True" HeadersVisibility="Column"
-                      SelectionMode="Single" GridLinesVisibility="Horizontal"
-                      Background="White" RowBackground="White"
-                      AlternatingRowBackground="#FAFAFA" BorderThickness="0"
-                      RowHeight="36" ColumnHeaderHeight="36">
-
+        <Border Background="{DynamicResource Brush.Surface}"
+                Margin="24,20"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="1">
+            <DataGrid b:DataGridColumnLayout.Chiave="Clienti.Lista"
+                      ItemsSource="{Binding ClientiFiltrati}"
+                      CanUserAddRows="False" IsReadOnly="True">
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow" BasedOn="{StaticResource DataGridRow.Base}">
+                        <EventSetter Event="MouseDoubleClick" Handler="Row_MouseDoubleClick"/>
+                        <Setter Property="Cursor" Value="Hand"/>
+                    </Style>
+                </DataGrid.RowStyle>
                 <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="" Width="44">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource Button.Icon}"
+                                        ToolTip="Apri"
+                                        Command="{Binding DataContext.AprirDettaglioCommand,
+                                                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                        CommandParameter="{Binding}">
+                                    <TextBlock Text="&#xE70F;" FontFamily="Segoe MDL2 Assets"
+                                               FontWeight="Normal"/>
+                                </Button>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                     <DataGridTextColumn Header="Codice"
                                        Binding="{Binding CodiceClienteGestionale}"
                                        Width="140"/>
                     <DataGridTextColumn Header="Ragione Sociale"
                                        Binding="{Binding RagioneSociale}"
                                        Width="*"/>
-                    <DataGridTextColumn Header="P.IVA"
-                                       Binding="{Binding PartitaIVA}"
-                                       Width="130"/>
-                    <DataGridTextColumn Header="Stato"
-                                       Binding="{Binding StatoCliente}"
-                                       Width="100"/>
-                    <DataGridTemplateColumn Header="" Width="60">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <Button Content="Apri"
-                                        FontSize="11"
-                                        Padding="8,4"
-                                        Command="{Binding DataContext.AprirDettaglioCommand,
-                                                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                        CommandParameter="{Binding}"
-                                        Cursor="Hand"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
         </Border>

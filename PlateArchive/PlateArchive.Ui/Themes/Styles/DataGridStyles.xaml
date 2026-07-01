@@ -1,0 +1,228 @@
+﻿<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Dipendenze self-contained: token Base necessari per {StaticResource ...} -->
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Base/Spacing.xaml"/>
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Base/CornerRadius.xaml"/>
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Base/Typography.xaml"/>
+        <ResourceDictionary Source="/PlateArchive.Ui;component/Themes/Base/Elevation.xaml"/>
+    </ResourceDictionary.MergedDictionaries>
+
+
+    <!-- ─────────────────────────────────────────
+         DATAGRID BASE
+    ───────────────────────────────────────── -->
+    <Style x:Key="DataGrid.Base" TargetType="DataGrid">
+        <Setter Property="Background"              Value="{DynamicResource Brush.Surface}"/>
+        <Setter Property="Foreground"              Value="{DynamicResource Brush.TextPrimary}"/>
+        <Setter Property="BorderBrush"             Value="{DynamicResource Brush.Border}"/>
+        <Setter Property="BorderThickness"         Value="1"/>
+        <Setter Property="RowBackground"           Value="Transparent"/>
+        <Setter Property="AlternatingRowBackground" Value="{DynamicResource Brush.SurfaceAlt}"/>
+        <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource Brush.Border}"/>
+        <Setter Property="VerticalGridLinesBrush"   Value="Transparent"/>
+        <Setter Property="FontFamily"              Value="{StaticResource FontFamily.Base}"/>
+        <Setter Property="FontSize"                Value="{StaticResource FontSize.Body}"/>
+        <Setter Property="RowHeight"               Value="42"/>
+        <Setter Property="ColumnHeaderHeight"      Value="44"/>
+        <Setter Property="SelectionMode"           Value="Single"/>
+        <Setter Property="SelectionUnit"           Value="FullRow"/>
+        <Setter Property="CanUserResizeRows"       Value="False"/>
+        <Setter Property="AutoGenerateColumns"     Value="False"/>
+        <Setter Property="GridLinesVisibility"     Value="Horizontal"/>
+        <Setter Property="HeadersVisibility"       Value="Column"/>
+        <Setter Property="SnapsToDevicePixels"     Value="True"/>
+        <Setter Property="UseLayoutRounding"       Value="True"/>
+        <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
+        <Setter Property="ScrollViewer.PanningMode"      Value="Both"/>
+    </Style>
+
+    <Style TargetType="DataGrid" BasedOn="{StaticResource DataGrid.Base}"/>
+
+    <!-- ─────────────────────────────────────────
+         COLUMN HEADER — più definito, testo primario
+    ───────────────────────────────────────── -->
+    <Style x:Key="DataGridColumnHeader.Base" TargetType="DataGridColumnHeader">
+        <Setter Property="Background"              Value="{DynamicResource Brush.SurfaceVariant}"/>
+        <Setter Property="Foreground"              Value="{DynamicResource Brush.TextPrimary}"/>
+        <Setter Property="BorderBrush"             Value="{DynamicResource Brush.BorderStrong}"/>
+        <Setter Property="BorderThickness"         Value="0,0,0,2"/>
+        <Setter Property="Padding"                 Value="10,0"/>
+        <Setter Property="FontFamily"              Value="{StaticResource FontFamily.Base}"/>
+        <Setter Property="FontSize"                Value="{StaticResource FontSize.Caption}"/>
+        <Setter Property="FontWeight"              Value="{StaticResource FontWeight.SemiBold}"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="SnapsToDevicePixels"     Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridColumnHeader">
+                    <!-- Outer Grid needed to host resize grippers as overlay -->
+                    <Grid>
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- ContentPresenter anziché TextBlock: permette HeaderTemplate
+                                     sulle singole colonne; le colonne stringa mantengono lo stesso look. -->
+                                <ContentPresenter Grid.Column="0"
+                                                  Content="{TemplateBinding Content}"
+                                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                  VerticalAlignment="Center"
+                                                  RecognizesAccessKey="True">
+                                    <ContentPresenter.Resources>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="TextTrimming"                   Value="CharacterEllipsis"/>
+                                            <Setter Property="TextOptions.TextFormattingMode" Value="Ideal"/>
+                                            <Setter Property="TextOptions.TextRenderingMode"  Value="ClearType"/>
+                                            <Setter Property="Foreground"  Value="{DynamicResource Brush.TextPrimary}"/>
+                                            <Setter Property="FontWeight"  Value="{StaticResource FontWeight.SemiBold}"/>
+                                            <Setter Property="FontSize"    Value="{StaticResource FontSize.Caption}"/>
+                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                        </Style>
+                                    </ContentPresenter.Resources>
+                                </ContentPresenter>
+
+                                <!-- Sort indicator -->
+                                <Path x:Name="SortArrow"
+                                      Grid.Column="1"
+                                      Margin="6,0,4,0"
+                                      VerticalAlignment="Center"
+                                      Visibility="Collapsed"
+                                      Fill="{DynamicResource Brush.Primary}"
+                                      Data="M 0 4 L 4 0 L 8 4"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Resize grippers — trasparenti ma interattivi -->
+                        <Thumb x:Name="PART_LeftHeaderGripper"
+                               HorizontalAlignment="Left"
+                               Width="6" Cursor="SizeWE">
+                            <Thumb.Template>
+                                <ControlTemplate TargetType="Thumb">
+                                    <Border Background="Transparent"/>
+                                </ControlTemplate>
+                            </Thumb.Template>
+                        </Thumb>
+                        <Thumb x:Name="PART_RightHeaderGripper"
+                               HorizontalAlignment="Right"
+                               Width="6" Cursor="SizeWE">
+                            <Thumb.Template>
+                                <ControlTemplate TargetType="Thumb">
+                                    <Border Background="Transparent"/>
+                                </ControlTemplate>
+                            </Thumb.Template>
+                        </Thumb>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Root" Property="Background"
+                                    Value="{DynamicResource Brush.SurfaceHover}"/>
+                        </Trigger>
+                        <Trigger Property="SortDirection" Value="Ascending">
+                            <Setter TargetName="SortArrow" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="SortArrow" Property="Data"       Value="M 0 4 L 4 0 L 8 4"/>
+                        </Trigger>
+                        <Trigger Property="SortDirection" Value="Descending">
+                            <Setter TargetName="SortArrow" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="SortArrow" Property="Data"       Value="M 0 0 L 4 4 L 8 0"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource DataGridColumnHeader.Base}"/>
+
+    <!-- ─────────────────────────────────────────
+         ROW — selezione con Primary brush
+    ───────────────────────────────────────── -->
+    <Style x:Key="DataGridRow.Base" TargetType="DataGridRow">
+        <Setter Property="Background"      Value="Transparent"/>
+        <Setter Property="Foreground"      Value="{DynamicResource Brush.TextPrimary}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridRow">
+                    <Border x:Name="Root"
+                            Background="{TemplateBinding Background}"
+                            BorderThickness="0">
+                        <SelectiveScrollingGrid>
+                            <DataGridCellsPresenter
+                                x:Name="CellsPresenter"
+                                SelectiveScrollingGrid.SelectiveScrollingOrientation=
+                                    "{Binding AreRowDetailsFrozen,
+                                     RelativeSource={RelativeSource AncestorType=DataGrid},
+                                     Converter={x:Static DataGrid.RowDetailsScrollingConverter},
+                                     ConverterParameter={x:Static SelectiveScrollingOrientation.Vertical}}"
+                                ItemsPanel="{TemplateBinding ItemsPanel}"/>
+                        </SelectiveScrollingGrid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Root" Property="Background"
+                                    Value="{DynamicResource Brush.ItemHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Root" Property="Background"
+                                    Value="{DynamicResource Brush.Primary}"/>
+                            <Setter Property="Foreground"
+                                    Value="{DynamicResource Brush.OnPrimary}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="DataGridRow" BasedOn="{StaticResource DataGridRow.Base}"/>
+
+    <!-- ─────────────────────────────────────────
+         CELL — testo sempre TextPrimary
+    ───────────────────────────────────────── -->
+    <Style x:Key="DataGridCell.Base" TargetType="DataGridCell">
+        <Setter Property="BorderThickness"  Value="0"/>
+        <Setter Property="Padding"          Value="10,0"/>
+        <Setter Property="Foreground"       Value="{DynamicResource Brush.TextPrimary}"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridCell">
+                    <Border Background="Transparent"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <!-- Quando la riga è selezionata il testo diventa OnPrimary -->
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource Brush.OnPrimary}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style TargetType="DataGridCell" BasedOn="{StaticResource DataGridCell.Base}"/>
+
+    <!-- ─────────────────────────────────────────
+         ROW HEADER — nascosto
+    ───────────────────────────────────────── -->
+    <Style TargetType="DataGridRowHeader">
+        <Setter Property="Width"      Value="0"/>
+        <Setter Property="Visibility" Value="Collapsed"/>
+    </Style>
+
+</ResourceDictionary>
