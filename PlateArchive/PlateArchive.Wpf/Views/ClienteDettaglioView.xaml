@@ -378,6 +378,8 @@
                                   BorderThickness="0" RowHeight="36" ColumnHeaderHeight="34">
                             <DataGrid.RowStyle>
                                 <Style TargetType="DataGridRow" BasedOn="{StaticResource DataGridRow.Base}">
+                                    <EventSetter Event="MouseDoubleClick" Handler="RigaPiastra_MouseDoubleClick"/>
+                                    <Setter Property="Cursor" Value="Hand"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding Stato}" Value="Obsoleta">
                                             <Setter Property="Foreground" Value="{DynamicResource Brush.TextDisabled}"/>
