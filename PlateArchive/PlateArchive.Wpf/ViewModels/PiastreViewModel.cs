@@ -64,6 +64,8 @@ public class PiastreViewModel : ViewModelBase
     private string?            _erroreCodiceDuplicato;
     private string?            _erroreDisegno;
     private string?            _percorsoDisegnoPendente;
+    private bool                _isCodicePiastraNonValido;
+    private bool                _isClienteEsclusivoNonValido;
 
     // ── Form: metadati disegno associato (modifica in-place nel dettaglio) ────
     private string       _formRevisioneDisegno = string.Empty;
@@ -384,7 +386,30 @@ public class PiastreViewModel : ViewModelBase
     public string FormCodicePiastra
     {
         get => _formCodicePiastra;
-        set { if (SetField(ref _formCodicePiastra, value)) ControllaDuplicato(value); }
+        set
+        {
+            if (SetField(ref _formCodicePiastra, value))
+            {
+                ControllaDuplicato(value);
+                if (IsCodicePiastraNonValido && !string.IsNullOrWhiteSpace(value))
+                    IsCodicePiastraNonValido = false;
+            }
+        }
+    }
+
+    /// <summary>True quando "Salva" è stato premuto senza aver compilato il codice piastra.</summary>
+    public bool IsCodicePiastraNonValido
+    {
+        get => _isCodicePiastraNonValido;
+        set => SetField(ref _isCodicePiastraNonValido, value);
+    }
+
+    /// <summary>True quando "Salva" è stato premuto senza aver selezionato il cliente esclusivo
+    /// richiesto per le piastre di tipo SpecialeCliente.</summary>
+    public bool IsClienteEsclusivoNonValido
+    {
+        get => _isClienteEsclusivoNonValido;
+        set => SetField(ref _isClienteEsclusivoNonValido, value);
     }
 
     public string FormCodiceArticolo
@@ -412,7 +437,11 @@ public class PiastreViewModel : ViewModelBase
         {
             if (SetField(ref _formTipo, value))
             {
-                if (value == TipoPiastra.Standard) FormClienteEsclusivo = null;
+                if (value == TipoPiastra.Standard)
+                {
+                    FormClienteEsclusivo        = null;
+                    IsClienteEsclusivoNonValido = false;
+                }
                 OnPropertyChanged(nameof(IsClienteEsclusivoVisible));
                 OnPropertyChanged(nameof(IsAssociazioneClientiVisible));
             }
@@ -443,6 +472,7 @@ public class PiastreViewModel : ViewModelBase
                     OnPropertyChanged(nameof(FiltroClienteEsclusivo));
                     ClientiEsclusiviSuggeriti.Clear();
                     OnPropertyChanged(nameof(IsClientiEsclusiviSuggerimentiVisible));
+                    IsClienteEsclusivoNonValido = false;
                 }
                 OnPropertyChanged(nameof(IsClienteEsclusivoSelezionatoVisible));
                 OnPropertyChanged(nameof(IsClienteEsclusivoSearchVisible));
@@ -725,7 +755,9 @@ public class PiastreViewModel : ViewModelBase
         FormClienteEsclusivo     = PiastraSelezionata.IdClienteEsclusivo.HasValue
             ? _tuttiClienti.FirstOrDefault(c => c.IdCliente == PiastraSelezionata.IdClienteEsclusivo)
             : null;
-        ErroreCodiceDuplicato    = null;
+        ErroreCodiceDuplicato        = null;
+        IsCodicePiastraNonValido     = false;
+        IsClienteEsclusivoNonValido  = false;
         IsModifica    = true;
         IsFormVisible = true;
     }
@@ -749,6 +781,8 @@ public class PiastreViewModel : ViewModelBase
         FormClienteEsclusivo     = null;
         ErroreCodiceDuplicato    = null;
         PercorsoDisegnoPendente  = null;
+        IsCodicePiastraNonValido    = false;
+        IsClienteEsclusivoNonValido = false;
         _filtroClienteEsclusivo         = string.Empty;
         _formFiltroClienteAssociato     = string.Empty;
         OnPropertyChanged(nameof(FiltroClienteEsclusivo));
@@ -762,17 +796,10 @@ public class PiastreViewModel : ViewModelBase
 
     private async Task SalvaAsync()
     {
-        if (string.IsNullOrWhiteSpace(FormCodicePiastra)) return;
+        IsCodicePiastraNonValido    = string.IsNullOrWhiteSpace(FormCodicePiastra);
+        IsClienteEsclusivoNonValido = FormTipo == TipoPiastra.SpecialeCliente && FormClienteEsclusivo is null;
+        if (IsCodicePiastraNonValido || IsClienteEsclusivoNonValido) return;
         if (IsErroreVisible) return;
-        if (FormTipo == TipoPiastra.SpecialeCliente && FormClienteEsclusivo is null)
-        {
-            MessageBox.Show(
-                "Per una piastra speciale cliente è necessario selezionare il cliente.",
-                "Cliente mancante",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-            return;
-        }
 
         Piastra piastraSalvata;
         if (IsModifica)

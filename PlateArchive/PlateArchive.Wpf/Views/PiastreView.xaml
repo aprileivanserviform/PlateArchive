@@ -494,8 +494,23 @@
                         </Border>
 
                         <TextBlock Text="Codice piastra *" Style="{StaticResource FieldLabel}"/>
-                        <TextBox Text="{Binding FormCodicePiastra, UpdateSourceTrigger=PropertyChanged}"
-                                 Style="{StaticResource FieldBox}"/>
+                        <TextBox Text="{Binding FormCodicePiastra, UpdateSourceTrigger=PropertyChanged}">
+                            <TextBox.Style>
+                                <Style TargetType="TextBox" BasedOn="{StaticResource FieldBox}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCodicePiastraNonValido}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Error}"/>
+                                            <Setter Property="BorderThickness" Value="2"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
+                        <TextBlock Text="Campo obbligatorio."
+                                   FontSize="{StaticResource FontSize.Caption}"
+                                   Foreground="{DynamicResource Brush.Error}"
+                                   Margin="0,-8,0,10"
+                                   Visibility="{Binding IsCodicePiastraNonValido, Converter={StaticResource BoolToVis}}"/>
 
                         <TextBlock Text="Codice articolo gestionale" Style="{StaticResource FieldLabel}"/>
                         <TextBox Text="{Binding FormCodiceArticolo, UpdateSourceTrigger=PropertyChanged}"
@@ -550,8 +565,18 @@
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
                                 <TextBox Grid.Row="0"
-                                         Text="{Binding FiltroClienteEsclusivo, UpdateSourceTrigger=PropertyChanged}"
-                                         Style="{StaticResource FieldBox}"/>
+                                         Text="{Binding FiltroClienteEsclusivo, UpdateSourceTrigger=PropertyChanged}">
+                                    <TextBox.Style>
+                                        <Style TargetType="TextBox" BasedOn="{StaticResource FieldBox}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsClienteEsclusivoNonValido}" Value="True">
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Error}"/>
+                                                    <Setter Property="BorderThickness" Value="2"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBox.Style>
+                                </TextBox>
                                 <Border Grid.Row="1"
                                         Visibility="{Binding IsClientiEsclusiviSuggerimentiVisible, Converter={StaticResource BoolToVis}}"
                                         Background="{DynamicResource Brush.Surface}"
@@ -582,6 +607,11 @@
                                     </ItemsControl>
                                 </Border>
                             </Grid>
+                            <TextBlock Text="Cliente obbligatorio per una piastra Speciale Cliente."
+                                       FontSize="{StaticResource FontSize.Caption}"
+                                       Foreground="{DynamicResource Brush.Error}"
+                                       Margin="0,4,0,0"
+                                       Visibility="{Binding IsClienteEsclusivoNonValido, Converter={StaticResource BoolToVis}}"/>
                         </StackPanel>
 
                         <TextBlock Text="Formato macchina" Style="{StaticResource FieldLabel}"/>
