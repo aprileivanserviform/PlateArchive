@@ -1,0 +1,135 @@
+<UserControl x:Class="PlateArchive.Wpf.Views.OrdiniVenditaView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:b="clr-namespace:PlateArchive.Wpf.Behaviors">
+    <!--
+    OrdiniVenditaView — righe ordine di vendita non evase, lette dal gestionale (DB2/Panthera).
+    Interrogazione live (nessuna cache locale, vedi TASK-16/17 in docs/TASKS.md): il pulsante
+    "Aggiorna" rilancia la query ogni volta. Per ogni riga si cerca in locale la Piastra con lo
+    stesso CodiceArticoloGestionale; se trovata e con disegno associato, "Apri disegno" lo apre
+    direttamente con l'applicazione predefinita del sistema operativo.
+    -->
+
+    <DockPanel Background="{DynamicResource Brush.Background}">
+
+        <!-- ── Header ─────────────────────────────────────────── -->
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource Brush.Surface}"
+                Padding="24,14"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,0,0,1">
+            <DockPanel>
+                <Button DockPanel.Dock="Right"
+                        Content="Aggiorna"
+                        Command="{Binding AggiornaCommand}"/>
+
+                <StackPanel DockPanel.Dock="Left">
+                    <TextBlock Text="Ordini vendita"
+                               Style="{StaticResource TextBlock.Title}"
+                               Margin="0,0,0,10"/>
+                    <TextBox Text="{Binding FiltroRicerca, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="Cerca per cliente, articolo o numero ordine"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Errore -->
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource Brush.ErrorSurface}"
+                BorderBrush="{DynamicResource Brush.Error}"
+                BorderThickness="0,0,0,1"
+                Padding="24,10"
+                Visibility="{Binding IsErroreVisible, Converter={StaticResource BoolToVis}}">
+            <TextBlock Text="{Binding Errore}"
+                       TextWrapping="Wrap"
+                       FontSize="{StaticResource FontSize.Caption}"
+                       Foreground="{DynamicResource Brush.Error}"/>
+        </Border>
+
+        <!-- ── Body ───────────────────────────────────────────── -->
+        <Grid Margin="24,20,24,24">
+            <Border Background="{DynamicResource Brush.Surface}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="1">
+                <DataGrid b:DataGridColumnLayout.Chiave="OrdiniVendita.Lista"
+                          ItemsSource="{Binding RigheFiltrate}"
+                          CanUserAddRows="False" IsReadOnly="True"
+                          RowHeight="36">
+                    <DataGrid.RowStyle>
+                        <Style TargetType="DataGridRow" BasedOn="{StaticResource DataGridRow.Base}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding PiastraTrovata}" Value="False">
+                                    <Setter Property="Background" Value="{DynamicResource Brush.WarningSurface}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.RowStyle>
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Anno"
+                                           Binding="{Binding Riga.AnnoOrdine}"
+                                           Width="70"/>
+                        <DataGridTextColumn Header="Numero"
+                                           Binding="{Binding Riga.NumeroOrdine}"
+                                           Width="90"/>
+                        <DataGridTextColumn Header="Riga"
+                                           Binding="{Binding Riga.RigaOrdine}"
+                                           Width="60"/>
+                        <DataGridTextColumn Header="Cliente"
+                                           Binding="{Binding Riga.RagioneSocialeCliente}"
+                                           Width="*"/>
+                        <DataGridTextColumn Header="Articolo"
+                                           Binding="{Binding Riga.CodiceArticolo}"
+                                           Width="220"/>
+                        <DataGridTemplateColumn Header="" Width="140" CanUserResize="False">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button Content="Apri disegno"
+                                                Style="{StaticResource Button.Secondary}"
+                                                Command="{Binding DataContext.AprirDisegnoCommand,
+                                                          RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                CommandParameter="{Binding}"
+                                                Visibility="{Binding HaDisegno, Converter={StaticResource BoolToVis}}"/>
+                                        <TextBlock Text="Piastra non trovata"
+                                                   FontSize="{StaticResource FontSize.Caption}"
+                                                   Foreground="{DynamicResource Brush.Warning}"
+                                                   VerticalAlignment="Center"
+                                                   Visibility="{Binding PiastraNonTrovata, Converter={StaticResource BoolToVis}}"/>
+                                        <TextBlock Text="Nessun disegno"
+                                                   FontSize="{StaticResource FontSize.Caption}"
+                                                   Foreground="{DynamicResource Brush.TextDisabled}"
+                                                   VerticalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <MultiDataTrigger>
+                                                            <MultiDataTrigger.Conditions>
+                                                                <Condition Binding="{Binding PiastraTrovata}" Value="True"/>
+                                                                <Condition Binding="{Binding HaDisegno}" Value="False"/>
+                                                            </MultiDataTrigger.Conditions>
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </MultiDataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+
+            <!-- Overlay caricamento -->
+            <Border Background="{DynamicResource Brush.Overlay}"
+                    Visibility="{Binding IsCaricamento, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="Lettura ordini dal gestionale..."
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Foreground="{DynamicResource Brush.TextSecondary}"
+                           FontSize="{StaticResource FontSize.Caption}"/>
+            </Border>
+        </Grid>
+    </DockPanel>
+</UserControl>

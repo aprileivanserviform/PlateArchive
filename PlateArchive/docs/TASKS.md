@@ -1078,86 +1078,101 @@ else
 ## TASK-15 — Collegamento articolo gestionale ↔ Piastra/Disegno (branch feat/ordini-vendita-righe)
 
 **Priorità:** Alta
-**Stato:** `[ ]`
+**Stato:** `[x]` — risolto 2026-07-01 (nessun nuovo modello necessario)
 
 ### Contesto
 
-Oggi `Piastra.CodiceArticoloGestionale` è pensato per corrispondere all'articolo del gestionale (Panthera, DB2 `PANTH01` — stessa fonte già usata da `SincronizzazioneGestionaleService` per i Clienti), ma i codici reali visti nelle righe ordine (es. `30C1K1K310-106-G03`, `30C1K2K310SP1420-G`) sembrano più granulari/variantizzati rispetto al codice piastra interno (`PLT-000245`). Non è detto che esista una corrispondenza diretta 1:1 automatica: serve probabilmente una tabella di mapping esplicita, mantenuta in locale, tra "codice articolo di riga ordine" e `IdPiastra`.
+Oggi `Piastra.CodiceArticoloGestionale` è pensato per corrispondere all'articolo del gestionale (Panthera, DB2 `PANTH01` — stessa fonte già usata da `SincronizzazioneGestionaleService` per i Clienti).
 
-Questo è il collegamento abilitante per TASK-16 e TASK-17: senza un modo affidabile per risalire dalla riga ordine alla piastra corretta, la vista ordini non può proporre/aprire il disegno giusto.
+### Decisione presa
 
-### Obiettivo
+**Corrispondenza diretta**: il campo `R_ARTICOLO` di `THIP.ORD_VEN_RIG` viene confrontato per uguaglianza esatta con `Piastra.CodiceArticoloGestionale` (campo già esistente, univoco). Nessuna nuova tabella di mapping.
 
-Definire e implementare il modello di collegamento (`PlateArchive.Core` + `PlateArchive.Data` + migrazione), con un flusso per l'operatore che associ manualmente (la prima volta) un codice articolo di riga ordine a una piastra esistente, e che riutilizzi l'associazione nelle sincronizzazioni successive.
-
-### Decisioni aperte `[!]`
-
-- **Criterio di match**: uguaglianza diretta su `CodiceArticoloGestionale`, match per prefisso (parte comune prima del suffisso variante `-G03`/`-G`), o mappatura sempre manuale curata da un operatore?
-- **Struttura dati**: nuova tabella `ArticoloGestionalePiastra` (codice articolo raw → `IdPiastra`) separata da `Piastra.CodiceArticoloGestionale`, oppure riuso/estensione del campo esistente?
-- Verificare se un singolo `CodiceArticoloGestionale` può mappare a più piastre (varianti/formati) o è sempre 1:1.
+> **Nota aperta per il futuro** (non bloccante, da valutare più avanti): si può valutare se rendere `CodiceArticoloGestionale` obbligatorio in fase di codifica piastra, oppure eliminarlo ed eseguire il match direttamente su `CodicePiastra` — probabilmente più semplice da gestire. Rimandato.
 
 ### Acceptance criteria
 
-- [ ] Esiste un modello locale che collega un codice articolo di riga ordine a una `Piastra`
-- [ ] L'associazione, una volta creata, viene riutilizzata automaticamente per tutte le righe ordine con lo stesso codice articolo
-- [ ] Se un codice articolo non è ancora mappato, l'operatore può crearlo/associarlo dalla vista ordini (TASK-17) senza uscire dal flusso
+- [x] `IPiastraRepository.GetByCodiceArticoloGestionaleAsync(codice)` risolve la piastra corrispondente (con `Categoria`/`Formato`/`Disegno` inclusi)
 
 ---
 
 ## TASK-16 — Lettura righe ordine di vendita da DB2 (gestionale Panthera)
 
 **Priorità:** Alta
-**Stato:** `[ ]`
+**Stato:** `[x]` — implementato 2026-07-01, in attesa di verifica sul campo (vedi nota)
 
 ### Contesto
 
-Il gestionale Panthera espone (schermata "Vendite » Ordini vendita » Ordini vendita - righe") l'elenco delle righe ordine con causale, cliente, riga/articolo e descrizione estesa. Va letto via ODBC dallo stesso DB2 `PANTH01` già raggiunto da `SincronizzazioneGestionaleService` per i Clienti (`Db2:ConnectionString` in `appsettings.json`).
+Il gestionale Panthera espone (schermata "Vendite » Ordini vendita » Ordini vendita - righe") l'elenco delle righe ordine. Letto via ODBC dallo stesso DB2 `PANTH01` già raggiunto da `SincronizzazioneGestionaleService` per i Clienti (`Db2:ConnectionString` in `appsettings.json`).
 
-A differenza dei Clienti (anagrafica stabile, sincronizzata on-demand), lo stato "evasa/inevasa" di una riga ordine cambia di continuo: probabile che convenga un'interrogazione live al momento dell'apertura della vista, non una sincronizzazione/cache locale — da confermare.
+### Decisione presa
 
-### Obiettivo
+**Interrogazione live**, nessuna cache locale: lo stato evasa/inevasa cambia troppo spesso per giustificare una sincronizzazione. Il pulsante "Aggiorna" nella vista (TASK-17) rilancia la query ogni volta.
 
-Individuare le tabelle/colonne DB2 corrette (schema analogo a `THIP.CLIENTI_VEN`/`FINANCE.BBCLIPT` già usati) ed esporre un servizio che restituisca le righe ordine non evase, filtrabili per cliente/articolo/causale.
+### Schema DB2 (confermato dall'utente)
 
-### Decisioni aperte `[!]`
+- `THIP.ORD_VEN_RIG` (righe): `R_ARTICOLO`, `STATO_EVASIONE` (filtro `<> 2` = non evasa), `ID_AZIENDA` (= `'001'`), `ID_ANNO_ORD`, `ID_NUMERO_ORD`, `ID_RIGA_ORD`
+- `THIP.ORD_VEN_TES` (testata): contiene `R_CLIENTE`, che si collega a `FINANCE.BBCLIPT.CLICD` (stesso pattern di join già usato per `Db2:QueryClienti`) per recuperare `CLIRASOC` (ragione sociale)
 
-- Nomi tabelle/colonne DB2 per ordini e righe ordine (schema, join, colonna che identifica "riga evasa/inevasa")
-- Sincronizzazione/cache locale vs interrogazione live ad ogni apertura della vista
+**Query implementata** (`Db2:QueryRigheOrdineVendita` in `appsettings.json`):
 
-### Interventi previsti
+```sql
+SELECT r.ID_ANNO_ORD, r.ID_NUMERO_ORD, r.ID_RIGA_ORD, r.R_ARTICOLO, bb.CLIRASOC
+FROM THIP.ORD_VEN_RIG r
+INNER JOIN THIP.ORD_VEN_TES t
+    ON r.ID_AZIENDA = t.ID_AZIENDA
+   AND r.ID_ANNO_ORD = t.ID_ANNO_ORD
+   AND r.ID_NUMERO_ORD = t.ID_NUMERO_ORD
+INNER JOIN FINANCE.BBCLIPT bb
+    ON t.ID_AZIENDA = bb.T01CD
+   AND t.R_CLIENTE = bb.CLICD
+WHERE r.STATO_EVASIONE <> 2
+  AND r.ID_AZIENDA = '001'
+ORDER BY r.ID_ANNO_ORD DESC, r.ID_NUMERO_ORD DESC, r.ID_RIGA_ORD
+```
 
-- Nuova query in `appsettings.json` (`Db2:QueryRigheOrdine`), sul modello di `Db2:QueryClienti`
-- Nuovo metodo/servizio (estensione di `ISincronizzazioneGestionaleService` o nuovo `IRigheOrdineService`) in `PlateArchive.Services`
+> **`[!]` Da verificare con la VPN attiva**: le colonne di join tra `ORD_VEN_RIG` e `ORD_VEN_TES` (`ID_AZIENDA`, `ID_ANNO_ORD`, `ID_NUMERO_ORD`) sono un'ipotesi ragionevole (stessa convenzione testata/righe di molti gestionali AS/400) ma non sono state confermate esplicitamente dall'utente — solo le colonne di `ORD_VEN_RIG` e il collegamento `R_CLIENTE → BBCLIPT.CLICD` lo sono state. Se la query non restituisce righe o va in errore, controllare prima questo join.
+
+### Interventi realizzati
+
+- `PlateArchive.Services/RigaOrdineVendita.cs` — DTO di sola lettura (nessuna persistenza locale)
+- `PlateArchive.Services/IRigheOrdineVenditaService.cs` + `RigheOrdineVenditaService.cs` — stesso pattern ODBC di `SincronizzazioneGestionaleService`, con `IsDisponibile` per il caso "DB2 non configurato"
+- Registrazione DI in `App.xaml.cs` (nuova chiave `Db2:QueryRigheOrdineVendita`)
 
 ### Acceptance criteria
 
-- [ ] Il servizio restituisce solo le righe ordine non evase
-- [ ] In assenza di connessione DB2/VPN, la vista mostra un messaggio chiaro (stesso pattern di `IsDisponibile` già usato per i Clienti) senza eccezioni non gestite
+- [x] Il servizio restituisce solo le righe ordine non evase
+- [x] In assenza di connessione DB2/VPN, la vista mostra un messaggio chiaro senza eccezioni non gestite
 
 ---
 
 ## TASK-17 — Vista "Ordini vendita" in PlateArchive con apertura diretta del disegno
 
 **Priorità:** Alta
-**Stato:** `[ ]`
+**Stato:** `[x]` — implementato 2026-07-01, da verificare a video con VPN attiva
 
 **Dipende da:** TASK-15, TASK-16
 
 ### Contesto
 
-L'operatore deve poter cercare tra le righe ordine inevase (per cliente, articolo, causale) e aprire direttamente il disegno tecnico della piastra corrispondente, senza dover prima individuare manualmente la piastra giusta nell'archivio.
+L'operatore deve poter cercare tra le righe ordine inevase e aprire direttamente il disegno tecnico della piastra corrispondente, senza dover prima individuare manualmente la piastra giusta nell'archivio.
 
-### Obiettivo
+### Realizzato
 
-Nuova schermata (`RigheOrdineView` / `RigheOrdineViewModel`) con elenco righe ordine e colonna/azione "Apri disegno":
-- Se la riga è già mappata a una piastra (TASK-15) con disegno associato → apre il file direttamente (stesso meccanismo di `PiastreViewModel.AprirDisegno`)
-- Se non è ancora mappata → propone di associarla a una piastra esistente (riuso del pattern `ImportaDisegnoViewModel`/ricerca piastra)
+- `OrdiniVenditaView.xaml` / `OrdiniVenditaViewModel.cs` — nuova voce di menu "Ordini vendita"
+- Elenco righe non evase (Anno / Numero / Riga / Cliente / Articolo), ricerca client-side su cliente/articolo/numero ordine
+- Per ogni riga, ricerca locale della `Piastra` per `CodiceArticoloGestionale` (TASK-15):
+  - Piastra trovata + disegno presente → pulsante "Apri disegno" (stesso meccanismo di `PiastreViewModel.AprirDisegno`)
+  - Piastra trovata ma senza disegno → etichetta "Nessun disegno"
+  - Piastra non trovata → riga evidenziata in ambra + etichetta "Piastra non trovata"
+- Pulsante "Aggiorna" per rilanciare la query (nessuna cache, vedi TASK-16)
 
 ### Acceptance criteria
 
-- [ ] La ricerca filtra per cliente, causale e codice articolo/riga
-- [ ] "Apri disegno" funziona per le righe già mappate con disegno presente
-- [ ] Le righe non mappate offrono un percorso guidato per associarle a una piastra, senza uscire dalla vista
+- [x] La ricerca filtra per cliente, articolo e numero ordine
+- [x] "Apri disegno" funziona per le righe con piastra e disegno presenti
+- [x] Le righe senza piastra corrispondente sono chiaramente segnalate (riga evidenziata + etichetta)
+- [ ] **Da verificare a video con VPN attiva**: la query DB2 restituisce righe corrette (vedi nota join in TASK-16)
 
 ---
 
