@@ -881,8 +881,6 @@
                                         <TextBlock Text="{Binding PiastraSelezionata.CodiceArticoloGestionale, FallbackValue='—'}"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="1">
-                                        <TextBlock Text="Peso (kg)" Style="{StaticResource TextBlock.Caption}"/>
-                                        <TextBlock Text="{Binding PiastraSelezionata.Peso, StringFormat='{}{0:F3}', FallbackValue='—', TargetNullValue='—'}" Margin="0,0,0,8"/>
                                         <TextBlock Text="Creato il" Style="{StaticResource TextBlock.Caption}"/>
                                         <TextBlock Margin="0,0,0,8">
                                             <TextBlock.Text>
@@ -903,6 +901,7 @@
                             <Border Style="{StaticResource Card.Subtle}" Padding="12,10" Margin="0,0,0,16">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
@@ -944,6 +943,16 @@
                                             <TextBlock.Text>
                                                 <Binding Path="PiastraSelezionata.Durezza"
                                                          StringFormat="{}{0:F1}"
+                                                         FallbackValue="—" TargetNullValue="—"/>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="4">
+                                        <TextBlock Text="Peso (kg)" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock>
+                                            <TextBlock.Text>
+                                                <Binding Path="PiastraSelezionata.Peso"
+                                                         StringFormat="{}{0:F3}"
                                                          FallbackValue="—" TargetNullValue="—"/>
                                             </TextBlock.Text>
                                         </TextBlock>
