@@ -2,11 +2,13 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows.Input;
+using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
 using PlateArchive.Data.Repositories.Interfaces;
 using PlateArchive.Wpf.Commands;
+using PlateArchive.Wpf.Services;
 
 namespace PlateArchive.Wpf.ViewModels;
 
@@ -39,7 +41,9 @@ public class DisegniViewModel : ViewModelBase
     private string       _formFormato      = string.Empty;
     private StatoDisegno _formStato        = StatoDisegno.DaVerificare;
     private string       _formNote         = string.Empty;
-    private string?      _erroreFileNonTrovato;
+    private string?       _erroreFileNonTrovato;
+    private BitmapSource? _anteprimaDisegno;
+    private bool          _isCaricamentoAnteprima;
 
     public DisegniViewModel(IDisegnoRepository disegniRepo)
     {
@@ -81,8 +85,10 @@ public class DisegniViewModel : ViewModelBase
             {
                 OnPropertyChanged(nameof(IsDetailVisible));
                 OnPropertyChanged(nameof(IsNessunDisegnoSelezionato));
+                OnPropertyChanged(nameof(IsNoAnteprima));
                 // Popola il form con i dati del disegno selezionato
                 CaricaForm();
+                _ = CaricaAnteprimaAsync();
             }
         }
     }
@@ -140,6 +146,27 @@ public class DisegniViewModel : ViewModelBase
     }
 
     public bool IsErroreFileVisible => !string.IsNullOrEmpty(_erroreFileNonTrovato);
+
+    public BitmapSource? AnteprimaDisegno
+    {
+        get => _anteprimaDisegno;
+        set
+        {
+            if (SetField(ref _anteprimaDisegno, value))
+            {
+                OnPropertyChanged(nameof(IsAnteprimaVisible));
+                OnPropertyChanged(nameof(IsNoAnteprima));
+            }
+        }
+    }
+    public bool IsAnteprimaVisible => _anteprimaDisegno is not null;
+
+    public bool IsCaricamentoAnteprima
+    {
+        get => _isCaricamentoAnteprima;
+        private set { if (SetField(ref _isCaricamentoAnteprima, value)) OnPropertyChanged(nameof(IsNoAnteprima)); }
+    }
+    public bool IsNoAnteprima => !IsAnteprimaVisible && !IsCaricamentoAnteprima && DisegnoSelezionato is not null;
 
     /// <summary>Tutti i valori dell'enum StatoDisegno — usati nel ComboBox del form.</summary>
     public IEnumerable<StatoDisegno> StatiDisegno    { get; } = Enum.GetValues<StatoDisegno>();
@@ -238,6 +265,25 @@ public class DisegniViewModel : ViewModelBase
         // la selezione (o ne ha selezionata un'altra durante il CollectionChanged.Reset).
         AggiornaFiltro();
         DisegnoSelezionato = salvato;
+        // SetField restituisce false se stessa reference → CaricaAnteprimaAsync non è
+        // triggerato dal setter; lo chiamiamo esplicitamente per aggiornare il percorso.
+        _ = CaricaAnteprimaAsync();
+    }
+
+    // ─── Anteprima DWG ───────────────────────────────────────────────────────
+
+    private async Task CaricaAnteprimaAsync()
+    {
+        AnteprimaDisegno       = null;
+        IsCaricamentoAnteprima = true;
+        try
+        {
+            AnteprimaDisegno = await DwgThumbnailReader.EstraiAnteprimaAsync(_disegnoSelezionato?.PercorsoFile);
+        }
+        finally
+        {
+            IsCaricamentoAnteprima = false;
+        }
     }
 
     // ─── Apertura file ────────────────────────────────────────────────────────

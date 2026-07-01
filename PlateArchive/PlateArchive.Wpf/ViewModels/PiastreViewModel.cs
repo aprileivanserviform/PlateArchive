@@ -3,12 +3,14 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
 using PlateArchive.Data.Repositories.Interfaces;
 using PlateArchive.Services;
 using PlateArchive.Wpf.Commands;
+using PlateArchive.Wpf.Services;
 
 namespace PlateArchive.Wpf.ViewModels;
 
@@ -210,7 +212,9 @@ public class PiastreViewModel : ViewModelBase
     public ObservableCollection<MacchinaStandard>           MacchineDisponibili { get; } = [];
     public ObservableCollection<Cliente>                    ClientiSuggeriti    { get; } = [];
 
-    private Disegno? _disegnoCorrente;
+    private Disegno?       _disegnoCorrente;
+    private BitmapSource?  _anteprimaDisegno;
+    private bool           _isCaricamentoAnteprima;
     public Disegno? DisegnoCorrente
     {
         get => _disegnoCorrente;
@@ -222,6 +226,7 @@ public class PiastreViewModel : ViewModelBase
                 OnPropertyChanged(nameof(IsDisegnoAssente));
                 OnPropertyChanged(nameof(IsFormDisegnoPresente));
                 OnPropertyChanged(nameof(IsFormDisegnoAssente));
+                OnPropertyChanged(nameof(IsNoAnteprima));
             }
         }
     }
@@ -231,6 +236,27 @@ public class PiastreViewModel : ViewModelBase
     // Nel form: in modifica mostra il disegno esistente; in creazione mostra sempre la drop zone
     public bool IsFormDisegnoPresente => IsModifica && DisegnoCorrente is not null;
     public bool IsFormDisegnoAssente  => !IsModifica || DisegnoCorrente is null;
+
+    public BitmapSource? AnteprimaDisegno
+    {
+        get => _anteprimaDisegno;
+        set
+        {
+            if (SetField(ref _anteprimaDisegno, value))
+            {
+                OnPropertyChanged(nameof(IsAnteprimaVisible));
+                OnPropertyChanged(nameof(IsNoAnteprima));
+            }
+        }
+    }
+    public bool IsAnteprimaVisible => _anteprimaDisegno is not null;
+
+    public bool IsCaricamentoAnteprima
+    {
+        get => _isCaricamentoAnteprima;
+        private set { if (SetField(ref _isCaricamentoAnteprima, value)) OnPropertyChanged(nameof(IsNoAnteprima)); }
+    }
+    public bool IsNoAnteprima => !IsAnteprimaVisible && !IsCaricamentoAnteprima && DisegnoCorrente is not null;
 
     // ─── Pannello aggiungi macchina compatibile ───────────────────────────────
 
@@ -543,7 +569,8 @@ public class PiastreViewModel : ViewModelBase
     {
         MacchineCompatibili.Clear();
         ClientiAssociati.Clear();
-        DisegnoCorrente = null;
+        DisegnoCorrente  = null;
+        AnteprimaDisegno = null;
 
         if (PiastraSelezionata is null) return;
 
@@ -555,6 +582,13 @@ public class PiastreViewModel : ViewModelBase
         foreach (var m in macchine) MacchineCompatibili.Add(m);
         foreach (var c in clienti)  ClientiAssociati.Add(c);
         DisegnoCorrente = disegno;
+
+        if (disegno is not null)
+        {
+            IsCaricamentoAnteprima = true;
+            try   { AnteprimaDisegno = await DwgThumbnailReader.EstraiAnteprimaAsync(disegno.PercorsoFile); }
+            finally { IsCaricamentoAnteprima = false; }
+        }
     }
 
     // ─── Filtro lista ─────────────────────────────────────────────────────────

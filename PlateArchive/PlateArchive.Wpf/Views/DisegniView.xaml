@@ -122,6 +122,33 @@
                                    Foreground="{DynamicResource Brush.Error}"/>
                     </Border>
 
+                    <!-- Anteprima disegno DWG -->
+                    <Border Visibility="{Binding IsDetailVisible, Converter={StaticResource BoolToVis}}"
+                            Background="{DynamicResource Brush.SurfaceVariant}"
+                            BorderBrush="{DynamicResource Brush.Border}"
+                            BorderThickness="1"
+                            CornerRadius="{StaticResource Radius.S}"
+                            Margin="0,0,0,12"
+                            MaxHeight="220" MinHeight="64">
+                        <Grid>
+                            <Image Source="{Binding AnteprimaDisegno}"
+                                   Stretch="Uniform"
+                                   RenderOptions.BitmapScalingMode="HighQuality"
+                                   Margin="4"
+                                   Visibility="{Binding IsAnteprimaVisible, Converter={StaticResource BoolToVis}}"/>
+                            <TextBlock Text="Caricamento anteprima..."
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       FontSize="{StaticResource FontSize.Caption}"
+                                       Opacity="0.5"
+                                       Visibility="{Binding IsCaricamentoAnteprima, Converter={StaticResource BoolToVis}}"/>
+                            <TextBlock Text="Anteprima non disponibile"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       FontSize="{StaticResource FontSize.Caption}"
+                                       Opacity="0.5"
+                                       Visibility="{Binding IsNoAnteprima, Converter={StaticResource BoolToVis}}"/>
+                        </Grid>
+                    </Border>
+
                     <!-- Percorso file -->
                     <TextBlock Text="Percorso file" Style="{StaticResource FieldLabel}"/>
                     <DockPanel Margin="0,0,0,10">
