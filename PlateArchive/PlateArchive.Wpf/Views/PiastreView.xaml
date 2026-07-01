@@ -525,24 +525,12 @@
                                   SelectedItem="{Binding FormStato}"
                                   Margin="0,0,0,10"/>
 
-                        <!-- Categoria e Peso — la categoria "Speciale" (SPE) rende obbligatorio il cliente esclusivo -->
-                        <Grid Margin="0,0,0,10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="Categoria" Style="{StaticResource FieldLabel}"/>
-                                <ComboBox ItemsSource="{Binding CategoriePiastre}"
-                                          SelectedItem="{Binding FormCategoriaSelezionata}"
-                                          DisplayMemberPath="Descrizione"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="Peso (kg)" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Text="{Binding FormPeso, UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>
-                        </Grid>
+                        <!-- Categoria — la categoria "Speciale" (SPE) rende obbligatorio il cliente esclusivo -->
+                        <TextBlock Text="Categoria" Style="{StaticResource FieldLabel}"/>
+                        <ComboBox ItemsSource="{Binding CategoriePiastre}"
+                                  SelectedItem="{Binding FormCategoriaSelezionata}"
+                                  DisplayMemberPath="Descrizione"
+                                  Margin="0,0,0,10"/>
 
                         <!-- Cliente esclusivo — visibile solo per categoria Speciale (SPE) -->
                         <StackPanel Visibility="{Binding IsClienteEsclusivoVisible, Converter={StaticResource BoolToVis}}"
@@ -645,6 +633,8 @@
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="8"/>
                                 <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0">
                                 <TextBlock Text="Larghezza" Style="{StaticResource FieldLabel}"/>
@@ -661,6 +651,10 @@
                             <StackPanel Grid.Column="6">
                                 <TextBlock Text="Durezza" Style="{StaticResource FieldLabel}"/>
                                 <TextBox Text="{Binding FormDurezza, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="8">
+                                <TextBlock Text="Peso (kg)" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding FormPeso, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                         </Grid>
 

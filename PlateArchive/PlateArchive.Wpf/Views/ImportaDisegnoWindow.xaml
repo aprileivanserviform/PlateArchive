@@ -154,27 +154,17 @@
                                   DisplayMemberPath="NomeFormato"
                                   Margin="0,0,0,10"/>
 
-                        <Grid Margin="0,0,0,10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="Categoria" Style="{StaticResource FieldLabel}"/>
-                                <ComboBox ItemsSource="{Binding CategoriePiastre}"
-                                          SelectedItem="{Binding FormCategoria}"
-                                          DisplayMemberPath="Descrizione"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="Peso (kg)" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Text="{Binding FormPeso, UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>
-                        </Grid>
+                        <TextBlock Text="Categoria" Style="{StaticResource FieldLabel}"/>
+                        <ComboBox ItemsSource="{Binding CategoriePiastre}"
+                                  SelectedItem="{Binding FormCategoria}"
+                                  DisplayMemberPath="Descrizione"
+                                  Margin="0,0,0,10"/>
 
                         <TextBlock Text="Misure (mm)" Style="{StaticResource FieldLabel}"/>
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="8"/>
                                 <ColumnDefinition Width="*"/>
@@ -198,6 +188,10 @@
                             <StackPanel Grid.Column="6">
                                 <TextBlock Text="Durezza" Style="{StaticResource FieldLabel}"/>
                                 <TextBox Text="{Binding FormDurezza, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="8">
+                                <TextBlock Text="Peso (kg)" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding FormPeso, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                         </Grid>
 
