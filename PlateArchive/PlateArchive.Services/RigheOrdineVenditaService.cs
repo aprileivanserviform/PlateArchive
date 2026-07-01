@@ -40,7 +40,8 @@ public class RigheOrdineVenditaService(string connectionString, string queryRigh
                 NumeroOrdine:           ToStringTrim(reader, 1),
                 RigaOrdine:             ToStringTrim(reader, 2),
                 CodiceArticolo:         articolo,
-                RagioneSocialeCliente:  ToStringTrim(reader, 4)));
+                DescrizioneEstesa:      ToStringTrim(reader, 4),
+                RagioneSocialeCliente:  ToStringTrim(reader, 5)));
         }
 
         return righe;

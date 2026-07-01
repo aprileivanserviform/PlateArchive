@@ -7,7 +7,10 @@
     Interrogazione live (nessuna cache locale, vedi TASK-16/17 in docs/TASKS.md): il pulsante
     "Aggiorna" rilancia la query ogni volta. Per ogni riga si cerca in locale la Piastra con lo
     stesso CodiceArticoloGestionale; se trovata e con disegno associato, "Apri disegno" lo apre
-    direttamente con l'applicazione predefinita del sistema operativo.
+    direttamente con l'applicazione predefinita del sistema operativo. Se la piastra non è stata
+    trovata, "Associa piastra" (o il doppio clic sulla riga) apre AssociaPiastraOrdineWindow per
+    collegarla a una piastra esistente; se è già stata trovata, il doppio clic apre invece
+    PiastraDettaglioWindow con le sue caratteristiche.
     -->
 
     <DockPanel Background="{DynamicResource Brush.Background}">
@@ -28,7 +31,7 @@
                                Style="{StaticResource TextBlock.Title}"
                                Margin="0,0,0,10"/>
                     <TextBox Text="{Binding FiltroRicerca, UpdateSourceTrigger=PropertyChanged}"
-                             ToolTip="Cerca per cliente, articolo o numero ordine"/>
+                             ToolTip="Cerca per cliente, articolo, descrizione o numero ordine"/>
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -57,6 +60,8 @@
                           RowHeight="36">
                     <DataGrid.RowStyle>
                         <Style TargetType="DataGridRow" BasedOn="{StaticResource DataGridRow.Base}">
+                            <EventSetter Event="MouseDoubleClick" Handler="Riga_MouseDoubleClick"/>
+                            <Setter Property="Cursor" Value="Hand"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding PiastraTrovata}" Value="False">
                                     <Setter Property="Background" Value="{DynamicResource Brush.WarningSurface}"/>
@@ -80,7 +85,10 @@
                         <DataGridTextColumn Header="Articolo"
                                            Binding="{Binding Riga.CodiceArticolo}"
                                            Width="220"/>
-                        <DataGridTemplateColumn Header="" Width="140" CanUserResize="False">
+                        <DataGridTextColumn Header="Descrizione"
+                                           Binding="{Binding Riga.DescrizioneEstesa}"
+                                           Width="*"/>
+                        <DataGridTemplateColumn Header="" Width="150" CanUserResize="False">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -90,11 +98,10 @@
                                                           RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                                 CommandParameter="{Binding}"
                                                 Visibility="{Binding HaDisegno, Converter={StaticResource BoolToVis}}"/>
-                                        <TextBlock Text="Piastra non trovata"
-                                                   FontSize="{StaticResource FontSize.Caption}"
-                                                   Foreground="{DynamicResource Brush.Warning}"
-                                                   VerticalAlignment="Center"
-                                                   Visibility="{Binding PiastraNonTrovata, Converter={StaticResource BoolToVis}}"/>
+                                        <Button Content="Associa piastra"
+                                                Style="{StaticResource Button.Secondary}"
+                                                Click="AssociaPiastra_Click"
+                                                Visibility="{Binding PiastraNonTrovata, Converter={StaticResource BoolToVis}}"/>
                                         <TextBlock Text="Nessun disegno"
                                                    FontSize="{StaticResource FontSize.Caption}"
                                                    Foreground="{DynamicResource Brush.TextDisabled}"

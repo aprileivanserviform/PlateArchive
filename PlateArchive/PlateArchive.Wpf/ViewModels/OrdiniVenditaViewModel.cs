@@ -120,11 +120,26 @@ public class OrdiniVenditaViewModel : ViewModelBase
         foreach (var r in _tutte.Where(r =>
             string.IsNullOrEmpty(f)
             || r.Riga.CodiceArticolo.ToLower().Contains(f)
+            || r.Riga.DescrizioneEstesa.ToLower().Contains(f)
             || r.Riga.RagioneSocialeCliente.ToLower().Contains(f)
             || r.Riga.NumeroOrdine.ToLower().Contains(f)))
         {
             RigheFiltrate.Add(r);
         }
+    }
+
+    /// <summary>Ri-risolve la piastra per la riga indicata (senza ripetere la query DB2) — usata
+    /// dopo che l'utente ha associato una piastra all'articolo tramite <c>AssociaPiastraOrdineWindow</c>.</summary>
+    public async Task RicaricaRigaAsync(RigaOrdineVenditaRow vecchia)
+    {
+        var piastra = await _piastreRepo.GetByCodiceArticoloGestionaleAsync(vecchia.Riga.CodiceArticolo);
+        var nuova   = new RigaOrdineVenditaRow(vecchia.Riga, piastra);
+
+        var idxTutte = _tutte.IndexOf(vecchia);
+        if (idxTutte >= 0) _tutte[idxTutte] = nuova;
+
+        var idxFiltrate = RigheFiltrate.IndexOf(vecchia);
+        if (idxFiltrate >= 0) RigheFiltrate[idxFiltrate] = nuova;
     }
 
     private void AprirDisegno(RigaOrdineVenditaRow row)
