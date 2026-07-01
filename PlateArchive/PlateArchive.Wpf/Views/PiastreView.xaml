@@ -1160,11 +1160,11 @@
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="Macchina"
                                                            Binding="{Binding MacchinaStandard.NomeMacchina}"
-                                                           Width="*"/>
+                                                           Width="Auto"/>
                                         <DataGridTextColumn Header="Codice"
                                                            Binding="{Binding MacchinaStandard.CodiceMacchina}"
-                                                           Width="110"/>
-                                        <DataGridTemplateColumn Header="" Width="44">
+                                                           Width="Auto"/>
+                                        <DataGridTemplateColumn Header="" Width="44" CanUserResize="False">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <Button Style="{StaticResource Button.IconDanger}"
@@ -1286,11 +1286,11 @@
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="Cliente"
                                                            Binding="{Binding Cliente.RagioneSociale}"
-                                                           Width="*"/>
+                                                           Width="Auto"/>
                                         <DataGridTextColumn Header="Macchina"
                                                            Binding="{Binding ClienteMacchina.MacchinaStandard.NomeMacchina}"
-                                                           Width="120"/>
-                                        <DataGridTemplateColumn Header="" Width="44">
+                                                           Width="Auto"/>
+                                        <DataGridTemplateColumn Header="" Width="44" CanUserResize="False">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <Button Style="{StaticResource Button.IconDanger}"
