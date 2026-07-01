@@ -36,12 +36,13 @@ public class RigheOrdineVenditaService(string connectionString, string queryRigh
             if (string.IsNullOrEmpty(articolo)) continue;
 
             righe.Add(new RigaOrdineVendita(
-                AnnoOrdine:             ToStringTrim(reader, 0),
-                NumeroOrdine:           ToStringTrim(reader, 1),
-                RigaOrdine:             ToStringTrim(reader, 2),
-                CodiceArticolo:         articolo,
-                DescrizioneEstesa:      ToStringTrim(reader, 4),
-                RagioneSocialeCliente:  ToStringTrim(reader, 5)));
+                AnnoOrdine:                ToStringTrim(reader, 0),
+                NumeroOrdine:              ToStringTrim(reader, 1),
+                RigaOrdine:                ToStringTrim(reader, 2),
+                CodiceArticolo:            articolo,
+                DescrizioneEstesa:         ToStringTrim(reader, 4),
+                RagioneSocialeCliente:     ToStringTrim(reader, 5),
+                CodiceClienteGestionale:   ToStringTrim(reader, 6)));
         }
 
         return righe;

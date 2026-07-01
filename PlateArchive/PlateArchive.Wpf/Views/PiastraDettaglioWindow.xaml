@@ -43,7 +43,7 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="Stato" Style="{StaticResource TextBlock.Caption}"/>
+                            <TextBlock Text="Stato piastra" Style="{StaticResource TextBlock.Caption}"/>
                             <TextBlock Text="{Binding Piastra.Stato, FallbackValue='—'}" Margin="0,0,0,8"/>
                             <TextBlock Text="Categoria" Style="{StaticResource TextBlock.Caption}"/>
                             <TextBlock Text="{Binding Piastra.Categoria.Descrizione, FallbackValue='—', TargetNullValue='—'}"/>

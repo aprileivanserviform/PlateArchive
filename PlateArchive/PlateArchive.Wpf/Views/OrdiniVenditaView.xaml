@@ -88,20 +88,29 @@
                         <DataGridTextColumn Header="Descrizione"
                                            Binding="{Binding Riga.DescrizioneEstesa}"
                                            Width="*"/>
-                        <DataGridTemplateColumn Header="" Width="150" CanUserResize="False">
+                        <DataGridTemplateColumn Header="" Width="80" CanUserResize="False">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Button Content="Apri disegno"
-                                                Style="{StaticResource Button.Secondary}"
+                                        <Button Style="{StaticResource Button.Icon}"
+                                                ToolTip="Apri disegno"
                                                 Command="{Binding DataContext.AprirDisegnoCommand,
                                                           RelativeSource={RelativeSource AncestorType=DataGrid}}"
                                                 CommandParameter="{Binding}"
-                                                Visibility="{Binding HaDisegno, Converter={StaticResource BoolToVis}}"/>
-                                        <Button Content="Associa piastra"
-                                                Style="{StaticResource Button.Secondary}"
+                                                Visibility="{Binding HaDisegno, Converter={StaticResource BoolToVis}}">
+                                            <!-- &#xE78B; = NewWindow -->
+                                            <TextBlock Text="&#xE78B;" FontFamily="Segoe MDL2 Assets"
+                                                       FontWeight="Normal"/>
+                                        </Button>
+                                        <Button Style="{StaticResource Button.Icon}"
+                                                ToolTip="Associa piastra"
                                                 Click="AssociaPiastra_Click"
-                                                Visibility="{Binding PiastraNonTrovata, Converter={StaticResource BoolToVis}}"/>
+                                                Visibility="{Binding PiastraNonTrovata, Converter={StaticResource BoolToVis}}">
+                                            <!-- &#xE71B; = Link -->
+                                            <TextBlock Text="&#xE71B;" FontFamily="Segoe MDL2 Assets"
+                                                       Foreground="{DynamicResource Brush.Warning}"
+                                                       FontWeight="Normal"/>
+                                        </Button>
                                         <TextBlock Text="Nessun disegno"
                                                    FontSize="{StaticResource FontSize.Caption}"
                                                    Foreground="{DynamicResource Brush.TextDisabled}"

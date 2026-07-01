@@ -387,7 +387,7 @@
                             <!-- Stato -->
                             <DataGridTextColumn x:Name="ColStato"
                                                 Binding="{Binding Stato}"
-                                                Width="80"
+                                                Width="115"
                                                 SortMemberPath="Stato"
                                                 HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
 
@@ -520,7 +520,7 @@
                         <TextBox Text="{Binding FormDescrizione, UpdateSourceTrigger=PropertyChanged}"
                                  Style="{StaticResource FieldBox}"/>
 
-                        <TextBlock Text="Stato" Style="{StaticResource FieldLabel}"/>
+                        <TextBlock Text="Stato piastra" Style="{StaticResource FieldLabel}"/>
                         <ComboBox ItemsSource="{Binding StatiPiastra}"
                                   SelectedItem="{Binding FormStato}"
                                   Margin="0,0,0,10"/>
@@ -882,7 +882,7 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
-                                        <TextBlock Text="Stato" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock Text="Stato piastra" Style="{StaticResource TextBlock.Caption}"/>
                                         <TextBlock Text="{Binding PiastraSelezionata.Stato}" Margin="0,0,0,8"/>
                                         <TextBlock Text="Formato" Style="{StaticResource TextBlock.Caption}"/>
                                         <TextBlock Text="{Binding PiastraSelezionata.Formato.NomeFormato, FallbackValue='—'}" Margin="0,0,0,8"/>
@@ -1012,9 +1012,9 @@
                                         </StackPanel>
                                     </Grid>
 
-                                    <!-- Stato -->
+                                    <!-- Stato disegno -->
                                     <StackPanel Margin="0,0,0,8">
-                                        <TextBlock Text="Stato" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock Text="Stato disegno" Style="{StaticResource TextBlock.Caption}"/>
                                         <ComboBox ItemsSource="{Binding StatiDisegno}"
                                                   SelectedItem="{Binding FormStatoDisegno}"/>
                                     </StackPanel>

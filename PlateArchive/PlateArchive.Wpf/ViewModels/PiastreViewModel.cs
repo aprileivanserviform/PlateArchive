@@ -167,7 +167,7 @@ public class PiastreViewModel : ViewModelBase
     public FiltroColonna FiltroCategoria     { get; } = new("Categoria",       FiltroColonnaTipo.Enum);
     public FiltroColonna FiltroFormato       { get; } = new("Formato",         FiltroColonnaTipo.Enum);
     public FiltroColonna FiltroTipo          { get; } = new("Tipo",            FiltroColonnaTipo.Enum);
-    public FiltroColonna FiltroStato         { get; } = new("Stato",           FiltroColonnaTipo.Enum);
+    public FiltroColonna FiltroStato         { get; } = new("Stato piastra",   FiltroColonnaTipo.Enum);
     public FiltroColonna FiltroLarghezza     { get; } = new("Larghezza",       FiltroColonnaTipo.Numerico);
     public FiltroColonna FiltroAltezza       { get; } = new("Altezza",         FiltroColonnaTipo.Numerico);
     public FiltroColonna FiltroSpessore      { get; } = new("Spessore",        FiltroColonnaTipo.Numerico);

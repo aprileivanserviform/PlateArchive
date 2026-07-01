@@ -15,4 +15,5 @@ public record RigaOrdineVendita(
     string RigaOrdine,
     string CodiceArticolo,
     string DescrizioneEstesa,
-    string RagioneSocialeCliente);
+    string RagioneSocialeCliente,
+    string CodiceClienteGestionale);

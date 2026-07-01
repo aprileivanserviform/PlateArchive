@@ -1162,9 +1162,12 @@ L'operatore deve poter cercare tra le righe ordine inevase e aprire direttamente
 - `OrdiniVenditaView.xaml` / `OrdiniVenditaViewModel.cs` — nuova voce di menu "Ordini vendita"
 - Elenco righe non evase (Anno / Numero / Riga / Cliente / Articolo), ricerca client-side su cliente/articolo/numero ordine
 - Per ogni riga, ricerca locale della `Piastra` per `CodiceArticoloGestionale` (TASK-15):
-  - Piastra trovata + disegno presente → pulsante "Apri disegno" (stesso meccanismo di `PiastreViewModel.AprirDisegno`)
+  - Piastra trovata + disegno presente → icona "Apri disegno" (stesso meccanismo di `PiastreViewModel.AprirDisegno`)
   - Piastra trovata ma senza disegno → etichetta "Nessun disegno"
-  - Piastra non trovata → riga evidenziata in ambra + etichetta "Piastra non trovata"
+  - Piastra non trovata → riga evidenziata in ambra + icona "Associa piastra" (apre `AssociaPiastraOrdineWindow`)
+- Doppio clic sulla riga: apre `PiastraDettaglioWindow` se la piastra è già trovata, altrimenti il flusso "Associa piastra"
+- Colonne "Stato piastra"/"Stato disegno" rinominate ovunque nell'app per distinguerle (erano entrambe genericamente "Stato")
+- **Associazione cliente-piastra automatica**: se il cliente della riga ordine risulta già sincronizzato localmente (`Cliente.CodiceClienteGestionale`, via `t.R_CLIENTE`) e la piastra collegata ha un disegno, viene creata automaticamente l'associazione `ClientePiastra` (se non esiste già) — sia al caricamento della lista sia subito dopo un'associazione manuale piastra↔articolo
 - Pulsante "Aggiorna" per rilanciare la query (nessuna cache, vedi TASK-16)
 
 ### Acceptance criteria

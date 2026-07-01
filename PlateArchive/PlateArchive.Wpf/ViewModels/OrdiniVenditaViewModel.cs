@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows.Input;
+using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
 using PlateArchive.Data.Repositories.Interfaces;
 using PlateArchive.Services;
@@ -33,6 +34,8 @@ public class OrdiniVenditaViewModel : ViewModelBase
 {
     private readonly IRigheOrdineVenditaService _righeOrdineService;
     private readonly IPiastraRepository         _piastreRepo;
+    private readonly IClienteRepository         _clientiRepo;
+    private readonly IClientePiastraRepository  _clientiPiastreRepo;
 
     private readonly List<RigaOrdineVenditaRow> _tutte = [];
 
@@ -40,10 +43,16 @@ public class OrdiniVenditaViewModel : ViewModelBase
     private bool    _isCaricamento;
     private string? _errore;
 
-    public OrdiniVenditaViewModel(IRigheOrdineVenditaService righeOrdineService, IPiastraRepository piastreRepo)
+    public OrdiniVenditaViewModel(
+        IRigheOrdineVenditaService righeOrdineService,
+        IPiastraRepository         piastreRepo,
+        IClienteRepository         clientiRepo,
+        IClientePiastraRepository  clientiPiastreRepo)
     {
         _righeOrdineService = righeOrdineService;
         _piastreRepo        = piastreRepo;
+        _clientiRepo        = clientiRepo;
+        _clientiPiastreRepo = clientiPiastreRepo;
 
         AggiornaCommand     = new RelayCommand(async _ => await CaricaAsync());
         AprirDisegnoCommand = new RelayCommand(
@@ -97,7 +106,9 @@ public class OrdiniVenditaViewModel : ViewModelBase
             foreach (var r in righe)
             {
                 var piastra = await _piastreRepo.GetByCodiceArticoloGestionaleAsync(r.CodiceArticolo);
-                _tutte.Add(new RigaOrdineVenditaRow(r, piastra));
+                var riga    = new RigaOrdineVenditaRow(r, piastra);
+                await AssociaClientePiastraSeMancanteAsync(riga);
+                _tutte.Add(riga);
             }
 
             AggiornaFiltro();
@@ -134,12 +145,40 @@ public class OrdiniVenditaViewModel : ViewModelBase
     {
         var piastra = await _piastreRepo.GetByCodiceArticoloGestionaleAsync(vecchia.Riga.CodiceArticolo);
         var nuova   = new RigaOrdineVenditaRow(vecchia.Riga, piastra);
+        await AssociaClientePiastraSeMancanteAsync(nuova);
 
         var idxTutte = _tutte.IndexOf(vecchia);
         if (idxTutte >= 0) _tutte[idxTutte] = nuova;
 
         var idxFiltrate = RigheFiltrate.IndexOf(vecchia);
         if (idxFiltrate >= 0) RigheFiltrate[idxFiltrate] = nuova;
+    }
+
+    /// <summary>
+    /// Se il cliente della riga ha ordinato un articolo per cui esiste già una piastra con
+    /// disegno associato, crea automaticamente l'associazione commerciale ClientePiastra
+    /// (se non esiste già): il cliente ha di fatto ordinato quella piastra.
+    /// </summary>
+    private async Task AssociaClientePiastraSeMancanteAsync(RigaOrdineVenditaRow row)
+    {
+        if (row.Piastra is null || row.Piastra.Disegno is null) return;
+        if (string.IsNullOrWhiteSpace(row.Riga.CodiceClienteGestionale)) return;
+
+        var cliente = await _clientiRepo.GetByCodiceGestionaleAsync(row.Riga.CodiceClienteGestionale);
+        if (cliente is null) return;
+
+        var esiste = await _clientiPiastreRepo.ExistsAsync(cliente.IdCliente, row.Piastra.IdPiastra);
+        if (esiste) return;
+
+        await _clientiPiastreRepo.AddAsync(new ClientePiastra
+        {
+            IdCliente        = cliente.IdCliente,
+            IdPiastra        = row.Piastra.IdPiastra,
+            DataAssociazione = DateTime.UtcNow,
+            Stato            = StatoClientePiastra.Attiva,
+            Cliente          = cliente,
+            Piastra          = row.Piastra
+        });
     }
 
     private void AprirDisegno(RigaOrdineVenditaRow row)
