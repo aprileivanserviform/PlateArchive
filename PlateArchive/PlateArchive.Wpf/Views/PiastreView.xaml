@@ -308,6 +308,11 @@
                             <Style TargetType="DataGridRow" BasedOn="{StaticResource DataGridRow.Base}">
                                 <EventSetter Event="MouseDoubleClick" Handler="Row_MouseDoubleClick"/>
                                 <Setter Property="Cursor" Value="Hand"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Disegno.Stato}" Value="DaVerificare">
+                                        <Setter Property="Background" Value="{DynamicResource Brush.WarningSurface}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
                             </Style>
                         </DataGrid.RowStyle>
                         <DataGrid.Columns>
@@ -938,38 +943,64 @@
                                     CornerRadius="{StaticResource Radius.S}"
                                     Padding="10,8" Margin="0,0,0,4"
                                     Visibility="{Binding IsDisegnoPresente, Converter={StaticResource BoolToVis}}">
-                                <DockPanel>
-                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                                        <Button Style="{StaticResource Button.Icon}"
-                                                ToolTip="Apri" Margin="0,0,2,0"
-                                                Command="{Binding AprirDisegnoCommand}">
-                                            <TextBlock Text="&#xE78B;" FontFamily="Segoe MDL2 Assets" FontWeight="Normal"/>
-                                        </Button>
-                                        <Button Style="{StaticResource Button.IconDanger}"
-                                                ToolTip="Rimuovi"
-                                                Command="{Binding RimuoviDisegnoCommand}">
-                                            <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"/>
-                                        </Button>
-                                    </StackPanel>
-                                    <StackPanel>
+                                <StackPanel>
+                                    <DockPanel Margin="0,0,0,8">
+                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                            <Button Style="{StaticResource Button.Icon}"
+                                                    ToolTip="Apri" Margin="0,0,2,0"
+                                                    Command="{Binding AprirDisegnoCommand}">
+                                                <TextBlock Text="&#xE78B;" FontFamily="Segoe MDL2 Assets" FontWeight="Normal"/>
+                                            </Button>
+                                            <Button Style="{StaticResource Button.IconDanger}"
+                                                    ToolTip="Rimuovi"
+                                                    Command="{Binding RimuoviDisegnoCommand}">
+                                                <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"/>
+                                            </Button>
+                                        </StackPanel>
                                         <TextBlock Text="{Binding DisegnoCorrente.NomeFile}"
                                                    FontWeight="{StaticResource FontWeight.SemiBold}"
-                                                   TextTrimming="CharacterEllipsis"/>
-                                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                                            <TextBlock Text="{Binding DisegnoCorrente.Formato}"
-                                                       FontSize="{StaticResource FontSize.Caption}"
-                                                       Foreground="{DynamicResource Brush.TextSecondary}"
-                                                       Margin="0,0,8,0"/>
-                                            <TextBlock Text="Rev."
-                                                       FontSize="{StaticResource FontSize.Caption}"
-                                                       Foreground="{DynamicResource Brush.TextSecondary}"
-                                                       Margin="0,0,2,0"/>
-                                            <TextBlock Text="{Binding DisegnoCorrente.Revisione}"
-                                                       FontSize="{StaticResource FontSize.Caption}"
-                                                       Foreground="{DynamicResource Brush.TextSecondary}"/>
+                                                   TextTrimming="CharacterEllipsis"
+                                                   VerticalAlignment="Center"/>
+                                    </DockPanel>
+
+                                    <!-- Formato + Revisione -->
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="Formato" Style="{StaticResource TextBlock.Caption}"/>
+                                            <ComboBox ItemsSource="{Binding FormatiDisponibili}"
+                                                      Text="{Binding FormFormatoDisegno, UpdateSourceTrigger=PropertyChanged}"
+                                                      IsEditable="True"/>
                                         </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Revisione" Style="{StaticResource TextBlock.Caption}"/>
+                                            <TextBox Text="{Binding FormRevisioneDisegno, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- Stato -->
+                                    <StackPanel Margin="0,0,0,8">
+                                        <TextBlock Text="Stato" Style="{StaticResource TextBlock.Caption}"/>
+                                        <ComboBox ItemsSource="{Binding StatiDisegno}"
+                                                  SelectedItem="{Binding FormStatoDisegno}"/>
                                     </StackPanel>
-                                </DockPanel>
+
+                                    <!-- Note -->
+                                    <StackPanel Margin="0,0,0,8">
+                                        <TextBlock Text="Note" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBox Text="{Binding FormNoteDisegno, UpdateSourceTrigger=PropertyChanged}"
+                                                 AcceptsReturn="True" Height="50"/>
+                                    </StackPanel>
+
+                                    <Button Content="Salva metadati disegno"
+                                            Command="{Binding SalvaDisegnoCommand}"
+                                            Style="{StaticResource Button.Secondary}"
+                                            HorizontalAlignment="Left"/>
+                                </StackPanel>
                             </Border>
 
                             <!-- Drop zone (nessun disegno) -->

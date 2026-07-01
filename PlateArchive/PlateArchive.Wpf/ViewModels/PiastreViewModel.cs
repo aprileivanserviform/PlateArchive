@@ -65,6 +65,12 @@ public class PiastreViewModel : ViewModelBase
     private string?            _erroreDisegno;
     private string?            _percorsoDisegnoPendente;
 
+    // ── Form: metadati disegno associato (modifica in-place nel dettaglio) ────
+    private string       _formRevisioneDisegno = string.Empty;
+    private string       _formFormatoDisegno   = string.Empty;
+    private StatoDisegno _formStatoDisegno     = StatoDisegno.DaVerificare;
+    private string       _formNoteDisegno      = string.Empty;
+
     // ── Form: cliente esclusivo (solo per SpecialeCliente) ────────────────────
     private Cliente? _formClienteEsclusivo;
     private string   _filtroClienteEsclusivo     = string.Empty;
@@ -125,6 +131,7 @@ public class PiastreViewModel : ViewModelBase
         RimuoviCompatibilitaCommand     = new RelayCommand(async p => await RimuoviCompatibilitaAsync(p));
         AprirDisegnoCommand             = new RelayCommand(_ => AprirDisegno(),  _ => DisegnoCorrente is not null);
         RimuoviDisegnoCommand           = new RelayCommand(async _ => await RimuoviDisegnoAsync(), _ => DisegnoCorrente is not null);
+        SalvaDisegnoCommand             = new RelayCommand(async _ => await SalvaDisegnoAsync(), _ => DisegnoCorrente is not null);
         AggiungiClienteCommand          = new RelayCommand(async _ => await ApriAggiungiClienteAsync(),      _ => PiastraSelezionata is not null);
         ConfermaAggiungiClienteCommand  = new RelayCommand(async _ => await ConfermaAggiungiClienteAsync(),  _ => ClienteSelezionato is not null);
         AnnullaAggiungiClienteCommand   = new RelayCommand(_ => ChiudiAggiungiCliente());
@@ -257,6 +264,35 @@ public class PiastreViewModel : ViewModelBase
         private set { if (SetField(ref _isCaricamentoAnteprima, value)) OnPropertyChanged(nameof(IsNoAnteprima)); }
     }
     public bool IsNoAnteprima => !IsAnteprimaVisible && !IsCaricamentoAnteprima && DisegnoCorrente is not null;
+
+    // ─── Metadati disegno (modifica in-place nel dettaglio) ───────────────────
+
+    public string FormRevisioneDisegno
+    {
+        get => _formRevisioneDisegno;
+        set => SetField(ref _formRevisioneDisegno, value);
+    }
+
+    public string FormFormatoDisegno
+    {
+        get => _formFormatoDisegno;
+        set => SetField(ref _formFormatoDisegno, value);
+    }
+
+    public StatoDisegno FormStatoDisegno
+    {
+        get => _formStatoDisegno;
+        set => SetField(ref _formStatoDisegno, value);
+    }
+
+    public string FormNoteDisegno
+    {
+        get => _formNoteDisegno;
+        set => SetField(ref _formNoteDisegno, value);
+    }
+
+    public IEnumerable<StatoDisegno> StatiDisegno       { get; } = Enum.GetValues<StatoDisegno>();
+    public IEnumerable<string>       FormatiDisponibili { get; } = ["DWG", "DXF", "PDF", "STP", "STEP", "IGS"];
 
     // ─── Pannello aggiungi macchina compatibile ───────────────────────────────
 
@@ -526,6 +562,7 @@ public class PiastreViewModel : ViewModelBase
     public ICommand RimuoviCompatibilitaCommand     { get; }
     public ICommand AprirDisegnoCommand             { get; }
     public ICommand RimuoviDisegnoCommand           { get; }
+    public ICommand SalvaDisegnoCommand             { get; }
     public ICommand AggiungiClienteCommand              { get; }
     public ICommand ConfermaAggiungiClienteCommand      { get; }
     public ICommand AnnullaAggiungiClienteCommand       { get; }
@@ -582,6 +619,7 @@ public class PiastreViewModel : ViewModelBase
         foreach (var m in macchine) MacchineCompatibili.Add(m);
         foreach (var c in clienti)  ClientiAssociati.Add(c);
         DisegnoCorrente = disegno;
+        CaricaFormDisegno();
 
         if (disegno is not null)
         {
@@ -589,6 +627,20 @@ public class PiastreViewModel : ViewModelBase
             try   { AnteprimaDisegno = await DwgThumbnailReader.EstraiAnteprimaAsync(disegno.PercorsoFile); }
             finally { IsCaricamentoAnteprima = false; }
         }
+    }
+
+    /// <summary>Ricarica l'elenco piastre dal repository e riseleziona la piastra indicata.
+    /// Usata dopo il flusso "Importa disegno" (drop sulla tabella generale), che può
+    /// creare una nuova piastra al volo o modificarne una esistente.</summary>
+    public async Task RicaricaEApriPiastraAsync(int? idPiastra)
+    {
+        _tutti.Clear();
+        var piastre = await _piastreRepo.GetAllAsync();
+        foreach (var p in piastre) _tutti.Add(p);
+        AggiornaFiltro();
+
+        if (idPiastra.HasValue)
+            PiastraSelezionata = _tutti.FirstOrDefault(p => p.IdPiastra == idPiastra.Value);
     }
 
     // ─── Filtro lista ─────────────────────────────────────────────────────────
@@ -990,6 +1042,32 @@ public class PiastreViewModel : ViewModelBase
 
         await _disegniRepo.DeleteAsync(DisegnoCorrente.IdDisegno);
         await LoadDettaglioAsync();
+    }
+
+    private void CaricaFormDisegno()
+    {
+        if (DisegnoCorrente is null)
+        {
+            FormRevisioneDisegno = FormFormatoDisegno = FormNoteDisegno = string.Empty;
+            FormStatoDisegno     = StatoDisegno.DaVerificare;
+            return;
+        }
+        FormRevisioneDisegno = DisegnoCorrente.Revisione ?? string.Empty;
+        FormFormatoDisegno   = DisegnoCorrente.Formato   ?? string.Empty;
+        FormStatoDisegno     = DisegnoCorrente.Stato;
+        FormNoteDisegno      = DisegnoCorrente.Note      ?? string.Empty;
+    }
+
+    private async Task SalvaDisegnoAsync()
+    {
+        if (DisegnoCorrente is null) return;
+
+        DisegnoCorrente.Revisione = N(FormRevisioneDisegno);
+        DisegnoCorrente.Formato   = N(FormFormatoDisegno);
+        DisegnoCorrente.Stato     = FormStatoDisegno;
+        DisegnoCorrente.Note      = N(FormNoteDisegno);
+
+        await _disegniRepo.UpdateAsync(DisegnoCorrente);
     }
 
     // ─── Aggiungi / rimuovi cliente associato ─────────────────────────────────

@@ -30,9 +30,6 @@
             <DataTemplate DataType="{x:Type vm:MacchineViewModel}">
                 <views:MacchineView/>
             </DataTemplate>
-            <DataTemplate DataType="{x:Type vm:DisegniViewModel}">
-                <views:DisegniView/>
-            </DataTemplate>
             <DataTemplate DataType="{x:Type vm:FormatiMacchinaViewModel}">
                 <views:FormatiMacchinaView/>
             </DataTemplate>

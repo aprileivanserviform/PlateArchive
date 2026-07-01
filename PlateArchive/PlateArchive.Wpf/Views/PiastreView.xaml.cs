@@ -2,7 +2,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
+using Microsoft.Extensions.DependencyInjection;
 using PlateArchive.Core.Models;
 using PlateArchive.Wpf.ViewModels;
 
@@ -52,17 +52,6 @@ public partial class PiastreView : UserControl
                 Path.GetExtension(files[0]).ToLower());
     }
 
-    private static Piastra? GetPiastraAtPoint(DataGrid grid, DragEventArgs e)
-    {
-        var hit = VisualTreeHelper.HitTest(grid, e.GetPosition(grid))?.VisualHit as DependencyObject;
-        while (hit is not null)
-        {
-            if (hit is DataGridRow row) return row.Item as Piastra;
-            hit = VisualTreeHelper.GetParent(hit);
-        }
-        return null;
-    }
-
     // ── DataGrid ────────────────────────────────────────────────
 
     private void DataGrid_DragOver(object sender, DragEventArgs e)
@@ -97,12 +86,22 @@ public partial class PiastreView : UserControl
         if (!IsValidFileDrop(e)) return;
         if (DataContext is not PiastreViewModel vm) return;
 
-        var file    = ((string[])e.Data.GetData(DataFormats.FileDrop))[0];
-        var piastra = GetPiastraAtPoint(PiastreDataGrid, e) ?? vm.PiastraSelezionata;
-        if (piastra is null) return;
+        // Drop sulla tabella generale (indipendentemente da riga/selezione): apre sempre il
+        // dialog di import "smart", che verifica se il file è già associato a un'altra piastra
+        // o permette di crearne una nuova / collegarlo a una piastra esistente senza disegno.
+        var file = ((string[])e.Data.GetData(DataFormats.FileDrop))[0];
+        await ApriImportaDialogAsync(vm, file);
+    }
 
-        vm.PiastraSelezionata = piastra;
-        await vm.AssociaDisegnoAsync(piastra, file);
+    private async Task ApriImportaDialogAsync(PiastreViewModel vm, string percorsoFile)
+    {
+        var importaVm = App.ServiceProvider.GetRequiredService<ImportaDisegnoViewModel>();
+        await importaVm.InitAsync(percorsoFile);
+        var win = new ImportaDisegnoWindow(importaVm) { Owner = Window.GetWindow(this) };
+        win.ShowDialog();
+
+        if (importaVm.Confermato)
+            await vm.RicaricaEApriPiastraAsync(importaVm.DisegnoCreato?.IdPiastra);
     }
 
     // ── Drop zone nel form (file pendente) ──────────────────────

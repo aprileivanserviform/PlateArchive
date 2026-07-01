@@ -126,9 +126,6 @@
                     <Button Content="Macchine"
                             Command="{Binding NavigateToMacchineCommand}"
                             Style="{StaticResource NavButtonStyle}"/>
-                    <Button Content="Disegni"
-                            Command="{Binding NavigateToDisegniCommand}"
-                            Style="{StaticResource NavButtonStyle}"/>
 
                     <!-- Sezione Impostazioni espandibile -->
                     <Separator Margin="4,8,4,4"/>
