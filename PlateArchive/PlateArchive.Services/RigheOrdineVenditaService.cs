@@ -1,3 +1,4 @@
+using System.Data.Common;
 using System.Data.Odbc;
 
 namespace PlateArchive.Services;
@@ -31,21 +32,23 @@ public class RigheOrdineVenditaService(string connectionString, string queryRigh
         {
             ct.ThrowIfCancellationRequested();
 
-            var articolo = reader.IsDBNull(3) ? null : reader.GetValue(3).ToString()?.Trim();
+            var articolo = ToStringTrim(reader, 3);
             if (string.IsNullOrEmpty(articolo)) continue;
 
             righe.Add(new RigaOrdineVendita(
-                AnnoOrdine:             ToInt(reader.GetValue(0)),
-                NumeroOrdine:           ToInt(reader.GetValue(1)),
-                RigaOrdine:             ToInt(reader.GetValue(2)),
+                AnnoOrdine:             ToStringTrim(reader, 0),
+                NumeroOrdine:           ToStringTrim(reader, 1),
+                RigaOrdine:             ToStringTrim(reader, 2),
                 CodiceArticolo:         articolo,
-                RagioneSocialeCliente:  reader.IsDBNull(4) ? string.Empty : reader.GetValue(4).ToString()!.Trim()));
+                RagioneSocialeCliente:  ToStringTrim(reader, 4)));
         }
 
         return righe;
     }
 
-    // I campi numerici DB2/AS400 arrivano via ODBC come decimal o come stringa a seconda del
-    // driver: normalizziamo qui invece di assumere un tipo .NET specifico.
-    private static int ToInt(object value) => Convert.ToInt32(value);
+    // Le colonne DB2/AS400 arrivano via ODBC con tipi eterogenei (decimal, char, ecc.) a seconda
+    // della colonna: leggiamo tutto come stringa invece di assumere un tipo numerico, dato che
+    // alcune (es. CHARACTER(10)) possono contenere causale e numero concatenati.
+    private static string ToStringTrim(DbDataReader reader, int index) =>
+        reader.IsDBNull(index) ? string.Empty : reader.GetValue(index).ToString()!.Trim();
 }

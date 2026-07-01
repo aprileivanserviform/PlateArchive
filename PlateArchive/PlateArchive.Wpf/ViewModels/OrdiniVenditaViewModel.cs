@@ -121,7 +121,7 @@ public class OrdiniVenditaViewModel : ViewModelBase
             string.IsNullOrEmpty(f)
             || r.Riga.CodiceArticolo.ToLower().Contains(f)
             || r.Riga.RagioneSocialeCliente.ToLower().Contains(f)
-            || r.Riga.NumeroOrdine.ToString().Contains(f)))
+            || r.Riga.NumeroOrdine.ToLower().Contains(f)))
         {
             RigheFiltrate.Add(r);
         }
