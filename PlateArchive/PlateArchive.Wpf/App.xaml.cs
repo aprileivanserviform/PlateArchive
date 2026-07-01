@@ -93,6 +93,7 @@ public partial class App : Application
         services.AddTransient<PiastreViewModel>();
         services.AddTransient<MacchineViewModel>();
         services.AddTransient<ImportaDisegnoViewModel>();
+        services.AddTransient<PiastraDettaglioViewModel>();
         services.AddTransient<FormatiMacchinaViewModel>();
         services.AddTransient<CategoriePiastreViewModel>();
         services.AddTransient<ProduttoriMacchinaViewModel>();

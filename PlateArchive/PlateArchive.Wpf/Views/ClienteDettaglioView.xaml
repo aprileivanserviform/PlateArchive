@@ -444,10 +444,19 @@
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <DataGridTemplateColumn Header="" Width="132">
+                                <DataGridTemplateColumn Header="" Width="160">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+
+                                                <!-- Apri caratteristiche (popup) -->
+                                                <Button Style="{StaticResource Button.Icon}"
+                                                        ToolTip="Apri caratteristiche piastra"
+                                                        Click="ApriDettaglioPiastra_Click">
+                                                    <!-- &#xE946; = Info -->
+                                                    <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets"
+                                                               FontWeight="Normal"/>
+                                                </Button>
 
                                                 <!-- Archivia / Riattiva -->
                                                 <Button Command="{Binding DataContext.ToggleStatoPiastraCommand,
