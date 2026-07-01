@@ -525,12 +525,26 @@
                                   SelectedItem="{Binding FormStato}"
                                   Margin="0,0,0,10"/>
 
-                        <TextBlock Text="Tipo piastra" Style="{StaticResource FieldLabel}"/>
-                        <ComboBox ItemsSource="{Binding TipiPiastra}"
-                                  SelectedItem="{Binding FormTipo}"
-                                  Margin="0,0,0,10"/>
+                        <!-- Categoria e Peso — la categoria "Speciale" (SPE) rende obbligatorio il cliente esclusivo -->
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Categoria" Style="{StaticResource FieldLabel}"/>
+                                <ComboBox ItemsSource="{Binding CategoriePiastre}"
+                                          SelectedItem="{Binding FormCategoriaSelezionata}"
+                                          DisplayMemberPath="Descrizione"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Peso (kg)" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding FormPeso, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                        </Grid>
 
-                        <!-- Cliente esclusivo — visibile solo per SpecialeCliente -->
+                        <!-- Cliente esclusivo — visibile solo per categoria Speciale (SPE) -->
                         <StackPanel Visibility="{Binding IsClienteEsclusivoVisible, Converter={StaticResource BoolToVis}}"
                                     Margin="0,0,0,10">
                             <TextBlock Text="Cliente esclusivo *" Style="{StaticResource FieldLabel}"/>
@@ -607,7 +621,7 @@
                                     </ItemsControl>
                                 </Border>
                             </Grid>
-                            <TextBlock Text="Cliente obbligatorio per una piastra Speciale Cliente."
+                            <TextBlock Text="Cliente obbligatorio per la categoria Speciale."
                                        FontSize="{StaticResource FontSize.Caption}"
                                        Foreground="{DynamicResource Brush.Error}"
                                        Margin="0,4,0,0"
@@ -619,25 +633,6 @@
                                   SelectedItem="{Binding FormFormatoSelezionato}"
                                   DisplayMemberPath="NomeFormato"
                                   Margin="0,0,0,10"/>
-
-                        <!-- Categoria e Peso -->
-                        <Grid Margin="0,0,0,10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="Categoria" Style="{StaticResource FieldLabel}"/>
-                                <ComboBox ItemsSource="{Binding CategoriePiastre}"
-                                          SelectedItem="{Binding FormCategoriaSelezionata}"
-                                          DisplayMemberPath="Descrizione"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="Peso (kg)" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Text="{Binding FormPeso, UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>
-                        </Grid>
 
                         <!-- Misure -->
                         <TextBlock Text="Misure (mm)" Style="{StaticResource FieldLabel}"/>

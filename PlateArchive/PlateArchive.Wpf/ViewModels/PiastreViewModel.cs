@@ -177,7 +177,6 @@ public class PiastreViewModel : ViewModelBase
     public FiltroColonna FiltroDataModifica  { get; } = new("Ultima modifica", FiltroColonnaTipo.Data);
 
     public IEnumerable<StatoPiastra> StatiPiastra { get; } = Enum.GetValues<StatoPiastra>();
-    public IEnumerable<TipoPiastra>  TipiPiastra  { get; } = Enum.GetValues<TipoPiastra>();
 
     public ObservableCollection<Piastra> PiastreFiltrate { get; } = [];
 
@@ -430,28 +429,19 @@ public class PiastreViewModel : ViewModelBase
         set => SetField(ref _formStato, value);
     }
 
+    /// <summary>Derivato automaticamente dalla categoria selezionata (vedi <see cref="FormCategoriaSelezionata"/>):
+    /// non è più scelto manualmente dall'utente nel form.</summary>
     public TipoPiastra FormTipo
     {
         get => _formTipo;
-        set
-        {
-            if (SetField(ref _formTipo, value))
-            {
-                if (value == TipoPiastra.Standard)
-                {
-                    FormClienteEsclusivo        = null;
-                    IsClienteEsclusivoNonValido = false;
-                }
-                OnPropertyChanged(nameof(IsClienteEsclusivoVisible));
-                OnPropertyChanged(nameof(IsAssociazioneClientiVisible));
-            }
-        }
+        private set => SetField(ref _formTipo, value);
     }
 
-    /// <summary>True se la sezione "cliente esclusivo" deve essere visibile nel form.</summary>
-    public bool IsClienteEsclusivoVisible    => FormTipo == TipoPiastra.SpecialeCliente;
-    /// <summary>True se la sezione "associa a clienti" (Standard) deve essere visibile nel form.</summary>
-    public bool IsAssociazioneClientiVisible => FormTipo == TipoPiastra.Standard;
+    /// <summary>True se la sezione "cliente esclusivo" deve essere visibile nel form — determinato
+    /// dalla categoria selezionata (SPE), non da una scelta manuale del tipo piastra.</summary>
+    public bool IsClienteEsclusivoVisible    => _formCategoriaSelezionata?.Codice == "SPE";
+    /// <summary>True se la sezione "associa a clienti" (categorie diverse da Speciale) deve essere visibile nel form.</summary>
+    public bool IsAssociazioneClientiVisible => _formCategoriaSelezionata?.Codice != "SPE";
 
     // ── Typeahead cliente esclusivo nel form ──────────────────────────────────
 
@@ -503,7 +493,22 @@ public class PiastreViewModel : ViewModelBase
     public CategoriaPiastra? FormCategoriaSelezionata
     {
         get => _formCategoriaSelezionata;
-        set => SetField(ref _formCategoriaSelezionata, value);
+        set
+        {
+            if (SetField(ref _formCategoriaSelezionata, value))
+            {
+                // La categoria "Speciale" (SPE) rende il cliente esclusivo obbligatorio;
+                // per ogni altra categoria la piastra torna Standard (associazione clienti opzionale).
+                FormTipo = value?.Codice == "SPE" ? TipoPiastra.SpecialeCliente : TipoPiastra.Standard;
+                if (FormTipo == TipoPiastra.Standard)
+                {
+                    FormClienteEsclusivo        = null;
+                    IsClienteEsclusivoNonValido = false;
+                }
+                OnPropertyChanged(nameof(IsClienteEsclusivoVisible));
+                OnPropertyChanged(nameof(IsAssociazioneClientiVisible));
+            }
+        }
     }
 
     public FormatoMacchina? FormFormatoSelezionato
@@ -743,7 +748,7 @@ public class PiastreViewModel : ViewModelBase
         FormCodiceArticolo       = PiastraSelezionata.CodiceArticoloGestionale  ?? string.Empty;
         FormDescrizione          = PiastraSelezionata.Descrizione                ?? string.Empty;
         FormStato                = PiastraSelezionata.Stato;
-        FormTipo                 = PiastraSelezionata.TipoPiastra;
+        // FormTipo è derivato automaticamente dalla categoria (vedi setter di FormCategoriaSelezionata).
         FormCategoriaSelezionata = CategoriePiastre.FirstOrDefault(c => c.IdCategoriaPiastra == PiastraSelezionata.IdCategoriaPiastra);
         FormFormatoSelezionato   = FormatiMacchine.FirstOrDefault(f => f.IdFormato == PiastraSelezionata.IdFormato);
         FormLarghezza            = PiastraSelezionata.LarghezzaMm?.ToString("F1")  ?? string.Empty;
@@ -775,7 +780,7 @@ public class PiastreViewModel : ViewModelBase
         FormCodicePiastra = FormCodiceArticolo = FormDescrizione = FormNote = string.Empty;
         FormLarghezza = FormAltezza = FormSpessore = FormDurezza = FormPeso = string.Empty;
         FormStato                = StatoPiastra.Attiva;
-        FormTipo                 = TipoPiastra.Standard;
+        // FormTipo è derivato automaticamente dalla categoria (vedi setter di FormCategoriaSelezionata).
         FormCategoriaSelezionata = CategoriePiastre.FirstOrDefault(c => c.Codice == "STD");
         FormFormatoSelezionato   = null;
         FormClienteEsclusivo     = null;
