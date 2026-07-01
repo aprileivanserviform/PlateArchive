@@ -18,7 +18,7 @@
                        Foreground="{DynamicResource Brush.TextSecondary}"
                        TextWrapping="Wrap">
                 <Run Text="Articolo gestionale:"/>
-                <Run Text="{Binding CodiceArticolo}" FontWeight="{StaticResource FontWeight.SemiBold}"/>
+                <Run Text="{Binding CodiceArticolo, Mode=OneWay}" FontWeight="{StaticResource FontWeight.SemiBold}"/>
             </TextBlock>
         </StackPanel>
 
