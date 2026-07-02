@@ -91,7 +91,8 @@
                 BorderThickness="1">
             <DataGrid b:DataGridColumnLayout.Chiave="Clienti.Lista"
                       ItemsSource="{Binding ClientiFiltrati}"
-                      CanUserAddRows="False" IsReadOnly="True">
+                      CanUserAddRows="False" IsReadOnly="True"
+                      FrozenColumnCount="1">
                 <DataGrid.RowStyle>
                     <Style TargetType="DataGridRow" BasedOn="{StaticResource DataGridRow.Base}">
                         <EventSetter Event="MouseDoubleClick" Handler="Row_MouseDoubleClick"/>
@@ -107,7 +108,9 @@
                     </Style>
                 </DataGrid.RowStyle>
                 <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="" Width="44">
+                    <!-- Colonna azioni: prima, fissa, alla larghezza minima dell'icona. -->
+                    <DataGridTemplateColumn Header="" Width="Auto"
+                                            CanUserResize="False" CanUserReorder="False">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Button Style="{StaticResource Button.Icon}"

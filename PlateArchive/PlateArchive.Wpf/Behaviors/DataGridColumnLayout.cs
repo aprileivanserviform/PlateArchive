@@ -53,8 +53,12 @@ public static class DataGridColumnLayout
         if (saved is null || saved.Count == 0) return;
 
         // 1. Ripristina le larghezze per colonne trovate nel file.
+        //    Le colonne non ridimensionabili (es. colonna azioni) mantengono la larghezza
+        //    dichiarata nel XAML: una larghezza salvata in passato non deve sovrascriverla.
         foreach (var col in grid.Columns)
         {
+            if (!col.CanUserResize) continue;
+
             var entry = saved.FirstOrDefault(s => s.Key == GetColKey(col));
             if (entry is not null)
                 col.Width = new DataGridLength(entry.Width);

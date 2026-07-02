@@ -37,20 +37,22 @@ public partial class OrdiniVenditaView : UserControl
     /// <summary>
     /// Ricrea le colonne dati della griglia in base alle colonne della query
     /// (Db2:QueryRigheOrdineVendita): nome colonna/alias = intestazione, ordine SELECT = ordine
-    /// griglia. La colonna template con i pulsanti azione (definita nel XAML) resta ultima.
+    /// griglia. La colonna template con i pulsanti azione (definita nel XAML) resta prima e fissa.
     /// </summary>
     private void GeneraColonne()
     {
         if (DataContext is not OrdiniVenditaViewModel vm || vm.Colonne.Count == 0) return;
 
         while (GrigliaOrdini.Columns.Count > 1)
-            GrigliaOrdini.Columns.RemoveAt(0);
+            GrigliaOrdini.Columns.RemoveAt(1);
 
         for (int i = 0; i < vm.Colonne.Count; i++)
         {
-            GrigliaOrdini.Columns.Insert(i, new DataGridTextColumn
+            GrigliaOrdini.Columns.Insert(i + 1, new DataGridTextColumn
             {
-                Header  = vm.Colonne[i],
+                // "__" perché l'header WPF interpreta "_" come tasto di scelta rapida
+                // (ID_ANNO_ORD verrebbe mostrato come IDANNO_ORD).
+                Header  = vm.Colonne[i].Replace("_", "__"),
                 Binding = new Binding($"Riga.Valori[{i}]"),
                 Width   = DataGridLength.Auto,
             });

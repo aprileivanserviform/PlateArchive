@@ -14,7 +14,7 @@
 
     Le colonne dati NON sono definite qui: le genera il code-behind dalla query configurata in
     appsettings.json (Db2:QueryRigheOrdineVendita) — è la SELECT a comandare la tabella.
-    Qui resta solo la colonna template con i pulsanti azione (sempre ultima).
+    Qui resta solo la colonna template con i pulsanti azione (sempre prima, fissa).
     -->
 
     <DockPanel Background="{DynamicResource Brush.Background}">
@@ -63,6 +63,7 @@
                           ItemsSource="{Binding RigheFiltrate}"
                           AutoGenerateColumns="False"
                           CanUserAddRows="False" IsReadOnly="True"
+                          FrozenColumnCount="1"
                           RowHeight="36">
                     <DataGrid.RowStyle>
                         <Style TargetType="DataGridRow" BasedOn="{StaticResource DataGridRow.Base}">
@@ -76,9 +77,11 @@
                         </Style>
                     </DataGrid.RowStyle>
                     <DataGrid.Columns>
-                        <!-- Le colonne dati vengono inserite prima di questa dal code-behind
-                             (GeneraColonne), in base alle colonne della query. -->
-                        <DataGridTemplateColumn Header="" Width="80" CanUserResize="False">
+                        <!-- Colonna azioni: sempre prima e fissa. Le colonne dati vengono
+                             inserite dopo di questa dal code-behind (GeneraColonne),
+                             in base alle colonne della query. -->
+                        <DataGridTemplateColumn Header="" Width="Auto"
+                                                CanUserResize="False" CanUserReorder="False">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -101,10 +104,12 @@
                                                        Foreground="{DynamicResource Brush.Warning}"
                                                        FontWeight="Normal"/>
                                         </Button>
-                                        <TextBlock Text="Nessun disegno"
-                                                   FontSize="{StaticResource FontSize.Caption}"
+                                        <!-- Piastra trovata ma senza disegno: solo icona con tooltip,
+                                             per tenere la colonna alla larghezza minima. -->
+                                        <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets"
+                                                   ToolTip="Nessun disegno associato alla piastra"
                                                    Foreground="{DynamicResource Brush.TextDisabled}"
-                                                   VerticalAlignment="Center">
+                                                   VerticalAlignment="Center" Margin="8,0">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="Visibility" Value="Collapsed"/>
