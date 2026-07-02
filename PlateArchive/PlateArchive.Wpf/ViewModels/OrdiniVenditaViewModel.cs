@@ -39,9 +39,10 @@ public class OrdiniVenditaViewModel : ViewModelBase
 
     private readonly List<RigaOrdineVenditaRow> _tutte = [];
 
-    private string  _filtroRicerca = string.Empty;
-    private bool    _isCaricamento;
-    private string? _errore;
+    private string                 _filtroRicerca = string.Empty;
+    private bool                   _isCaricamento;
+    private string?                _errore;
+    private IReadOnlyList<string>  _colonne = [];
 
     public OrdiniVenditaViewModel(
         IRigheOrdineVenditaService righeOrdineService,
@@ -61,6 +62,16 @@ public class OrdiniVenditaViewModel : ViewModelBase
     }
 
     public ObservableCollection<RigaOrdineVenditaRow> RigheFiltrate { get; } = [];
+
+    /// <summary>
+    /// Nomi colonna restituiti dalla query configurata in appsettings.json: la View li usa
+    /// per generare le colonne della griglia (è la SELECT a comandare la tabella).
+    /// </summary>
+    public IReadOnlyList<string> Colonne
+    {
+        get => _colonne;
+        private set => SetField(ref _colonne, value);
+    }
 
     public string FiltroRicerca
     {
@@ -100,10 +111,11 @@ public class OrdiniVenditaViewModel : ViewModelBase
         IsCaricamento = true;
         try
         {
-            var righe = await _righeOrdineService.LeggiRigheInevaseAsync();
+            var result = await _righeOrdineService.LeggiRigheInevaseAsync();
+            Colonne    = result.Colonne;
 
             _tutte.Clear();
-            foreach (var r in righe)
+            foreach (var r in result.Righe)
             {
                 var piastra = await _piastreRepo.GetByCodiceArticoloGestionaleAsync(r.CodiceArticolo);
                 var riga    = new RigaOrdineVenditaRow(r, piastra);
@@ -128,12 +140,10 @@ public class OrdiniVenditaViewModel : ViewModelBase
         var f = FiltroRicerca.Trim().ToLower();
 
         RigheFiltrate.Clear();
+        // La ricerca copre tutte le colonne della query, qualunque esse siano.
         foreach (var r in _tutte.Where(r =>
             string.IsNullOrEmpty(f)
-            || r.Riga.CodiceArticolo.ToLower().Contains(f)
-            || r.Riga.DescrizioneEstesa.ToLower().Contains(f)
-            || r.Riga.RagioneSocialeCliente.ToLower().Contains(f)
-            || r.Riga.NumeroOrdine.ToLower().Contains(f)))
+            || r.Riga.Valori.Any(v => v.ToLower().Contains(f))))
         {
             RigheFiltrate.Add(r);
         }

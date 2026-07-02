@@ -15,7 +15,13 @@ public class RigheOrdineVenditaService(string connectionString, string queryRigh
 {
     public bool IsDisponibile => !string.IsNullOrWhiteSpace(connectionString);
 
-    public async Task<IReadOnlyList<RigaOrdineVendita>> LeggiRigheInevaseAsync(CancellationToken ct = default)
+    // Colonne che alimentano la logica applicativa (ricerca piastra, auto-associazione):
+    // vengono individuate per NOME nel risultato, quindi la SELECT può cambiare liberamente
+    // ordine e colonne purché queste due restino presenti senza alias.
+    private const string ColonnaArticolo = "R_ARTICOLO";
+    private const string ColonnaCliente  = "R_CLIENTE";
+
+    public async Task<RigheOrdineVenditaResult> LeggiRigheInevaseAsync(CancellationToken ct = default)
     {
         if (!IsDisponibile)
             throw new InvalidOperationException("Stringa di connessione DB2 non configurata.");
@@ -28,24 +34,32 @@ public class RigheOrdineVenditaService(string connectionString, string queryRigh
         using var cmd    = new OdbcCommand(queryRigheOrdine, conn);
         using var reader = await cmd.ExecuteReaderAsync(ct);
 
+        // Le colonne (nome + posizione) sono definite dalla SELECT: la griglia le mostra così come sono.
+        var colonne = new string[reader.FieldCount];
+        for (int i = 0; i < reader.FieldCount; i++)
+            colonne[i] = reader.GetName(i).Trim();
+
+        var idxArticolo = Array.FindIndex(colonne, c => c.Equals(ColonnaArticolo, StringComparison.OrdinalIgnoreCase));
+        var idxCliente  = Array.FindIndex(colonne, c => c.Equals(ColonnaCliente,  StringComparison.OrdinalIgnoreCase));
+
         while (await reader.ReadAsync(ct))
         {
             ct.ThrowIfCancellationRequested();
 
-            var articolo = ToStringTrim(reader, 3);
-            if (string.IsNullOrEmpty(articolo)) continue;
+            var valori = new string[reader.FieldCount];
+            for (int i = 0; i < reader.FieldCount; i++)
+                valori[i] = ToStringTrim(reader, i);
+
+            var articolo = idxArticolo >= 0 ? valori[idxArticolo] : string.Empty;
+            if (idxArticolo >= 0 && string.IsNullOrEmpty(articolo)) continue;
 
             righe.Add(new RigaOrdineVendita(
-                AnnoOrdine:                ToStringTrim(reader, 0),
-                NumeroOrdine:              ToStringTrim(reader, 1),
-                RigaOrdine:                ToStringTrim(reader, 2),
-                CodiceArticolo:            articolo,
-                DescrizioneEstesa:         ToStringTrim(reader, 4),
-                RagioneSocialeCliente:     ToStringTrim(reader, 5),
-                CodiceClienteGestionale:   ToStringTrim(reader, 6)));
+                CodiceArticolo:          articolo,
+                CodiceClienteGestionale: idxCliente >= 0 ? valori[idxCliente] : string.Empty,
+                Valori:                  valori));
         }
 
-        return righe;
+        return new RigheOrdineVenditaResult(colonne, righe);
     }
 
     // Le colonne DB2/AS400 arrivano via ODBC con tipi eterogenei (decimal, char, ecc.) a seconda

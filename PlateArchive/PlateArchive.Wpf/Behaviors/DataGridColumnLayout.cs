@@ -39,6 +39,13 @@ public static class DataGridColumnLayout
         grid.ColumnReordered += (_, _) => SalvaLayout(grid, chiave);
     }
 
+    /// <summary>
+    /// Riapplica il layout salvato. Da chiamare quando le colonne vengono (ri)generate da
+    /// codice DOPO il Loaded della griglia (es. OrdiniVenditaView, colonne guidate dalla query):
+    /// il ripristino automatico su Loaded in quel caso non trova ancora le colonne.
+    /// </summary>
+    public static void Ripristina(DataGrid grid, string chiave) => RipristinaLayout(grid, chiave);
+
     private static void RipristinaLayout(DataGrid grid, string chiave)
     {
         var svc   = App.ServiceProvider.GetService<IColumnLayoutService>();

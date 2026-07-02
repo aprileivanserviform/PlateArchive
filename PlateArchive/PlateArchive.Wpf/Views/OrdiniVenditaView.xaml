@@ -11,6 +11,10 @@
     trovata, "Associa piastra" (o il doppio clic sulla riga) apre AssociaPiastraOrdineWindow per
     collegarla a una piastra esistente; se è già stata trovata, il doppio clic apre invece
     PiastraDettaglioWindow con le sue caratteristiche.
+
+    Le colonne dati NON sono definite qui: le genera il code-behind dalla query configurata in
+    appsettings.json (Db2:QueryRigheOrdineVendita) — è la SELECT a comandare la tabella.
+    Qui resta solo la colonna template con i pulsanti azione (sempre ultima).
     -->
 
     <DockPanel Background="{DynamicResource Brush.Background}">
@@ -31,7 +35,7 @@
                                Style="{StaticResource TextBlock.Title}"
                                Margin="0,0,0,10"/>
                     <TextBox Text="{Binding FiltroRicerca, UpdateSourceTrigger=PropertyChanged}"
-                             ToolTip="Cerca per cliente, articolo, descrizione o numero ordine"/>
+                             ToolTip="Cerca in tutte le colonne"/>
                 </StackPanel>
             </DockPanel>
         </Border>
@@ -54,8 +58,10 @@
             <Border Background="{DynamicResource Brush.Surface}"
                     BorderBrush="{DynamicResource Brush.Border}"
                     BorderThickness="1">
-                <DataGrid b:DataGridColumnLayout.Chiave="OrdiniVendita.Lista"
+                <DataGrid x:Name="GrigliaOrdini"
+                          b:DataGridColumnLayout.Chiave="OrdiniVendita.Lista"
                           ItemsSource="{Binding RigheFiltrate}"
+                          AutoGenerateColumns="False"
                           CanUserAddRows="False" IsReadOnly="True"
                           RowHeight="36">
                     <DataGrid.RowStyle>
@@ -70,24 +76,8 @@
                         </Style>
                     </DataGrid.RowStyle>
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Anno"
-                                           Binding="{Binding Riga.AnnoOrdine}"
-                                           Width="70"/>
-                        <DataGridTextColumn Header="Numero"
-                                           Binding="{Binding Riga.NumeroOrdine}"
-                                           Width="90"/>
-                        <DataGridTextColumn Header="Riga"
-                                           Binding="{Binding Riga.RigaOrdine}"
-                                           Width="60"/>
-                        <DataGridTextColumn Header="Cliente"
-                                           Binding="{Binding Riga.RagioneSocialeCliente}"
-                                           Width="*"/>
-                        <DataGridTextColumn Header="Articolo"
-                                           Binding="{Binding Riga.CodiceArticolo}"
-                                           Width="220"/>
-                        <DataGridTextColumn Header="Descrizione"
-                                           Binding="{Binding Riga.DescrizioneEstesa}"
-                                           Width="*"/>
+                        <!-- Le colonne dati vengono inserite prima di questa dal code-behind
+                             (GeneraColonne), in base alle colonne della query. -->
                         <DataGridTemplateColumn Header="" Width="80" CanUserResize="False">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
