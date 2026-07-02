@@ -97,9 +97,11 @@
                         <EventSetter Event="MouseDoubleClick" Handler="Row_MouseDoubleClick"/>
                         <Setter Property="Cursor" Value="Hand"/>
                         <Style.Triggers>
+                            <!-- Cliente annullato nel gestionale: riga in rosso sbiadito,
+                                 stessa evidenziazione usata nella lista Ordini vendita. -->
                             <DataTrigger Binding="{Binding AttivoGestionale}" Value="False">
-                                <Setter Property="Foreground" Value="{DynamicResource Brush.TextDisabled}"/>
-                                <Setter Property="FontStyle" Value="Italic"/>
+                                <Setter Property="Background" Value="{DynamicResource Brush.ErrorSurface}"/>
+                                <Setter Property="ToolTip" Value="Cliente annullato nel gestionale"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
