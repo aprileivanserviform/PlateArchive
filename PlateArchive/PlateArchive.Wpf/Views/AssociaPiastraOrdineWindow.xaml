@@ -49,6 +49,7 @@
 
             <!-- Piastra selezionata (chip con X) -->
             <Border Visibility="{Binding IsPiastraSelezionataVisible, Converter={StaticResource BoolToVis}}"
+
                     Background="{DynamicResource Brush.PrimarySubtle}"
                     BorderBrush="{DynamicResource Brush.Primary}"
                     BorderThickness="1"

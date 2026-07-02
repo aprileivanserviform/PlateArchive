@@ -74,6 +74,16 @@ public static class DataGridColumnLayout
 
         for (int i = 0; i < inOrdine.Count; i++)
             inOrdine[i]!.DisplayIndex = i;
+
+        // 3. Le colonne non riordinabili (es. colonna azioni) devono restare alla posizione
+        //    dichiarata nella collezione: la riassegnazione sopra può averle spinte altrove
+        //    quando il file salvato non le contiene (o le contiene con una chiave posizionale
+        //    ormai stantia, tipo "__col_7").
+        for (int i = 0; i < grid.Columns.Count; i++)
+        {
+            if (!grid.Columns[i].CanUserReorder)
+                grid.Columns[i].DisplayIndex = i;
+        }
     }
 
     private static void SalvaLayout(DataGrid grid, string chiave)
