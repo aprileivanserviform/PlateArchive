@@ -29,6 +29,7 @@ public class ClientiViewModel : ViewModelBase
     private readonly ObservableCollection<Cliente> _tutti = [];
 
     private string  _filtroRicerca      = string.Empty;
+    private string  _filtroStato        = FiltroStatoTutti;
     private bool    _isSincronizzando;
     private string? _esitoSincronizzazione;
     private bool    _esitoIsErrore;
@@ -64,6 +65,22 @@ public class ClientiViewModel : ViewModelBase
     {
         get => _filtroRicerca;
         set { if (SetField(ref _filtroRicerca, value)) AggiornaFiltro(); }
+    }
+
+    // ─── Filtro per stato gestionale ──────────────────────────────────────────
+    // Lo stato arriva dal gestionale via sincronizzazione (Cliente.AttivoGestionale).
+
+    private const string FiltroStatoTutti     = "Tutti";
+    private const string FiltroStatoAttivi    = "Attivi";
+    private const string FiltroStatoAnnullati = "Annullati";
+
+    public IReadOnlyList<string> OpzioniFiltroStato { get; } =
+        [FiltroStatoTutti, FiltroStatoAttivi, FiltroStatoAnnullati];
+
+    public string FiltroStato
+    {
+        get => _filtroStato;
+        set { if (SetField(ref _filtroStato, value)) AggiornaFiltro(); }
     }
 
     /// <summary>Subset di _tutti filtrato per la ricerca — bound alla DataGrid nella View.</summary>
@@ -140,9 +157,15 @@ public class ClientiViewModel : ViewModelBase
         ClientiFiltrati.Clear();
         var f = _filtroRicerca.Trim().ToLower();
         foreach (var c in _tutti.Where(c =>
-            string.IsNullOrEmpty(f)
-            || c.CodiceClienteGestionale.ToLower().Contains(f)
-            || c.RagioneSociale.ToLower().Contains(f)))
+            (string.IsNullOrEmpty(f)
+             || c.CodiceClienteGestionale.ToLower().Contains(f)
+             || c.RagioneSociale.ToLower().Contains(f))
+            && (_filtroStato switch
+            {
+                FiltroStatoAttivi    => c.AttivoGestionale,
+                FiltroStatoAnnullati => !c.AttivoGestionale,
+                _                    => true,
+            })))
         {
             ClientiFiltrati.Add(c);
         }

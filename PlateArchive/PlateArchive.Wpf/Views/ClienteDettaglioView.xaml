@@ -39,6 +39,35 @@
             </DockPanel>
         </Border>
 
+        <!-- ── Avviso cliente annullato nel gestionale ─────────── -->
+        <!-- Visibile solo se AttivoGestionale = false (via DataTrigger: BoolToVis non supporta l'inversione). -->
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource Brush.WarningSurface}"
+                BorderBrush="{DynamicResource Brush.Warning}"
+                BorderThickness="1"
+                CornerRadius="{StaticResource Radius.S}"
+                Padding="12,8" Margin="24,16,24,0">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Cliente.AttivoGestionale}" Value="False">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets"
+                           Foreground="{DynamicResource Brush.Warning}"
+                           VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBlock Text="Cliente annullato nel gestionale — lo storico di macchine e piastre resta consultabile."
+                           Foreground="{DynamicResource Brush.Warning}"
+                           FontWeight="SemiBold"
+                           TextWrapping="Wrap" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
         <!-- ── Tab content ────────────────────────────────────── -->
         <TabControl Style="{StaticResource TabControl.Base}" Margin="24,20,24,24">
 
@@ -65,6 +94,22 @@
                             <TextBlock Text="{Binding Cliente.CodiceClienteGestionale}"
                                        Style="{StaticResource TextBlock.Body}"
                                        Margin="0,0,0,14"/>
+
+                            <TextBlock Text="Stato nel gestionale" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Margin="0,0,0,14">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource TextBlock.Body}">
+                                        <Setter Property="Text" Value="Attivo"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource Brush.Success}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Cliente.AttivoGestionale}" Value="False">
+                                                <Setter Property="Text" Value="Annullato"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource Brush.Error}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
 
                         </StackPanel>
                     </Border>

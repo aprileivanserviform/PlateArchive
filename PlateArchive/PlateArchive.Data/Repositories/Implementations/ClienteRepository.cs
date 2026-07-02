@@ -7,7 +7,8 @@ namespace PlateArchive.Data.Repositories.Implementations;
 /// <summary>
 /// Repository per la tabella Clienti.
 /// I clienti non hanno soft-delete: vengono sincronizzati dal gestionale DB2
-/// e un cliente eliminato nel gestionale viene semplicemente ignorato nelle sincronizzazioni successive.
+/// e un cliente annullato nel gestionale viene marcato AttivoGestionale = false
+/// (mai eliminato — lo storico piastre/macchine resta consultabile).
 /// </summary>
 public class ClienteRepository(PlateArchiveDbContext db) : IClienteRepository
 {

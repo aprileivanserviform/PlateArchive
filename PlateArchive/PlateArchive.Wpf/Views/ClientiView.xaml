@@ -71,9 +71,16 @@
                     </TextBlock>
                 </Border>
 
-                <!-- Barra filtri -->
-                <TextBox DockPanel.Dock="Top"
-                         Text="{Binding FiltroRicerca, UpdateSourceTrigger=PropertyChanged}"/>
+                <!-- Barra filtri: ricerca testuale + stato gestionale -->
+                <DockPanel DockPanel.Dock="Top">
+                    <ComboBox DockPanel.Dock="Right"
+                              Width="130" Margin="12,0,0,0"
+                              VerticalAlignment="Center"
+                              ItemsSource="{Binding OpzioniFiltroStato}"
+                              SelectedItem="{Binding FiltroStato}"
+                              ToolTip="Filtra per stato nel gestionale"/>
+                    <TextBox Text="{Binding FiltroRicerca, UpdateSourceTrigger=PropertyChanged}"/>
+                </DockPanel>
             </DockPanel>
         </Border>
 
@@ -89,6 +96,12 @@
                     <Style TargetType="DataGridRow" BasedOn="{StaticResource DataGridRow.Base}">
                         <EventSetter Event="MouseDoubleClick" Handler="Row_MouseDoubleClick"/>
                         <Setter Property="Cursor" Value="Hand"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding AttivoGestionale}" Value="False">
+                                <Setter Property="Foreground" Value="{DynamicResource Brush.TextDisabled}"/>
+                                <Setter Property="FontStyle" Value="Italic"/>
+                            </DataTrigger>
+                        </Style.Triggers>
                     </Style>
                 </DataGrid.RowStyle>
                 <DataGrid.Columns>
@@ -112,6 +125,41 @@
                     <DataGridTextColumn Header="Ragione Sociale"
                                        Binding="{Binding RagioneSociale}"
                                        Width="*"/>
+                    <DataGridTemplateColumn Header="Stato" Width="110">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border Padding="5,2" CornerRadius="3"
+                                        HorizontalAlignment="Left" Margin="4,0"
+                                        VerticalAlignment="Center"
+                                        ToolTip="Stato del cliente nel gestionale">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="{DynamicResource Brush.SuccessSurface}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding AttivoGestionale}" Value="False">
+                                                    <Setter Property="Background" Value="{DynamicResource Brush.ErrorSurface}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock FontSize="11" FontWeight="SemiBold" FontStyle="Normal">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Text" Value="Attivo"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource Brush.Success}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding AttivoGestionale}" Value="False">
+                                                        <Setter Property="Text" Value="Annullato"/>
+                                                        <Setter Property="Foreground" Value="{DynamicResource Brush.Error}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
         </Border>
