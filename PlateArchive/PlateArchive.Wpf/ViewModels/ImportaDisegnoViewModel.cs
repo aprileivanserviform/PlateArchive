@@ -302,13 +302,29 @@ public class ImportaDisegnoViewModel : ViewModelBase
 
     // ─── Inizializzazione ─────────────────────────────────────────────────────
 
-    public async Task InitAsync(string percorsoFile)
+    /// <param name="percorsoFile">File disegno trascinato.</param>
+    /// <param name="codiceArticoloPrecompilato">
+    /// Codice articolo gestionale da pre-compilare (flusso "crea piastra da riga ordine"):
+    /// se valorizzato e il disegno è nuovo, parte già in modalità "crea nuova piastra".
+    /// </param>
+    /// <param name="descrizionePrecompilata">Descrizione da pre-compilare (DESCR_ESTESA dell'articolo).</param>
+    public async Task InitAsync(
+        string  percorsoFile,
+        string? codiceArticoloPrecompilato = null,
+        string? descrizionePrecompilata    = null)
     {
         PercorsoFile      = percorsoFile;
         NomeFile          = Path.GetFileName(percorsoFile);
         FormCodicePiastra = Path.GetFileNameWithoutExtension(percorsoFile);
 
         DisegnoEsistente = await _disegniRepo.GetByNomeFileAsync(NomeFile);
+
+        if (DisegnoEsistente is null && !string.IsNullOrWhiteSpace(codiceArticoloPrecompilato))
+        {
+            IsCreaNuovaPiastraMode = true;
+            FormCodiceArticolo     = codiceArticoloPrecompilato;
+            FormDescrizione        = descrizionePrecompilata ?? string.Empty;
+        }
 
         if (DisegnoEsistente is not null)
         {

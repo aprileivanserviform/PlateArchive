@@ -153,4 +153,15 @@ public class AssociaPiastraOrdineViewModel : ViewModelBase
         Confermato = false;
         RichiestaChiusura?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>
+    /// Chiamato dal code-behind quando una nuova piastra è stata creata tramite drag&amp;drop
+    /// del disegno (flusso ImportaDisegnoWindow): il dialog si chiude come confermato,
+    /// così la riga ordine viene ricaricata e trova la piastra appena creata.
+    /// </summary>
+    public void SegnalaPiastraCreata()
+    {
+        Confermato = true;
+        RichiestaChiusura?.Invoke(this, EventArgs.Empty);
+    }
 }

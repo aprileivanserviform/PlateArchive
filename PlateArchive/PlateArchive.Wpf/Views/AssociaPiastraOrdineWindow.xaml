@@ -131,6 +131,29 @@
                            Foreground="{DynamicResource Brush.Error}"/>
             </Border>
 
+            <!-- Crea nuova piastra: drop del disegno → ImportaDisegnoWindow con
+                 codice articolo e descrizione pre-compilati dalla riga ordine. -->
+            <Border Margin="0,12,0,0"
+                    Background="{DynamicResource Brush.InfoSurface}"
+                    BorderBrush="{DynamicResource Brush.Info}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource Radius.S}"
+                    Padding="14,12"
+                    AllowDrop="True"
+                    DragOver="DropZonaNuovaPiastra_DragOver"
+                    Drop="DropZonaNuovaPiastra_Drop">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <TextBlock Text="&#xE898;" FontFamily="Segoe MDL2 Assets"
+                               Foreground="{DynamicResource Brush.Info}"
+                               VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <TextBlock Text="Oppure trascina qui il disegno (.dwg, .dxf, .pdf) per creare una nuova piastra"
+                               FontSize="{StaticResource FontSize.Caption}"
+                               Foreground="{DynamicResource Brush.Info}"
+                               TextWrapping="Wrap" VerticalAlignment="Center"
+                               MaxWidth="320"/>
+                </StackPanel>
+            </Border>
+
         </StackPanel>
     </DockPanel>
 </Window>
