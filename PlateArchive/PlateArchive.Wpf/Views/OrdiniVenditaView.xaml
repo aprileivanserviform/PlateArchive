@@ -66,6 +66,11 @@
                                 <DataTrigger Binding="{Binding PiastraTrovata}" Value="False">
                                     <Setter Property="Background" Value="{DynamicResource Brush.WarningSurface}"/>
                                 </DataTrigger>
+                                <!-- Dopo il trigger giallo: se il cliente è annullato il rosso prevale. -->
+                                <DataTrigger Binding="{Binding ClienteAnnullato}" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource Brush.ErrorSurface}"/>
+                                    <Setter Property="ToolTip" Value="Cliente annullato nel gestionale"/>
+                                </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </DataGrid.RowStyle>
