@@ -11,14 +11,16 @@ namespace PlateArchive.Services;
 /// Tutto viene letto come stringa: le colonne DB2/AS400 hanno tipi eterogenei, e alcune
 /// CHARACTER(10) contengono causale e numero concatenati (es. <c>"VS  003071"</c>).
 /// </para>
-/// <see cref="CodiceArticolo"/> e <see cref="CodiceClienteGestionale"/> sono estratti per NOME
-/// dalle colonne <c>R_ARTICOLO</c> e <c>R_CLIENTE</c> (che quindi devono restare nella SELECT
-/// senza alias) e alimentano la logica applicativa: ricerca piastra per codice articolo e
-/// auto-associazione cliente↔piastra.
+/// <see cref="CodiceArticolo"/>, <see cref="CodiceClienteGestionale"/> e
+/// <see cref="DescrizioneArticolo"/> sono estratti per NOME dalle colonne <c>R_ARTICOLO</c>,
+/// <c>R_CLIENTE</c> e <c>DESCR_ESTESA</c> (che quindi devono restare nella SELECT senza alias)
+/// e alimentano la logica applicativa: ricerca piastra per codice articolo, auto-associazione
+/// cliente↔piastra, descrizione articolo nei dialog Associa piastra / Caratteristiche piastra.
 /// </summary>
 public record RigaOrdineVendita(
     string CodiceArticolo,
     string CodiceClienteGestionale,
+    string DescrizioneArticolo,
     IReadOnlyList<string> Valori);
 
 /// <summary>

@@ -17,8 +17,9 @@ public class AssociaPiastraOrdineViewModel : ViewModelBase
 
     private List<Piastra> _tuttePiastre = [];
 
-    private string   _codiceArticolo = string.Empty;
-    private string   _filtroPiastra  = string.Empty;
+    private string   _codiceArticolo      = string.Empty;
+    private string   _descrizioneArticolo = string.Empty;
+    private string   _filtroPiastra       = string.Empty;
     private Piastra? _piastraSelezionata;
     private string?  _errore;
     private bool     _confermato;
@@ -38,6 +39,19 @@ public class AssociaPiastraOrdineViewModel : ViewModelBase
         get => _codiceArticolo;
         private set => SetField(ref _codiceArticolo, value);
     }
+
+    /// <summary>Descrizione estesa dell'articolo (DESCR_ESTESA), letta dalla riga ordine.</summary>
+    public string DescrizioneArticolo
+    {
+        get => _descrizioneArticolo;
+        private set
+        {
+            if (SetField(ref _descrizioneArticolo, value))
+                OnPropertyChanged(nameof(IsDescrizioneArticoloVisible));
+        }
+    }
+
+    public bool IsDescrizioneArticoloVisible => !string.IsNullOrEmpty(_descrizioneArticolo);
 
     public ObservableCollection<Piastra> PiastreSuggerite { get; } = [];
 
@@ -92,10 +106,11 @@ public class AssociaPiastraOrdineViewModel : ViewModelBase
     public ICommand SelezionaPiastraCommand          { get; }
     public ICommand RimuoviPiastraSelezionataCommand { get; }
 
-    public async Task InitAsync(string codiceArticolo)
+    public async Task InitAsync(string codiceArticolo, string descrizioneArticolo = "")
     {
-        CodiceArticolo = codiceArticolo;
-        _tuttePiastre  = (await _piastreRepo.GetAllAsync()).ToList();
+        CodiceArticolo      = codiceArticolo;
+        DescrizioneArticolo = descrizioneArticolo;
+        _tuttePiastre       = (await _piastreRepo.GetAllAsync()).ToList();
     }
 
     private void AggiornaSuggerimenti()

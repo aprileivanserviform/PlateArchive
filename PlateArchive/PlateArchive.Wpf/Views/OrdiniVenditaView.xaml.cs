@@ -61,6 +61,10 @@ public partial class OrdiniVenditaView : UserControl
         // Il ripristino automatico del behavior avviene sul Loaded, quando queste colonne
         // non esistono ancora: va riapplicato ora che ci sono.
         DataGridColumnLayout.Ripristina(GrigliaOrdini, DataGridColumnLayout.GetChiave(GrigliaOrdini)!);
+
+        // Il ripristino riassegna i DisplayIndex dalle voci salvate e può spingere in fondo
+        // la colonna azioni (che non compare tra le colonne dati salvate): va riportata prima.
+        GrigliaOrdini.Columns[0].DisplayIndex = 0;
     }
 
     private void AssociaPiastra_Click(object sender, RoutedEventArgs e)
@@ -84,7 +88,7 @@ public partial class OrdiniVenditaView : UserControl
         if (row.Piastra is null) return;
 
         var vm = App.ServiceProvider.GetRequiredService<PiastraDettaglioViewModel>();
-        await vm.InitAsync(row.Piastra.IdPiastra);
+        await vm.InitAsync(row.Piastra.IdPiastra, row.Riga.DescrizioneArticolo);
         new PiastraDettaglioWindow(vm) { Owner = Window.GetWindow(this) }.ShowDialog();
     }
 
@@ -93,7 +97,7 @@ public partial class OrdiniVenditaView : UserControl
         if (DataContext is not OrdiniVenditaViewModel viewModel) return;
 
         var vm = App.ServiceProvider.GetRequiredService<AssociaPiastraOrdineViewModel>();
-        await vm.InitAsync(row.Riga.CodiceArticolo);
+        await vm.InitAsync(row.Riga.CodiceArticolo, row.Riga.DescrizioneArticolo);
         new AssociaPiastraOrdineWindow(vm) { Owner = Window.GetWindow(this) }.ShowDialog();
 
         if (vm.Confermato)

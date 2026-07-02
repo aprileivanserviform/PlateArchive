@@ -20,6 +20,12 @@
                 <Run Text="Articolo gestionale:"/>
                 <Run Text="{Binding CodiceArticolo, Mode=OneWay}" FontWeight="{StaticResource FontWeight.SemiBold}"/>
             </TextBlock>
+            <TextBlock Text="{Binding DescrizioneArticolo, Mode=OneWay}"
+                       FontSize="{StaticResource FontSize.Caption}"
+                       Foreground="{DynamicResource Brush.TextSecondary}"
+                       TextWrapping="Wrap"
+                       Margin="0,4,0,0"
+                       Visibility="{Binding IsDescrizioneArticoloVisible, Converter={StaticResource BoolToVis}}"/>
         </StackPanel>
 
         <!-- ── Pulsanti fondo ────────────────────────────────────── -->

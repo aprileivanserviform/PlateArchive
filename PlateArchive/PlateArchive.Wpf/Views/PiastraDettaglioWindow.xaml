@@ -62,6 +62,12 @@
                     <StackPanel>
                         <TextBlock Text="Codice articolo gestionale" Style="{StaticResource TextBlock.Caption}"/>
                         <TextBlock Text="{Binding Piastra.CodiceArticoloGestionale, FallbackValue='—', TargetNullValue='—'}"/>
+                        <!-- Descrizione estesa (DESCR_ESTESA): presente solo se aperta da una riga ordine. -->
+                        <TextBlock Text="{Binding DescrizioneArticoloGestionale}"
+                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,4,0,0"
+                                   Visibility="{Binding IsDescrizioneArticoloVisible, Converter={StaticResource BoolToVis}}"/>
                     </StackPanel>
                 </Border>
 

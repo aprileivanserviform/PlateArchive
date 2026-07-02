@@ -21,6 +21,7 @@ public class PiastraDettaglioViewModel : ViewModelBase
     private readonly IPiastraRepository _piastreRepo;
 
     private Piastra?      _piastra;
+    private string?       _descrizioneArticoloGestionale;
     private BitmapSource? _anteprimaDisegno;
     private bool          _isCaricamentoAnteprima;
     private string?       _erroreDisegno;
@@ -48,6 +49,22 @@ public class PiastraDettaglioViewModel : ViewModelBase
 
     public bool IsDisegnoPresente => Piastra?.Disegno is not null;
     public bool IsDisegnoAssente  => Piastra is not null && Piastra.Disegno is null;
+
+    /// <summary>
+    /// Descrizione estesa dell'articolo (DESCR_ESTESA), disponibile solo quando la finestra
+    /// viene aperta da una riga ordine: è un dato live del gestionale, non salvato in locale.
+    /// </summary>
+    public string? DescrizioneArticoloGestionale
+    {
+        get => _descrizioneArticoloGestionale;
+        private set
+        {
+            if (SetField(ref _descrizioneArticoloGestionale, value))
+                OnPropertyChanged(nameof(IsDescrizioneArticoloVisible));
+        }
+    }
+
+    public bool IsDescrizioneArticoloVisible => !string.IsNullOrEmpty(_descrizioneArticoloGestionale);
 
     public BitmapSource? AnteprimaDisegno
     {
@@ -82,9 +99,10 @@ public class PiastraDettaglioViewModel : ViewModelBase
 
     public ICommand AprirDisegnoCommand { get; }
 
-    public async Task InitAsync(int idPiastra)
+    public async Task InitAsync(int idPiastra, string? descrizioneArticoloGestionale = null)
     {
         Piastra = await _piastreRepo.GetByIdAsync(idPiastra);
+        DescrizioneArticoloGestionale = descrizioneArticoloGestionale;
 
         if (Piastra?.Disegno is not null)
         {

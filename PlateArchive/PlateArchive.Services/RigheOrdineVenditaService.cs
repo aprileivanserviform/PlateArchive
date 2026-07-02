@@ -15,11 +15,12 @@ public class RigheOrdineVenditaService(string connectionString, string queryRigh
 {
     public bool IsDisponibile => !string.IsNullOrWhiteSpace(connectionString);
 
-    // Colonne che alimentano la logica applicativa (ricerca piastra, auto-associazione):
-    // vengono individuate per NOME nel risultato, quindi la SELECT può cambiare liberamente
-    // ordine e colonne purché queste due restino presenti senza alias.
-    private const string ColonnaArticolo = "R_ARTICOLO";
-    private const string ColonnaCliente  = "R_CLIENTE";
+    // Colonne che alimentano la logica applicativa (ricerca piastra, auto-associazione,
+    // descrizione articolo nei dialog): vengono individuate per NOME nel risultato, quindi la
+    // SELECT può cambiare liberamente ordine e colonne purché queste restino presenti senza alias.
+    private const string ColonnaArticolo    = "R_ARTICOLO";
+    private const string ColonnaCliente     = "R_CLIENTE";
+    private const string ColonnaDescrizione = "DESCR_ESTESA";
 
     public async Task<RigheOrdineVenditaResult> LeggiRigheInevaseAsync(CancellationToken ct = default)
     {
@@ -39,8 +40,9 @@ public class RigheOrdineVenditaService(string connectionString, string queryRigh
         for (int i = 0; i < reader.FieldCount; i++)
             colonne[i] = reader.GetName(i).Trim();
 
-        var idxArticolo = Array.FindIndex(colonne, c => c.Equals(ColonnaArticolo, StringComparison.OrdinalIgnoreCase));
-        var idxCliente  = Array.FindIndex(colonne, c => c.Equals(ColonnaCliente,  StringComparison.OrdinalIgnoreCase));
+        var idxArticolo    = Array.FindIndex(colonne, c => c.Equals(ColonnaArticolo,    StringComparison.OrdinalIgnoreCase));
+        var idxCliente     = Array.FindIndex(colonne, c => c.Equals(ColonnaCliente,     StringComparison.OrdinalIgnoreCase));
+        var idxDescrizione = Array.FindIndex(colonne, c => c.Equals(ColonnaDescrizione, StringComparison.OrdinalIgnoreCase));
 
         while (await reader.ReadAsync(ct))
         {
@@ -55,7 +57,8 @@ public class RigheOrdineVenditaService(string connectionString, string queryRigh
 
             righe.Add(new RigaOrdineVendita(
                 CodiceArticolo:          articolo,
-                CodiceClienteGestionale: idxCliente >= 0 ? valori[idxCliente] : string.Empty,
+                CodiceClienteGestionale: idxCliente     >= 0 ? valori[idxCliente]     : string.Empty,
+                DescrizioneArticolo:     idxDescrizione >= 0 ? valori[idxDescrizione] : string.Empty,
                 Valori:                  valori));
         }
 
@@ -65,6 +68,11 @@ public class RigheOrdineVenditaService(string connectionString, string queryRigh
     // Le colonne DB2/AS400 arrivano via ODBC con tipi eterogenei (decimal, char, ecc.) a seconda
     // della colonna: leggiamo tutto come stringa invece di assumere un tipo numerico, dato che
     // alcune (es. CHARACTER(10)) possono contenere causale e numero concatenati.
+    // Gli a-capo (es. DESCR_ESTESA multiriga) vengono compattati in uno spazio: in griglia
+    // ogni valore deve stare su una sola riga.
     private static string ToStringTrim(DbDataReader reader, int index) =>
-        reader.IsDBNull(index) ? string.Empty : reader.GetValue(index).ToString()!.Trim();
+        reader.IsDBNull(index)
+            ? string.Empty
+            : System.Text.RegularExpressions.Regex.Replace(
+                  reader.GetValue(index).ToString()!.Trim(), @"\s*[\r\n]+\s*", " ");
 }
