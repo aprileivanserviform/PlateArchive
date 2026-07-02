@@ -13,14 +13,11 @@ namespace PlateArchive.Wpf.ViewModels;
 /// <summary>
 /// Riga ordine di vendita (letta dal gestionale) abbinata alla piastra corrispondente
 /// (ricerca locale per <see cref="Piastra.CodiceArticoloGestionale"/>), se trovata.
-/// <see cref="ClienteAnnullato"/> = il cliente della riga risulta annullato nel gestionale
-/// (Cliente.AttivoGestionale = false nell'anagrafica locale sincronizzata).
 /// </summary>
-public class RigaOrdineVenditaRow(RigaOrdineVendita riga, Piastra? piastra, bool clienteAnnullato = false)
+public class RigaOrdineVenditaRow(RigaOrdineVendita riga, Piastra? piastra)
 {
-    public RigaOrdineVendita Riga             { get; } = riga;
-    public Piastra?          Piastra          { get; } = piastra;
-    public bool              ClienteAnnullato { get; } = clienteAnnullato;
+    public RigaOrdineVendita Riga     { get; } = riga;
+    public Piastra?          Piastra  { get; } = piastra;
 
     public bool PiastraTrovata    => Piastra is not null;
     public bool PiastraNonTrovata => Piastra is null;
@@ -105,19 +102,11 @@ public class OrdiniVenditaViewModel : ViewModelBase
         {
             var righe = await _righeOrdineService.LeggiRigheInevaseAsync();
 
-            // Codici dei clienti annullati nel gestionale — una sola query, usata per
-            // evidenziare le righe ordine di clienti non più attivi.
-            var codiciAnnullati = (await _clientiRepo.GetAllAsync())
-                .Where(c => !c.AttivoGestionale)
-                .Select(c => c.CodiceClienteGestionale)
-                .ToHashSet();
-
             _tutte.Clear();
             foreach (var r in righe)
             {
-                var piastra   = await _piastreRepo.GetByCodiceArticoloGestionaleAsync(r.CodiceArticolo);
-                var annullato = codiciAnnullati.Contains(r.CodiceClienteGestionale);
-                var riga      = new RigaOrdineVenditaRow(r, piastra, annullato);
+                var piastra = await _piastreRepo.GetByCodiceArticoloGestionaleAsync(r.CodiceArticolo);
+                var riga    = new RigaOrdineVenditaRow(r, piastra);
                 await AssociaClientePiastraSeMancanteAsync(riga);
                 _tutte.Add(riga);
             }
@@ -155,7 +144,7 @@ public class OrdiniVenditaViewModel : ViewModelBase
     public async Task RicaricaRigaAsync(RigaOrdineVenditaRow vecchia)
     {
         var piastra = await _piastreRepo.GetByCodiceArticoloGestionaleAsync(vecchia.Riga.CodiceArticolo);
-        var nuova   = new RigaOrdineVenditaRow(vecchia.Riga, piastra, vecchia.ClienteAnnullato);
+        var nuova   = new RigaOrdineVenditaRow(vecchia.Riga, piastra);
         await AssociaClientePiastraSeMancanteAsync(nuova);
 
         var idxTutte = _tutte.IndexOf(vecchia);
