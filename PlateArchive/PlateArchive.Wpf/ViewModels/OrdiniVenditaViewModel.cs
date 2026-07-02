@@ -1,0 +1,214 @@
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
+using System.Windows.Input;
+using PlateArchive.Core.Enums;
+using PlateArchive.Core.Models;
+using PlateArchive.Data.Repositories.Interfaces;
+using PlateArchive.Services;
+using PlateArchive.Wpf.Commands;
+
+namespace PlateArchive.Wpf.ViewModels;
+
+/// <summary>
+/// Riga ordine di vendita (letta dal gestionale) abbinata alla piastra corrispondente
+/// (ricerca locale per <see cref="Piastra.CodiceArticoloGestionale"/>), se trovata.
+/// </summary>
+public class RigaOrdineVenditaRow(RigaOrdineVendita riga, Piastra? piastra)
+{
+    public RigaOrdineVendita Riga     { get; } = riga;
+    public Piastra?          Piastra  { get; } = piastra;
+
+    public bool PiastraTrovata    => Piastra is not null;
+    public bool PiastraNonTrovata => Piastra is null;
+    public bool HaDisegno         => Piastra?.Disegno is not null;
+}
+
+/// <summary>
+/// ViewModel della schermata "Ordini vendita": elenca le righe ordine non evase lette dal
+/// gestionale (DB2/Panthera, interrogazione live — nessuna cache locale, vedi TASK-16/17 in
+/// docs/TASKS.md) e permette di aprire direttamente il disegno tecnico della piastra
+/// corrispondente all'articolo di riga, senza doverla cercare manualmente in Piastre.
+/// </summary>
+public class OrdiniVenditaViewModel : ViewModelBase
+{
+    private readonly IRigheOrdineVenditaService _righeOrdineService;
+    private readonly IPiastraRepository         _piastreRepo;
+    private readonly IClienteRepository         _clientiRepo;
+    private readonly IClientePiastraRepository  _clientiPiastreRepo;
+
+    private readonly List<RigaOrdineVenditaRow> _tutte = [];
+
+    private string                 _filtroRicerca = string.Empty;
+    private bool                   _isCaricamento;
+    private string?                _errore;
+    private IReadOnlyList<string>  _colonne = [];
+
+    public OrdiniVenditaViewModel(
+        IRigheOrdineVenditaService righeOrdineService,
+        IPiastraRepository         piastreRepo,
+        IClienteRepository         clientiRepo,
+        IClientePiastraRepository  clientiPiastreRepo)
+    {
+        _righeOrdineService = righeOrdineService;
+        _piastreRepo        = piastreRepo;
+        _clientiRepo        = clientiRepo;
+        _clientiPiastreRepo = clientiPiastreRepo;
+
+        AggiornaCommand     = new RelayCommand(async _ => await CaricaAsync());
+        AprirDisegnoCommand = new RelayCommand(
+            p => AprirDisegno((RigaOrdineVenditaRow)p!),
+            p => p is RigaOrdineVenditaRow { HaDisegno: true });
+    }
+
+    public ObservableCollection<RigaOrdineVenditaRow> RigheFiltrate { get; } = [];
+
+    /// <summary>
+    /// Nomi colonna restituiti dalla query configurata in appsettings.json: la View li usa
+    /// per generare le colonne della griglia (è la SELECT a comandare la tabella).
+    /// </summary>
+    public IReadOnlyList<string> Colonne
+    {
+        get => _colonne;
+        private set => SetField(ref _colonne, value);
+    }
+
+    public string FiltroRicerca
+    {
+        get => _filtroRicerca;
+        set { if (SetField(ref _filtroRicerca, value)) AggiornaFiltro(); }
+    }
+
+    public bool IsCaricamento
+    {
+        get => _isCaricamento;
+        set => SetField(ref _isCaricamento, value);
+    }
+
+    public string? Errore
+    {
+        get => _errore;
+        set { if (SetField(ref _errore, value)) OnPropertyChanged(nameof(IsErroreVisible)); }
+    }
+
+    public bool IsErroreVisible => !string.IsNullOrEmpty(_errore);
+
+    public ICommand AggiornaCommand     { get; }
+    public ICommand AprirDisegnoCommand { get; }
+
+    public override Task OnNavigatedAsync() => CaricaAsync();
+
+    private async Task CaricaAsync()
+    {
+        Errore = null;
+
+        if (!_righeOrdineService.IsDisponibile)
+        {
+            Errore = "Connessione al gestionale (DB2) non configurata.";
+            return;
+        }
+
+        IsCaricamento = true;
+        try
+        {
+            var result = await _righeOrdineService.LeggiRigheInevaseAsync();
+            Colonne    = result.Colonne;
+
+            _tutte.Clear();
+            foreach (var r in result.Righe)
+            {
+                var piastra = await _piastreRepo.GetByCodiceArticoloGestionaleAsync(r.CodiceArticolo);
+                var riga    = new RigaOrdineVenditaRow(r, piastra);
+                await AssociaClientePiastraSeMancanteAsync(riga);
+                _tutte.Add(riga);
+            }
+
+            AggiornaFiltro();
+        }
+        catch (Exception ex)
+        {
+            Errore = $"Errore durante la lettura degli ordini dal gestionale: {ex.Message}";
+        }
+        finally
+        {
+            IsCaricamento = false;
+        }
+    }
+
+    private void AggiornaFiltro()
+    {
+        var f = FiltroRicerca.Trim().ToLower();
+
+        RigheFiltrate.Clear();
+        // La ricerca copre tutte le colonne della query, qualunque esse siano.
+        foreach (var r in _tutte.Where(r =>
+            string.IsNullOrEmpty(f)
+            || r.Riga.Valori.Any(v => v.ToLower().Contains(f))))
+        {
+            RigheFiltrate.Add(r);
+        }
+    }
+
+    /// <summary>Ri-risolve la piastra per la riga indicata (senza ripetere la query DB2) — usata
+    /// dopo che l'utente ha associato una piastra all'articolo tramite <c>AssociaPiastraOrdineWindow</c>.</summary>
+    public async Task RicaricaRigaAsync(RigaOrdineVenditaRow vecchia)
+    {
+        var piastra = await _piastreRepo.GetByCodiceArticoloGestionaleAsync(vecchia.Riga.CodiceArticolo);
+        var nuova   = new RigaOrdineVenditaRow(vecchia.Riga, piastra);
+        await AssociaClientePiastraSeMancanteAsync(nuova);
+
+        var idxTutte = _tutte.IndexOf(vecchia);
+        if (idxTutte >= 0) _tutte[idxTutte] = nuova;
+
+        var idxFiltrate = RigheFiltrate.IndexOf(vecchia);
+        if (idxFiltrate >= 0) RigheFiltrate[idxFiltrate] = nuova;
+    }
+
+    /// <summary>
+    /// Se il cliente della riga ha ordinato un articolo per cui esiste già una piastra con
+    /// disegno associato, crea automaticamente l'associazione commerciale ClientePiastra
+    /// (se non esiste già): il cliente ha di fatto ordinato quella piastra.
+    /// </summary>
+    private async Task AssociaClientePiastraSeMancanteAsync(RigaOrdineVenditaRow row)
+    {
+        if (row.Piastra is null || row.Piastra.Disegno is null) return;
+        if (string.IsNullOrWhiteSpace(row.Riga.CodiceClienteGestionale)) return;
+
+        var cliente = await _clientiRepo.GetByCodiceGestionaleAsync(row.Riga.CodiceClienteGestionale);
+        if (cliente is null) return;
+
+        var esiste = await _clientiPiastreRepo.ExistsAsync(cliente.IdCliente, row.Piastra.IdPiastra);
+        if (esiste) return;
+
+        await _clientiPiastreRepo.AddAsync(new ClientePiastra
+        {
+            IdCliente        = cliente.IdCliente,
+            IdPiastra        = row.Piastra.IdPiastra,
+            DataAssociazione = DateTime.UtcNow,
+            Stato            = StatoClientePiastra.Attiva,
+            Cliente          = cliente,
+            Piastra          = row.Piastra
+        });
+    }
+
+    private void AprirDisegno(RigaOrdineVenditaRow row)
+    {
+        var percorso = row.Piastra?.Disegno?.PercorsoFile;
+        if (string.IsNullOrEmpty(percorso)) return;
+
+        if (!File.Exists(percorso))
+        {
+            Errore = $"File non trovato: {percorso}";
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(percorso) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Errore = $"Impossibile aprire il file: {ex.Message}";
+        }
+    }
+}

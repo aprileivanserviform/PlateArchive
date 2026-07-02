@@ -78,6 +78,11 @@ public partial class App : Application
                 db2Query,
                 sp.GetRequiredService<IClienteRepository>()));
 
+        // Lettura live (nessuna cache) delle righe ordine di vendita non evase.
+        var db2QueryRighe = config["Db2:QueryRigheOrdineVendita"] ?? string.Empty;
+        services.AddTransient<IRigheOrdineVenditaService>(_ =>
+            new RigheOrdineVenditaService(db2ConnStr, db2QueryRighe));
+
         // SyncStatusService: aggiorna la barra di stato durante la sincronizzazione.
         services.AddSingleton<ISyncStatusService, SyncStatusService>();
 
@@ -94,9 +99,11 @@ public partial class App : Application
         services.AddTransient<MacchineViewModel>();
         services.AddTransient<ImportaDisegnoViewModel>();
         services.AddTransient<PiastraDettaglioViewModel>();
+        services.AddTransient<AssociaPiastraOrdineViewModel>();
         services.AddTransient<FormatiMacchinaViewModel>();
         services.AddTransient<CategoriePiastreViewModel>();
         services.AddTransient<ProduttoriMacchinaViewModel>();
+        services.AddTransient<OrdiniVenditaViewModel>();
 
         // MainWindow e MainWindowViewModel sono Singleton (vivono per tutta la sessione dell'app).
         services.AddSingleton<MainWindowViewModel>();

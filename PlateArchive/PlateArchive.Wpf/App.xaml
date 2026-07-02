@@ -39,6 +39,9 @@
             <DataTemplate DataType="{x:Type vm:ProduttoriMacchinaViewModel}">
                 <views:ProduttoriMacchinaView/>
             </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:OrdiniVenditaViewModel}">
+                <views:OrdiniVenditaView/>
+            </DataTemplate>
 
         </ResourceDictionary>
     </Application.Resources>

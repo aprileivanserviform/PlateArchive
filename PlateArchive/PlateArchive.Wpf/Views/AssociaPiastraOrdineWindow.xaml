@@ -1,0 +1,159 @@
+<Window x:Class="PlateArchive.Wpf.Views.AssociaPiastraOrdineWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Associa piastra"
+        Width="440" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Style="{StaticResource Window.Base}">
+
+    <DockPanel Margin="24">
+
+        <!-- ── Header ─────────────────────────────────────────── -->
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,16">
+            <TextBlock Text="Associa piastra"
+                       Style="{StaticResource TextBlock.Title}"
+                       Margin="0,0,0,6"/>
+            <TextBlock FontSize="{StaticResource FontSize.Caption}"
+                       Foreground="{DynamicResource Brush.TextSecondary}"
+                       TextWrapping="Wrap">
+                <Run Text="Articolo gestionale:"/>
+                <Run Text="{Binding CodiceArticolo, Mode=OneWay}" FontWeight="{StaticResource FontWeight.SemiBold}"/>
+            </TextBlock>
+            <TextBlock Text="{Binding DescrizioneArticolo, Mode=OneWay}"
+                       FontSize="{StaticResource FontSize.Caption}"
+                       Foreground="{DynamicResource Brush.TextSecondary}"
+                       TextWrapping="Wrap"
+                       Margin="0,4,0,0"
+                       Visibility="{Binding IsDescrizioneArticoloVisible, Converter={StaticResource BoolToVis}}"/>
+        </StackPanel>
+
+        <!-- ── Pulsanti fondo ────────────────────────────────────── -->
+        <StackPanel DockPanel.Dock="Bottom"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,16,0,0">
+            <Button Content="Associa"
+                    Command="{Binding ConfermaCommand}"
+                    Margin="0,0,10,0"/>
+            <Button Content="Annulla"
+                    Command="{Binding AnnullaCommand}"
+                    Style="{StaticResource Button.Secondary}"/>
+        </StackPanel>
+
+        <!-- ── Corpo ──────────────────────────────────────────── -->
+        <StackPanel>
+
+            <TextBlock Text="Piastra"
+                       Style="{StaticResource FieldLabel}"/>
+
+            <!-- Piastra selezionata (chip con X) -->
+            <Border Visibility="{Binding IsPiastraSelezionataVisible, Converter={StaticResource BoolToVis}}"
+
+                    Background="{DynamicResource Brush.PrimarySubtle}"
+                    BorderBrush="{DynamicResource Brush.Primary}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource Radius.S}"
+                    Padding="10,6"
+                    Margin="0,0,0,8">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right"
+                            Style="{StaticResource Button.Icon}"
+                            Command="{Binding RimuoviPiastraSelezionataCommand}"
+                            ToolTip="Rimuovi"
+                            Margin="8,0,0,0">
+                        <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets"
+                                   FontSize="10"/>
+                    </Button>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock FontWeight="{StaticResource FontWeight.SemiBold}"
+                                   Text="{Binding PiastraSelezionata.CodicePiastra}"/>
+                        <TextBlock Text="{Binding PiastraSelezionata.Descrizione, TargetNullValue=''}"
+                                   FontSize="{StaticResource FontSize.Caption}"
+                                   Foreground="{DynamicResource Brush.TextSecondary}"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- Ricerca piastra -->
+            <Grid Visibility="{Binding IsPiastraSearchVisible, Converter={StaticResource BoolToVis}}"
+                  Margin="0,0,0,8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBox Grid.Row="0"
+                         Text="{Binding FiltroPiastra, UpdateSourceTrigger=PropertyChanged}"
+                         Style="{StaticResource FieldBox}"/>
+
+                <Border Grid.Row="1"
+                        Visibility="{Binding IsSuggerimentiVisible, Converter={StaticResource BoolToVis}}"
+                        Background="{DynamicResource Brush.Surface}"
+                        BorderBrush="{DynamicResource Brush.Border}"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource Radius.S}"
+                        Margin="0,2,0,0">
+                    <ItemsControl ItemsSource="{Binding PiastreSuggerite}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource Button.Ghost}"
+                                        HorizontalContentAlignment="Left"
+                                        HorizontalAlignment="Stretch"
+                                        Command="{Binding DataContext.SelezionaPiastraCommand,
+                                                  RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        CommandParameter="{Binding}"
+                                        Padding="10,6">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding CodicePiastra}"
+                                                   FontWeight="{StaticResource FontWeight.SemiBold}"
+                                                   MinWidth="90" Margin="0,0,10,0"/>
+                                        <TextBlock Text="{Binding Descrizione}"
+                                                   Foreground="{DynamicResource Brush.TextSecondary}"/>
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Border>
+            </Grid>
+
+            <!-- Errore -->
+            <Border Background="{DynamicResource Brush.ErrorSurface}"
+                    BorderBrush="{DynamicResource Brush.Error}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource Radius.S}"
+                    Padding="10,8"
+                    Visibility="{Binding IsErroreVisible, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="{Binding Errore}"
+                           TextWrapping="Wrap"
+                           FontSize="{StaticResource FontSize.Caption}"
+                           Foreground="{DynamicResource Brush.Error}"/>
+            </Border>
+
+            <!-- Crea nuova piastra: drop del disegno → ImportaDisegnoWindow con
+                 codice articolo e descrizione pre-compilati dalla riga ordine. -->
+            <Border Margin="0,12,0,0"
+                    Background="{DynamicResource Brush.InfoSurface}"
+                    BorderBrush="{DynamicResource Brush.Info}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource Radius.S}"
+                    Padding="14,12"
+                    AllowDrop="True"
+                    DragOver="DropZonaNuovaPiastra_DragOver"
+                    Drop="DropZonaNuovaPiastra_Drop">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <TextBlock Text="&#xE898;" FontFamily="Segoe MDL2 Assets"
+                               Foreground="{DynamicResource Brush.Info}"
+                               VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <TextBlock Text="Oppure trascina qui il disegno (.dwg, .dxf, .pdf) per creare una nuova piastra"
+                               FontSize="{StaticResource FontSize.Caption}"
+                               Foreground="{DynamicResource Brush.Info}"
+                               TextWrapping="Wrap" VerticalAlignment="Center"
+                               MaxWidth="320"/>
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </DockPanel>
+</Window>

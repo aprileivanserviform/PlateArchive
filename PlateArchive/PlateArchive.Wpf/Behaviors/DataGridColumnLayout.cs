@@ -39,6 +39,13 @@ public static class DataGridColumnLayout
         grid.ColumnReordered += (_, _) => SalvaLayout(grid, chiave);
     }
 
+    /// <summary>
+    /// Riapplica il layout salvato. Da chiamare quando le colonne vengono (ri)generate da
+    /// codice DOPO il Loaded della griglia (es. OrdiniVenditaView, colonne guidate dalla query):
+    /// il ripristino automatico su Loaded in quel caso non trova ancora le colonne.
+    /// </summary>
+    public static void Ripristina(DataGrid grid, string chiave) => RipristinaLayout(grid, chiave);
+
     private static void RipristinaLayout(DataGrid grid, string chiave)
     {
         var svc   = App.ServiceProvider.GetService<IColumnLayoutService>();
@@ -46,8 +53,12 @@ public static class DataGridColumnLayout
         if (saved is null || saved.Count == 0) return;
 
         // 1. Ripristina le larghezze per colonne trovate nel file.
+        //    Le colonne non ridimensionabili (es. colonna azioni) mantengono la larghezza
+        //    dichiarata nel XAML: una larghezza salvata in passato non deve sovrascriverla.
         foreach (var col in grid.Columns)
         {
+            if (!col.CanUserResize) continue;
+
             var entry = saved.FirstOrDefault(s => s.Key == GetColKey(col));
             if (entry is not null)
                 col.Width = new DataGridLength(entry.Width);
@@ -63,6 +74,16 @@ public static class DataGridColumnLayout
 
         for (int i = 0; i < inOrdine.Count; i++)
             inOrdine[i]!.DisplayIndex = i;
+
+        // 3. Le colonne non riordinabili (es. colonna azioni) devono restare alla posizione
+        //    dichiarata nella collezione: la riassegnazione sopra può averle spinte altrove
+        //    quando il file salvato non le contiene (o le contiene con una chiave posizionale
+        //    ormai stantia, tipo "__col_7").
+        for (int i = 0; i < grid.Columns.Count; i++)
+        {
+            if (!grid.Columns[i].CanUserReorder)
+                grid.Columns[i].DisplayIndex = i;
+        }
     }
 
     private static void SalvaLayout(DataGrid grid, string chiave)

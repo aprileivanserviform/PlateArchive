@@ -1075,6 +1075,110 @@ else
 
 ---
 
+## TASK-15 — Collegamento articolo gestionale ↔ Piastra/Disegno (branch feat/ordini-vendita-righe)
+
+**Priorità:** Alta
+**Stato:** `[x]` — risolto 2026-07-01 (nessun nuovo modello necessario)
+
+### Contesto
+
+Oggi `Piastra.CodiceArticoloGestionale` è pensato per corrispondere all'articolo del gestionale (Panthera, DB2 `PANTH01` — stessa fonte già usata da `SincronizzazioneGestionaleService` per i Clienti).
+
+### Decisione presa
+
+**Corrispondenza diretta**: il campo `R_ARTICOLO` di `THIP.ORD_VEN_RIG` viene confrontato per uguaglianza esatta con `Piastra.CodiceArticoloGestionale` (campo già esistente, univoco). Nessuna nuova tabella di mapping.
+
+> **Nota aperta per il futuro** (non bloccante, da valutare più avanti): si può valutare se rendere `CodiceArticoloGestionale` obbligatorio in fase di codifica piastra, oppure eliminarlo ed eseguire il match direttamente su `CodicePiastra` — probabilmente più semplice da gestire. Rimandato.
+
+### Acceptance criteria
+
+- [x] `IPiastraRepository.GetByCodiceArticoloGestionaleAsync(codice)` risolve la piastra corrispondente (con `Categoria`/`Formato`/`Disegno` inclusi)
+
+---
+
+## TASK-16 — Lettura righe ordine di vendita da DB2 (gestionale Panthera)
+
+**Priorità:** Alta
+**Stato:** `[x]` — implementato 2026-07-01, in attesa di verifica sul campo (vedi nota)
+
+### Contesto
+
+Il gestionale Panthera espone (schermata "Vendite » Ordini vendita » Ordini vendita - righe") l'elenco delle righe ordine. Letto via ODBC dallo stesso DB2 `PANTH01` già raggiunto da `SincronizzazioneGestionaleService` per i Clienti (`Db2:ConnectionString` in `appsettings.json`).
+
+### Decisione presa
+
+**Interrogazione live**, nessuna cache locale: lo stato evasa/inevasa cambia troppo spesso per giustificare una sincronizzazione. Il pulsante "Aggiorna" nella vista (TASK-17) rilancia la query ogni volta.
+
+### Schema DB2 (confermato dall'utente)
+
+- `THIP.ORD_VEN_RIG` (righe): `R_ARTICOLO`, `STATO_EVASIONE` (filtro `<> 2` = non evasa), `ID_AZIENDA` (= `'001'`), `ID_ANNO_ORD`, `ID_NUMERO_ORD`, `ID_RIGA_ORD`
+- `THIP.ORD_VEN_TES` (testata): contiene `R_CLIENTE`, che si collega a `FINANCE.BBCLIPT.CLICD` (stesso pattern di join già usato per `Db2:QueryClienti`) per recuperare `CLIRASOC` (ragione sociale)
+
+**Query implementata** (`Db2:QueryRigheOrdineVendita` in `appsettings.json`):
+
+```sql
+SELECT r.ID_ANNO_ORD, r.ID_NUMERO_ORD, r.ID_RIGA_ORD, r.R_ARTICOLO, bb.CLIRASOC
+FROM THIP.ORD_VEN_RIG r
+INNER JOIN THIP.ORD_VEN_TES t
+    ON r.ID_AZIENDA = t.ID_AZIENDA
+   AND r.ID_ANNO_ORD = t.ID_ANNO_ORD
+   AND r.ID_NUMERO_ORD = t.ID_NUMERO_ORD
+INNER JOIN FINANCE.BBCLIPT bb
+    ON t.ID_AZIENDA = bb.T01CD
+   AND t.R_CLIENTE = bb.CLICD
+WHERE r.STATO_EVASIONE <> 2
+  AND r.ID_AZIENDA = '001'
+ORDER BY r.ID_ANNO_ORD DESC, r.ID_NUMERO_ORD DESC, r.ID_RIGA_ORD
+```
+
+> **`[!]` Da verificare con la VPN attiva**: le colonne di join tra `ORD_VEN_RIG` e `ORD_VEN_TES` (`ID_AZIENDA`, `ID_ANNO_ORD`, `ID_NUMERO_ORD`) sono un'ipotesi ragionevole (stessa convenzione testata/righe di molti gestionali AS/400) ma non sono state confermate esplicitamente dall'utente — solo le colonne di `ORD_VEN_RIG` e il collegamento `R_CLIENTE → BBCLIPT.CLICD` lo sono state. Se la query non restituisce righe o va in errore, controllare prima questo join.
+
+### Interventi realizzati
+
+- `PlateArchive.Services/RigaOrdineVendita.cs` — DTO di sola lettura (nessuna persistenza locale)
+- `PlateArchive.Services/IRigheOrdineVenditaService.cs` + `RigheOrdineVenditaService.cs` — stesso pattern ODBC di `SincronizzazioneGestionaleService`, con `IsDisponibile` per il caso "DB2 non configurato"
+- Registrazione DI in `App.xaml.cs` (nuova chiave `Db2:QueryRigheOrdineVendita`)
+
+### Acceptance criteria
+
+- [x] Il servizio restituisce solo le righe ordine non evase
+- [x] In assenza di connessione DB2/VPN, la vista mostra un messaggio chiaro senza eccezioni non gestite
+
+---
+
+## TASK-17 — Vista "Ordini vendita" in PlateArchive con apertura diretta del disegno
+
+**Priorità:** Alta
+**Stato:** `[x]` — implementato 2026-07-01, da verificare a video con VPN attiva
+
+**Dipende da:** TASK-15, TASK-16
+
+### Contesto
+
+L'operatore deve poter cercare tra le righe ordine inevase e aprire direttamente il disegno tecnico della piastra corrispondente, senza dover prima individuare manualmente la piastra giusta nell'archivio.
+
+### Realizzato
+
+- `OrdiniVenditaView.xaml` / `OrdiniVenditaViewModel.cs` — nuova voce di menu "Ordini vendita"
+- Elenco righe non evase (Anno / Numero / Riga / Cliente / Articolo), ricerca client-side su cliente/articolo/numero ordine
+- Per ogni riga, ricerca locale della `Piastra` per `CodiceArticoloGestionale` (TASK-15):
+  - Piastra trovata + disegno presente → icona "Apri disegno" (stesso meccanismo di `PiastreViewModel.AprirDisegno`)
+  - Piastra trovata ma senza disegno → etichetta "Nessun disegno"
+  - Piastra non trovata → riga evidenziata in ambra + icona "Associa piastra" (apre `AssociaPiastraOrdineWindow`)
+- Doppio clic sulla riga: apre `PiastraDettaglioWindow` se la piastra è già trovata, altrimenti il flusso "Associa piastra"
+- Colonne "Stato piastra"/"Stato disegno" rinominate ovunque nell'app per distinguerle (erano entrambe genericamente "Stato")
+- **Associazione cliente-piastra automatica**: se il cliente della riga ordine risulta già sincronizzato localmente (`Cliente.CodiceClienteGestionale`, via `t.R_CLIENTE`) e la piastra collegata ha un disegno, viene creata automaticamente l'associazione `ClientePiastra` (se non esiste già) — sia al caricamento della lista sia subito dopo un'associazione manuale piastra↔articolo
+- Pulsante "Aggiorna" per rilanciare la query (nessuna cache, vedi TASK-16)
+
+### Acceptance criteria
+
+- [x] La ricerca filtra per cliente, articolo e numero ordine
+- [x] "Apri disegno" funziona per le righe con piastra e disegno presenti
+- [x] Le righe senza piastra corrispondente sono chiaramente segnalate (riga evidenziata + etichetta)
+- [ ] **Da verificare a video con VPN attiva**: la query DB2 restituisce righe corrette (vedi nota join in TASK-16)
+
+---
+
 ## Evolutivi futuri (fuori scope MVP)
 
 | Funzione | Riferimento |
@@ -1082,6 +1186,5 @@ else
 | Storico revisioni disegno (v1: una sola revisione corrente) | §23.3 |
 | Integrazione Autodesk Vault tramite `VaultId` | §23.4 |
 | Sincronizzazione DB2 automatica schedulata | §9 |
-| Navigazione da ordine/articolo gestionale → piastra → disegno | §13.7 |
 | Gestione utenti e permessi | — |
 | Esportazione dati (CSV / Excel) | — |
