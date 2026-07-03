@@ -77,10 +77,11 @@
                         </Style>
                     </DataGrid.RowStyle>
                     <DataGrid.Columns>
-                        <!-- Colonna azioni: sempre prima e fissa. Le colonne dati vengono
-                             inserite dopo di questa dal code-behind (GeneraColonne),
-                             in base alle colonne della query. -->
-                        <DataGridTemplateColumn Header="" Width="Auto"
+                        <!-- Colonna azioni: sempre prima e fissa, a larghezza minima (non Auto:
+                             eviterebbe che si allarghi alla riga con più icone/indicatori). Le
+                             colonne dati vengono inserite dopo di questa dal code-behind
+                             (GeneraColonne), in base alle colonne della query. -->
+                        <DataGridTemplateColumn Header="" Width="44"
                                                 CanUserResize="False" CanUserReorder="False">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
@@ -109,7 +110,7 @@
                                         <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets"
                                                    ToolTip="Nessun disegno associato alla piastra"
                                                    Foreground="{DynamicResource Brush.TextDisabled}"
-                                                   VerticalAlignment="Center" Margin="8,0">
+                                                   VerticalAlignment="Center" Margin="0">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="Visibility" Value="Collapsed"/>
