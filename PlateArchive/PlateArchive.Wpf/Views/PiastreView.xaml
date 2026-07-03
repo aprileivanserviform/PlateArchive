@@ -318,7 +318,7 @@
                         <DataGrid.Columns>
 
                             <!-- ⚠ Icona: nessun disegno associato -->
-                            <DataGridTemplateColumn Width="30" Header="" CanUserSort="False">
+                            <DataGridTemplateColumn Width="Auto" Header="" CanUserResize="False" CanUserSort="False">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE7BA;"

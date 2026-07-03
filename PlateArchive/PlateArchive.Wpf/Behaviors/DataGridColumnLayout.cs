@@ -59,12 +59,14 @@ public static class DataGridColumnLayout
         // 1. Ripristina le larghezze per colonne trovate nel file.
         //    Le colonne non ridimensionabili (es. colonna azioni) mantengono la larghezza
         //    dichiarata nel XAML: una larghezza salvata in passato non deve sovrascriverla.
+        //    Width == 0 è il sentinella "colonna Auto mai ridimensionata": non si applica,
+        //    così la colonna resta Auto e si adatta al contenuto.
         foreach (var col in grid.Columns)
         {
             if (!col.CanUserResize) continue;
 
             var entry = saved.FirstOrDefault(s => s.Key == GetColKey(col));
-            if (entry is not null)
+            if (entry is not null && entry.Width > 0)
                 col.Width = new DataGridLength(entry.Width);
         }
 
@@ -97,10 +99,16 @@ public static class DataGridColumnLayout
         var svc = App.ServiceProvider.GetService<IColumnLayoutService>();
         if (svc is null) return;
 
+        // La larghezza si persiste SOLO per le colonne che l'utente ha ridimensionato a mano:
+        // il trascinamento del gripper imposta col.Width a un valore assoluto (Pixel), mentre
+        // le colonne Auto restano Auto. Salvarne la ActualWidth le congelerebbe come assolute al
+        // primo click (il salvataggio scatta a ogni MouseLeftButtonUp), vanificando l'Auto.
+        // Width = 0 → sentinella "Auto": in ripristino non viene applicata. L'ordine (DisplayIndex)
+        // si persiste comunque per tutte, così il riordino resta valido anche senza resize.
         svc.Salva(chiave, grid.Columns.Select(col => new ColonnaLayout
         {
             Key          = GetColKey(col),
-            Width        = col.ActualWidth,
+            Width        = col.Width.IsAbsolute ? col.ActualWidth : 0,
             DisplayIndex = col.DisplayIndex,
         }));
     }
