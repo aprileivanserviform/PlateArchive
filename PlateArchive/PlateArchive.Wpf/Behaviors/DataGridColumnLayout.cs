@@ -48,6 +48,10 @@ public static class DataGridColumnLayout
 
     private static void RipristinaLayout(DataGrid grid, string chiave)
     {
+        // A design-time (finestra di progettazione XAML) App.ServiceProvider non è ancora
+        // valorizzato: senza questa guardia GetService riceverebbe un provider null e lancerebbe.
+        if (App.ServiceProvider is null) return;
+
         var svc   = App.ServiceProvider.GetService<IColumnLayoutService>();
         var saved = svc?.Carica(chiave);
         if (saved is null || saved.Count == 0) return;
@@ -88,6 +92,8 @@ public static class DataGridColumnLayout
 
     private static void SalvaLayout(DataGrid grid, string chiave)
     {
+        if (App.ServiceProvider is null) return;
+
         var svc = App.ServiceProvider.GetService<IColumnLayoutService>();
         if (svc is null) return;
 
