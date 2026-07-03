@@ -170,7 +170,11 @@
     <Style TargetType="ScrollViewer">
         <Setter Property="SnapsToDevicePixels"       Value="True"/>
         <Setter Property="UseLayoutRounding"          Value="True"/>
-        <Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
+        <!-- "Auto" sull'orizzontale: le griglie con colonne a larghezza Auto che superano
+             la larghezza disponibile mostrano la scrollbar orizzontale in basso. I pannelli
+             con contenuto che va a capo non la mostrano (nessun overflow orizzontale);
+             TextBox e ComboBox gestiscono le proprie scrollbar internamente. -->
+        <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
         <Setter Property="VerticalScrollBarVisibility"   Value="Auto"/>
         <Setter Property="Template">
             <Setter.Value>
