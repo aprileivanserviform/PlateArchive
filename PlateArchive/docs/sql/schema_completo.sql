@@ -9,7 +9,7 @@
 --     -o docs/sql/schema_completo.sql
 --
 -- Idempotente (-i): crea/applica solo ciò che manca, in base a __EFMigrationsHistory.
--- Riflette tutte le migrazioni fino a 20260702064753_AddClienteAttivoGestionale.
+-- Riflette tutte le migrazioni fino a 20260703091911_MacchineDimensioniFoglio.
 -- =============================================================================
 
 IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
@@ -895,6 +895,58 @@ IF NOT EXISTS (
 BEGIN
     INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
     VALUES (N'20260702064753_AddClienteAttivoGestionale', N'8.0.0');
+END;
+GO
+
+COMMIT;
+GO
+
+BEGIN TRANSACTION;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260703091911_MacchineDimensioniFoglio'
+)
+BEGIN
+    EXEC sp_rename N'[MacchineStandard].[LarghezzaMm]', N'LarghezzaMassimaFoglioMm', N'COLUMN';
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260703091911_MacchineDimensioniFoglio'
+)
+BEGIN
+    EXEC sp_rename N'[MacchineStandard].[AltezzaMm]', N'AltezzaMassimaFoglioMm', N'COLUMN';
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260703091911_MacchineDimensioniFoglio'
+)
+BEGIN
+    ALTER TABLE [MacchineStandard] ADD [LarghezzaMinimaFoglioMm] decimal(18,2) NULL;
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260703091911_MacchineDimensioniFoglio'
+)
+BEGIN
+    ALTER TABLE [MacchineStandard] ADD [AltezzaMinimaFoglioMm] decimal(18,2) NULL;
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260703091911_MacchineDimensioniFoglio'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20260703091911_MacchineDimensioniFoglio', N'8.0.0');
 END;
 GO
 
