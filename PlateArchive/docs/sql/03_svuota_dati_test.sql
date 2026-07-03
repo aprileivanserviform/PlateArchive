@@ -12,6 +12,9 @@
 -- NON tocca: Clienti (fonte DB2) e __EFMigrationsHistory (schema/migrazioni).
 -- I seed identità vengono azzerati: i nuovi record ripartono da Id = 1.
 --
+-- CategoriePiastre viene svuotata E RI-SEMINATA con le due righe obbligatorie
+-- STD/SPE: sono una lookup su cui l'app fa controlli (Codice), non dati di test.
+--
 -- Solo per ambienti di sviluppo/test. NON eseguire in produzione.
 -- =============================================================================
 
@@ -51,8 +54,17 @@ BEGIN TRY
     DBCC CHECKIDENT ('FormatiMacchine',            RESEED, 0) WITH NO_INFOMSGS;
     DBCC CHECKIDENT ('ProduttoriMacchine',         RESEED, 0) WITH NO_INFOMSGS;
 
+    -- CategoriePiastre è una lookup OBBLIGATORIA: l'app fa controlli sul Codice.
+    --   STD -> categoria "Standard" (default in creazione piastra/disegno)
+    --   SPE -> "Speciale Cliente": rende il cliente obbligatorio e imposta
+    --          TipoPiastra.SpecialeCliente (ImportaDisegnoViewModel.IsClienteObbligatorio).
+    -- Vanno SEMPRE ripristinate dopo lo svuotamento, altrimenti la UI si rompe.
+    INSERT INTO CategoriePiastre (Codice, Descrizione, Ordine) VALUES
+        ('STD', 'Standard',         1),
+        ('SPE', 'Speciale Cliente', 2);
+
     COMMIT TRANSACTION;
-    PRINT '=== Svuotamento completato con successo. ===';
+    PRINT '=== Svuotamento completato (categorie STD/SPE ripristinate). ===';
 
 END TRY
 BEGIN CATCH
