@@ -5,7 +5,7 @@ namespace PlateArchive.Data;
 
 /// <summary>
 /// DbContext principale dell'applicazione.
-/// Configurato in App.xaml.cs con SQL Server (prod) o SQLite (dev/test).
+/// Configurato in App.xaml.cs con SQL Server.
 /// <para>
 /// Ogni schermata WPF ottiene la propria istanza (Scoped) tramite NavigationService:
 /// quando si naviga altrove il scope viene distrutto → DbContext rilasciato.

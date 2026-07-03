@@ -38,9 +38,8 @@ public partial class App : Application
 
         var services = new ServiceCollection();
 
-        // ─── Database ─────────────────────────────────────────────────────────
+        // ─── Database (SQL Server) ────────────────────────────────────────────
         // La stringa di connessione deve essere presente in appsettings.json.
-        // Per lo sviluppo locale si può usare SQLite cambiando il provider.
         var connStr = config.GetConnectionString("PlateArchiveDB")
             ?? throw new InvalidOperationException("Stringa di connessione 'PlateArchiveDB' non trovata in appsettings.json");
         services.AddDbContext<PlateArchiveDbContext>(opt =>

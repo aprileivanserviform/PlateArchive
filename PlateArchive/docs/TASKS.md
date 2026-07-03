@@ -222,7 +222,7 @@ public class ClientePiastra
 
 ### Contesto
 
-La persistenza usa Entity Framework Core. Il database di riferimento è **SQLite** per sviluppo e prototipazione (zero configurazione, file locale); la struttura è predisposta per migrare a SQL Server in produzione cambiando solo il provider e la stringa di connessione.
+La persistenza usa Entity Framework Core su **SQL Server** (dev e produzione). La stringa di connessione è in `appsettings.json`.
 
 Le regole di unicità e la relazione 1:1 piastra-disegno devono essere enforce a livello di database, non solo applicativo.
 
@@ -234,7 +234,7 @@ Creare il `DbContext`, configurare tutti i vincoli tramite Fluent API, implement
 
 ```
 Microsoft.EntityFrameworkCore
-Microsoft.EntityFrameworkCore.Sqlite
+Microsoft.EntityFrameworkCore.SqlServer
 Microsoft.EntityFrameworkCore.Tools
 ```
 
@@ -378,7 +378,7 @@ protected override void OnStartup(StartupEventArgs e)
 
     // Database
     services.AddDbContext<PlateArchiveDbContext>(opt =>
-        opt.UseSqlite("Data Source=platearchive.db"));
+        opt.UseSqlServer(config.GetConnectionString("PlateArchiveDB")));
 
     // Repository
     services.AddScoped<IClienteRepository, ClienteRepository>();
