@@ -525,12 +525,14 @@
                                   SelectedItem="{Binding FormStato}"
                                   Margin="0,0,0,10"/>
 
-                        <TextBlock Text="Tipo piastra" Style="{StaticResource FieldLabel}"/>
-                        <ComboBox ItemsSource="{Binding TipiPiastra}"
-                                  SelectedItem="{Binding FormTipo}"
+                        <!-- Categoria: guida il comportamento "Speciale Cliente" (SPE) -->
+                        <TextBlock Text="Categoria" Style="{StaticResource FieldLabel}"/>
+                        <ComboBox ItemsSource="{Binding CategoriePiastre}"
+                                  SelectedItem="{Binding FormCategoriaSelezionata}"
+                                  DisplayMemberPath="Descrizione"
                                   Margin="0,0,0,10"/>
 
-                        <!-- Cliente esclusivo — visibile solo per SpecialeCliente -->
+                        <!-- Cliente esclusivo — visibile solo per categoria "Speciale Cliente" (SPE) -->
                         <StackPanel Visibility="{Binding IsClienteEsclusivoVisible, Converter={StaticResource BoolToVis}}"
                                     Margin="0,0,0,10">
                             <TextBlock Text="Cliente esclusivo *" Style="{StaticResource FieldLabel}"/>
@@ -614,13 +616,7 @@
                                        Visibility="{Binding IsClienteEsclusivoNonValido, Converter={StaticResource BoolToVis}}"/>
                         </StackPanel>
 
-                        <TextBlock Text="Formato macchina" Style="{StaticResource FieldLabel}"/>
-                        <ComboBox ItemsSource="{Binding FormatiMacchine}"
-                                  SelectedItem="{Binding FormFormatoSelezionato}"
-                                  DisplayMemberPath="NomeFormato"
-                                  Margin="0,0,0,10"/>
-
-                        <!-- Categoria e Peso -->
+                        <!-- Formato macchina e Peso -->
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -628,10 +624,10 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0">
-                                <TextBlock Text="Categoria" Style="{StaticResource FieldLabel}"/>
-                                <ComboBox ItemsSource="{Binding CategoriePiastre}"
-                                          SelectedItem="{Binding FormCategoriaSelezionata}"
-                                          DisplayMemberPath="Descrizione"/>
+                                <TextBlock Text="Formato macchina" Style="{StaticResource FieldLabel}"/>
+                                <ComboBox ItemsSource="{Binding FormatiMacchine}"
+                                          SelectedItem="{Binding FormFormatoSelezionato}"
+                                          DisplayMemberPath="NomeFormato"/>
                             </StackPanel>
                             <StackPanel Grid.Column="2">
                                 <TextBlock Text="Peso (kg)" Style="{StaticResource FieldLabel}"/>
@@ -673,6 +669,88 @@
                         <TextBox Text="{Binding FormNote, UpdateSourceTrigger=PropertyChanged}"
                                  Style="{StaticResource FieldBox}"
                                  AcceptsReturn="True" Height="60"/>
+
+                        <!-- Macchine compatibili (opzionale) — tabella come nelle Macchine -->
+                        <DockPanel Margin="0,4,0,6">
+                            <Button DockPanel.Dock="Right"
+                                    Content="+ Aggiungi"
+                                    Command="{Binding AggiungiMacchinaFormCommand}"
+                                    Style="{StaticResource Button.Secondary}"/>
+                            <TextBlock Text="Macchine compatibili (opzionale)"
+                                       Style="{StaticResource FieldLabel}"
+                                       VerticalAlignment="Center" Margin="0"/>
+                        </DockPanel>
+
+                        <!-- Inline: aggiungi macchina compatibile -->
+                        <Border Visibility="{Binding IsFormAggiungiMacchinaVisible, Converter={StaticResource BoolToVis}}"
+                                Style="{StaticResource Card.Accent}"
+                                Padding="12,10" Margin="0,0,0,8">
+                            <StackPanel>
+                                <TextBlock Text="Seleziona macchina:"
+                                           FontSize="{StaticResource FontSize.Caption}"
+                                           Foreground="{DynamicResource Brush.Primary}"
+                                           Margin="0,0,0,6"/>
+                                <ComboBox ItemsSource="{Binding FormMacchineDisponibili}"
+                                          SelectedItem="{Binding FormMacchinaDaAggiungere}"
+                                          Margin="0,0,0,8">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding CodiceMacchina}"
+                                                           FontWeight="SemiBold"/>
+                                                <TextBlock Text=" — "/>
+                                                <TextBlock Text="{Binding NomeMacchina}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           MaxWidth="200"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="Conferma"
+                                            Command="{Binding ConfermaAggiungiMacchinaFormCommand}"
+                                            Margin="0,0,8,0"/>
+                                    <Button Content="Annulla"
+                                            Command="{Binding AnnullaAggiungiMacchinaFormCommand}"
+                                            Style="{StaticResource Button.Secondary}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- DataGrid macchine compatibili selezionate -->
+                        <Border BorderBrush="{DynamicResource Brush.Border}"
+                                BorderThickness="1"
+                                Margin="0,0,0,10" MaxHeight="150">
+                            <DataGrid ItemsSource="{Binding FormMacchineDaAssociare}"
+                                      CanUserAddRows="False" IsReadOnly="True"
+                                      FrozenColumnCount="1"
+                                      RowHeight="30" ColumnHeaderHeight="30">
+                                <DataGrid.Columns>
+                                    <!-- Colonna azioni: prima, fissa, non ridimensionabile né spostabile. -->
+                                    <DataGridTemplateColumn Header="" Width="44"
+                                                            CanUserResize="False" CanUserReorder="False">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Style="{StaticResource Button.IconDanger}"
+                                                        ToolTip="Rimuovi"
+                                                        Command="{Binding DataContext.RimuoviMacchinaFormCommand,
+                                                                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                        CommandParameter="{Binding}">
+                                                    <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets"
+                                                               Foreground="{DynamicResource Brush.Error}"/>
+                                                </Button>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="Codice"
+                                                       Binding="{Binding CodiceMacchina}"
+                                                       Width="Auto"/>
+                                    <DataGridTextColumn Header="Macchina"
+                                                       Binding="{Binding NomeMacchina}"
+                                                       Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Border>
 
                         <!-- Associa a clienti (solo per piastre Standard) -->
                         <StackPanel Visibility="{Binding IsAssociazioneClientiVisible, Converter={StaticResource BoolToVis}}"
