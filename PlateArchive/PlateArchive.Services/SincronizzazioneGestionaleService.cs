@@ -23,7 +23,7 @@ public class SincronizzazioneGestionaleService(
         if (!IsDisponibile)
             return new SincronizzazioneResult(0, 0, 0, "Stringa di connessione DB2 non configurata.");
 
-        int inseriti = 0, aggiornati = 0, invariati = 0;
+        int inseriti = 0, aggiornati = 0, invariati = 0, annullati = 0;
 
         try
         {
@@ -33,6 +33,10 @@ public class SincronizzazioneGestionaleService(
             using var cmd    = new OdbcCommand(queryClienti, conn);
             using var reader = await cmd.ExecuteReaderAsync(ct);
 
+            // Codici restituiti dal gestionale (solo clienti validi: la query filtra STATO = 'V').
+            // Serve a fine ciclo per marcare come annullati i clienti locali non più presenti.
+            var codiciValidi = new HashSet<string>();
+
             while (await reader.ReadAsync(ct))
             {
                 ct.ThrowIfCancellationRequested();
@@ -40,9 +44,12 @@ public class SincronizzazioneGestionaleService(
                 var codice = reader.IsDBNull(0) ? null : reader.GetString(0).Trim();
                 if (string.IsNullOrEmpty(codice)) { invariati++; continue; }
 
+                codiciValidi.Add(codice);
+
                 var ragSoc = reader.IsDBNull(1) ? codice : reader.GetString(1).Trim();
 
                 // Strategia upsert: se esiste aggiorno la ragione sociale, altrimenti inserisco.
+                // Un cliente marcato annullato che ricompare tra i validi viene riattivato.
                 var esistente = await clienteRepo.GetByCodiceGestionaleAsync(codice);
 
                 if (esistente is null)
@@ -54,9 +61,10 @@ public class SincronizzazioneGestionaleService(
                     });
                     inseriti++;
                 }
-                else if (esistente.RagioneSociale != ragSoc)
+                else if (esistente.RagioneSociale != ragSoc || !esistente.AttivoGestionale)
                 {
-                    esistente.RagioneSociale = ragSoc;
+                    esistente.RagioneSociale   = ragSoc;
+                    esistente.AttivoGestionale = true;
                     await clienteRepo.UpdateAsync(esistente);
                     aggiornati++;
                 }
@@ -66,15 +74,33 @@ public class SincronizzazioneGestionaleService(
                 }
             }
 
-            return new SincronizzazioneResult(inseriti, aggiornati, invariati, null);
+            // Clienti locali assenti dal gestionale → annullati (mai eliminati: lo storico
+            // piastre/macchine resta intatto). Se la query non ha restituito righe si salta:
+            // più probabile un problema di query/connessione che un annullamento di massa.
+            if (codiciValidi.Count > 0)
+            {
+                foreach (var cliente in await clienteRepo.GetAllAsync())
+                {
+                    ct.ThrowIfCancellationRequested();
+
+                    if (cliente.AttivoGestionale && !codiciValidi.Contains(cliente.CodiceClienteGestionale))
+                    {
+                        cliente.AttivoGestionale = false;
+                        await clienteRepo.UpdateAsync(cliente);
+                        annullati++;
+                    }
+                }
+            }
+
+            return new SincronizzazioneResult(inseriti, aggiornati, invariati, null, annullati);
         }
         catch (OperationCanceledException)
         {
-            return new SincronizzazioneResult(inseriti, aggiornati, invariati, "Operazione annullata.");
+            return new SincronizzazioneResult(inseriti, aggiornati, invariati, "Operazione annullata.", annullati);
         }
         catch (Exception ex)
         {
-            return new SincronizzazioneResult(inseriti, aggiornati, invariati, ex.Message);
+            return new SincronizzazioneResult(inseriti, aggiornati, invariati, ex.Message, annullati);
         }
     }
 }

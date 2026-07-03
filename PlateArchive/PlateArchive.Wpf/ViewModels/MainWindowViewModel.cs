@@ -48,6 +48,7 @@ public class MainWindowViewModel : ViewModelBase
         NavigateToClientiCommand          = new RelayCommand(_ => _navigation.Navigate<ClientiViewModel>());
         NavigateToPiastreCommand          = new RelayCommand(_ => _navigation.Navigate<PiastreViewModel>());
         NavigateToMacchineCommand         = new RelayCommand(_ => _navigation.Navigate<MacchineViewModel>());
+        NavigateToOrdiniVenditaCommand    = new RelayCommand(_ => _navigation.Navigate<OrdiniVenditaViewModel>());
         NavigateToFormatiMacchinaCommand    = new RelayCommand(_ => _navigation.Navigate<FormatiMacchinaViewModel>());
         NavigateToCategoriePiastreCommand   = new RelayCommand(_ => _navigation.Navigate<CategoriePiastreViewModel>());
         NavigateToProduttoriMacchinaCommand = new RelayCommand(_ => _navigation.Navigate<ProduttoriMacchinaViewModel>());
@@ -92,6 +93,7 @@ public class MainWindowViewModel : ViewModelBase
     public ICommand NavigateToClientiCommand         { get; }
     public ICommand NavigateToPiastreCommand         { get; }
     public ICommand NavigateToMacchineCommand        { get; }
+    public ICommand NavigateToOrdiniVenditaCommand   { get; }
     public ICommand NavigateToFormatiMacchinaCommand    { get; }
     public ICommand NavigateToCategoriePiastreCommand   { get; }
     public ICommand NavigateToProduttoriMacchinaCommand { get; }

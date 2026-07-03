@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PlateArchive.Data;
 
@@ -11,9 +12,11 @@ using PlateArchive.Data;
 namespace PlateArchive.Data.Migrations
 {
     [DbContext(typeof(PlateArchiveDbContext))]
-    partial class PlateArchiveDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260702064753_AddClienteAttivoGestionale")]
+    partial class AddClienteAttivoGestionale
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -233,10 +236,7 @@ namespace PlateArchive.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdMacchinaStandard"));
 
-                    b.Property<decimal?>("AltezzaMassimaFoglioMm")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("AltezzaMinimaFoglioMm")
+                    b.Property<decimal?>("AltezzaMm")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<bool>("Attiva")
@@ -252,10 +252,7 @@ namespace PlateArchive.Data.Migrations
                     b.Property<int?>("IdProduttore")
                         .HasColumnType("int");
 
-                    b.Property<decimal?>("LarghezzaMassimaFoglioMm")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("LarghezzaMinimaFoglioMm")
+                    b.Property<decimal?>("LarghezzaMm")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("NomeMacchina")

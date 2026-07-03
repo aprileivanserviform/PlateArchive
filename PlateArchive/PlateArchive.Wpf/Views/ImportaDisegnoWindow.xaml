@@ -88,10 +88,10 @@
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Codice"
                                                    Binding="{Binding Cliente.CodiceClienteGestionale}"
-                                                   Width="90"/>
+                                                   Width="Auto"/>
                                 <DataGridTextColumn Header="Cliente"
                                                    Binding="{Binding Cliente.RagioneSociale}"
-                                                   Width="*"/>
+                                                   Width="Auto"/>
                             </DataGrid.Columns>
                         </DataGrid>
                     </Border>

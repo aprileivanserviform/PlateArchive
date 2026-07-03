@@ -76,19 +76,19 @@
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Codice"
                                            Binding="{Binding CodiceMacchina}"
-                                           Width="160"/>
+                                           Width="Auto"/>
                         <DataGridTextColumn Header="Nome"
                                            Binding="{Binding NomeMacchina}"
-                                           Width="*"/>
+                                           Width="Auto"/>
                         <DataGridTextColumn Header="Formato"
                                            Binding="{Binding Formato.NomeFormato}"
-                                           Width="110"/>
+                                           Width="Auto"/>
                         <DataGridTextColumn Header="Produttore"
                                            Binding="{Binding Produttore.NomeProduttore}"
-                                           Width="110"/>
+                                           Width="Auto"/>
                         <DataGridCheckBoxColumn Header="Att."
                                                Binding="{Binding Attiva}"
-                                               Width="45"/>
+                                               Width="Auto"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Border>
@@ -142,7 +142,8 @@
                                   DisplayMemberPath="NomeProduttore"
                                   Margin="0,0,0,8"/>
 
-                        <!-- Misure -->
+                        <!-- Formato foglio lavorabile (min / max) -->
+                        <TextBlock Text="Formato foglio (mm)" Style="{StaticResource FieldLabel}"/>
                         <Grid Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -150,13 +151,30 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0">
-                                <TextBlock Text="Larghezza (mm)" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Text="{Binding FormLarghezza, UpdateSourceTrigger=PropertyChanged}"
+                                <TextBlock Text="Larghezza minima" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding FormLarghezzaMinima, UpdateSourceTrigger=PropertyChanged}"
                                          Style="{StaticResource FieldBox}"/>
                             </StackPanel>
                             <StackPanel Grid.Column="2">
-                                <TextBlock Text="Altezza (mm)" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Text="{Binding FormAltezza, UpdateSourceTrigger=PropertyChanged}"
+                                <TextBlock Text="Altezza minima" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding FormAltezzaMinima, UpdateSourceTrigger=PropertyChanged}"
+                                         Style="{StaticResource FieldBox}"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Larghezza massima" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding FormLarghezzaMassima, UpdateSourceTrigger=PropertyChanged}"
+                                         Style="{StaticResource FieldBox}"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Altezza massima" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding FormAltezzaMassima, UpdateSourceTrigger=PropertyChanged}"
                                          Style="{StaticResource FieldBox}"/>
                             </StackPanel>
                         </Grid>
@@ -226,15 +244,29 @@
                                         <TextBlock Text="Formato" Style="{StaticResource TextBlock.Caption}"/>
                                         <TextBlock Text="{Binding MacchinaSelezionata.Formato.NomeFormato, FallbackValue='—'}"
                                                    Margin="0,0,0,8"/>
-                                        <TextBlock Text="Larghezza (mm)" Style="{StaticResource TextBlock.Caption}"/>
-                                        <TextBlock Text="{Binding MacchinaSelezionata.LarghezzaMm, FallbackValue='—'}"/>
+                                        <TextBlock Text="Foglio min (L × A mm)" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock Margin="0,0,0,8">
+                                            <TextBlock.Text>
+                                                <MultiBinding StringFormat="{}{0:F0} × {1:F0}">
+                                                    <Binding Path="MacchinaSelezionata.LarghezzaMinimaFoglioMm" TargetNullValue="—" FallbackValue="—"/>
+                                                    <Binding Path="MacchinaSelezionata.AltezzaMinimaFoglioMm"   TargetNullValue="—" FallbackValue="—"/>
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
                                     </StackPanel>
                                     <StackPanel Grid.Column="1">
                                         <TextBlock Text="Produttore" Style="{StaticResource TextBlock.Caption}"/>
                                         <TextBlock Text="{Binding MacchinaSelezionata.Produttore.NomeProduttore, FallbackValue='—'}"
                                                    Margin="0,0,0,8"/>
-                                        <TextBlock Text="Altezza (mm)" Style="{StaticResource TextBlock.Caption}"/>
-                                        <TextBlock Text="{Binding MacchinaSelezionata.AltezzaMm, FallbackValue='—'}"/>
+                                        <TextBlock Text="Foglio max (L × A mm)" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock Margin="0,0,0,8">
+                                            <TextBlock.Text>
+                                                <MultiBinding StringFormat="{}{0:F0} × {1:F0}">
+                                                    <Binding Path="MacchinaSelezionata.LarghezzaMassimaFoglioMm" TargetNullValue="—" FallbackValue="—"/>
+                                                    <Binding Path="MacchinaSelezionata.AltezzaMassimaFoglioMm"   TargetNullValue="—" FallbackValue="—"/>
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
                                     </StackPanel>
                                 </Grid>
                             </Border>
@@ -302,15 +334,12 @@
                                     Margin="0,0,0,4" MaxHeight="180">
                                 <DataGrid ItemsSource="{Binding PiastreCompatibili}"
                                           CanUserAddRows="False" IsReadOnly="True"
+                                          FrozenColumnCount="1"
                                           RowHeight="30" ColumnHeaderHeight="30">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Codice"
-                                                           Binding="{Binding Piastra.CodicePiastra}"
-                                                           Width="100"/>
-                                        <DataGridTextColumn Header="Descrizione"
-                                                           Binding="{Binding Piastra.Descrizione}"
-                                                           Width="*"/>
-                                        <DataGridTemplateColumn Header="" Width="44">
+                                        <!-- Colonna azioni: prima, fissa, non ridimensionabile né spostabile. -->
+                                        <DataGridTemplateColumn Header="" Width="44"
+                                                                CanUserResize="False" CanUserReorder="False">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <Button Style="{StaticResource Button.IconDanger}"
@@ -324,6 +353,12 @@
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
+                                        <DataGridTextColumn Header="Codice"
+                                                           Binding="{Binding Piastra.CodicePiastra}"
+                                                           Width="Auto"/>
+                                        <DataGridTextColumn Header="Descrizione"
+                                                           Binding="{Binding Piastra.Descrizione}"
+                                                           Width="Auto"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Border>
@@ -438,15 +473,12 @@
                                     MaxHeight="150">
                                 <DataGrid ItemsSource="{Binding ClientiAssociati}"
                                           CanUserAddRows="False" IsReadOnly="True"
+                                          FrozenColumnCount="1"
                                           RowHeight="30" ColumnHeaderHeight="30">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Ragione Sociale"
-                                                           Binding="{Binding Cliente.RagioneSociale}"
-                                                           Width="*"/>
-                                        <DataGridTextColumn Header="Matricola"
-                                                           Binding="{Binding Matricola}"
-                                                           Width="90"/>
-                                        <DataGridTemplateColumn Header="" Width="44">
+                                        <!-- Colonna azioni: prima, fissa, non ridimensionabile né spostabile. -->
+                                        <DataGridTemplateColumn Header="" Width="44"
+                                                                CanUserResize="False" CanUserReorder="False">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <Button Style="{StaticResource Button.IconDanger}"
@@ -460,6 +492,12 @@
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
+                                        <DataGridTextColumn Header="Ragione Sociale"
+                                                           Binding="{Binding Cliente.RagioneSociale}"
+                                                           Width="Auto"/>
+                                        <DataGridTextColumn Header="Matricola"
+                                                           Binding="{Binding Matricola}"
+                                                           Width="Auto"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Border>

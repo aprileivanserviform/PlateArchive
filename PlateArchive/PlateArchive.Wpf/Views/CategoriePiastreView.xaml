@@ -26,9 +26,9 @@
                       CanUserAddRows="False" IsReadOnly="True"
                       RowHeight="36">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Codice"      Binding="{Binding Codice}"      Width="90"/>
-                    <DataGridTextColumn Header="Descrizione" Binding="{Binding Descrizione}" Width="*"/>
-                    <DataGridTextColumn Header="Ordine"      Binding="{Binding Ordine}"      Width="70"/>
+                    <DataGridTextColumn Header="Codice"      Binding="{Binding Codice}"      Width="Auto"/>
+                    <DataGridTextColumn Header="Descrizione" Binding="{Binding Descrizione}" Width="Auto"/>
+                    <DataGridTextColumn Header="Ordine"      Binding="{Binding Ordine}"      Width="Auto"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Border>

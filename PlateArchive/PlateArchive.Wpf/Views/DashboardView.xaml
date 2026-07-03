@@ -113,11 +113,11 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Codice"
                                                Binding="{Binding CodicePiastra}"
-                                               Width="120"/>
+                                               Width="Auto"/>
                             <DataGridTextColumn Header="Descrizione"
                                                Binding="{Binding Descrizione}"
-                                               Width="*"/>
-                            <DataGridTextColumn Header="Inserita" Width="72">
+                                               Width="Auto"/>
+                            <DataGridTextColumn Header="Inserita" Width="Auto">
                                 <DataGridTextColumn.Binding>
                                     <Binding Path="DataCreazione" StringFormat="dd/MM/yy"/>
                                 </DataGridTextColumn.Binding>
@@ -146,13 +146,13 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Piastra"
                                                Binding="{Binding Piastra.CodicePiastra}"
-                                               Width="120"/>
+                                               Width="Auto"/>
                             <DataGridTextColumn Header="Codice disegno"
                                                Binding="{Binding CodiceDisegno}"
-                                               Width="*"/>
+                                               Width="Auto"/>
                             <DataGridTextColumn Header="Rev."
                                                Binding="{Binding Revisione}"
-                                               Width="50"/>
+                                               Width="Auto"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </DockPanel>

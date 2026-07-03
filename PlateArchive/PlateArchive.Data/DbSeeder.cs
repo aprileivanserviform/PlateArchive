@@ -34,12 +34,12 @@ public static class DbSeeder
         // fmt106 = formati[0], fmt145 = formati[1], fmt88 = formati[2]
         var macchine = new[]
         {
-            new MacchinaStandard { CodiceMacchina = "NOVACUT_106",       NomeMacchina = "NOVACUT 106",         IdFormato = formati[0].IdFormato, LarghezzaMm = 760, AltezzaMm = 1060, Attiva = true  },
-            new MacchinaStandard { CodiceMacchina = "NOVACUT_145",       NomeMacchina = "NOVACUT 145",         IdFormato = formati[1].IdFormato, LarghezzaMm = 760, AltezzaMm = 1450, Attiva = true  },
-            new MacchinaStandard { CodiceMacchina = "EXPERTCUT_106",     NomeMacchina = "EXPERTCUT 106",       IdFormato = formati[0].IdFormato, LarghezzaMm = 760, AltezzaMm = 1060, Attiva = true  },
-            new MacchinaStandard { CodiceMacchina = "EXPERTCUT_145",     NomeMacchina = "EXPERTCUT 145",       IdFormato = formati[1].IdFormato, LarghezzaMm = 760, AltezzaMm = 1450, Attiva = true  },
-            new MacchinaStandard { CodiceMacchina = "SPRINTERA_106PER",  NomeMacchina = "SPRINTERA 106 PER",   IdFormato = formati[0].IdFormato, LarghezzaMm = 760, AltezzaMm = 1060, Attiva = true  },
-            new MacchinaStandard { CodiceMacchina = "MASTERCUT_VECCHIO", NomeMacchina = "MASTERCUT (vecchio)", IdFormato = formati[2].IdFormato, LarghezzaMm = 600, AltezzaMm = 880,  Attiva = false },
+            new MacchinaStandard { CodiceMacchina = "NOVACUT_106",       NomeMacchina = "NOVACUT 106",         IdFormato = formati[0].IdFormato, LarghezzaMinimaFoglioMm = 400, AltezzaMinimaFoglioMm = 350, LarghezzaMassimaFoglioMm = 760, AltezzaMassimaFoglioMm = 1060, Attiva = true  },
+            new MacchinaStandard { CodiceMacchina = "NOVACUT_145",       NomeMacchina = "NOVACUT 145",         IdFormato = formati[1].IdFormato, LarghezzaMinimaFoglioMm = 400, AltezzaMinimaFoglioMm = 400, LarghezzaMassimaFoglioMm = 760, AltezzaMassimaFoglioMm = 1450, Attiva = true  },
+            new MacchinaStandard { CodiceMacchina = "EXPERTCUT_106",     NomeMacchina = "EXPERTCUT 106",       IdFormato = formati[0].IdFormato, LarghezzaMinimaFoglioMm = 400, AltezzaMinimaFoglioMm = 350, LarghezzaMassimaFoglioMm = 760, AltezzaMassimaFoglioMm = 1060, Attiva = true  },
+            new MacchinaStandard { CodiceMacchina = "EXPERTCUT_145",     NomeMacchina = "EXPERTCUT 145",       IdFormato = formati[1].IdFormato, LarghezzaMinimaFoglioMm = 400, AltezzaMinimaFoglioMm = 400, LarghezzaMassimaFoglioMm = 760, AltezzaMassimaFoglioMm = 1450, Attiva = true  },
+            new MacchinaStandard { CodiceMacchina = "SPRINTERA_106PER",  NomeMacchina = "SPRINTERA 106 PER",   IdFormato = formati[0].IdFormato, LarghezzaMinimaFoglioMm = 400, AltezzaMinimaFoglioMm = 350, LarghezzaMassimaFoglioMm = 760, AltezzaMassimaFoglioMm = 1060, Attiva = true  },
+            new MacchinaStandard { CodiceMacchina = "MASTERCUT_VECCHIO", NomeMacchina = "MASTERCUT (vecchio)", IdFormato = formati[2].IdFormato, LarghezzaMinimaFoglioMm = 350, AltezzaMinimaFoglioMm = 300, LarghezzaMassimaFoglioMm = 600, AltezzaMassimaFoglioMm = 880,  Attiva = false },
         };
         db.MacchineStandard.AddRange(macchine);
 

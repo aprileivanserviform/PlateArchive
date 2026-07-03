@@ -128,8 +128,10 @@ CREATE TABLE dbo.MacchineStandard (
     Note               nvarchar(max) NULL,
     IdFormato          int           NULL,
     IdProduttore       int           NULL,
-    LarghezzaMm        decimal(18,2) NULL,
-    AltezzaMm          decimal(18,2) NULL,
+    LarghezzaMinimaFoglioMm  decimal(18,2) NULL,
+    AltezzaMinimaFoglioMm    decimal(18,2) NULL,
+    LarghezzaMassimaFoglioMm decimal(18,2) NULL,
+    AltezzaMassimaFoglioMm   decimal(18,2) NULL,
     CONSTRAINT PK_MacchineStandard PRIMARY KEY (IdMacchinaStandard),
     CONSTRAINT FK_MacchineStandard_FormatiMacchine_IdFormato
         FOREIGN KEY (IdFormato)
@@ -379,13 +381,15 @@ DECLARE @fmt106 int = (SELECT IdFormato FROM dbo.FormatiMacchine WHERE NomeForma
 DECLARE @fmt145 int = (SELECT IdFormato FROM dbo.FormatiMacchine WHERE NomeFormato = '145');
 DECLARE @fmt88  int = (SELECT IdFormato FROM dbo.FormatiMacchine WHERE NomeFormato = '88');
 
-INSERT INTO dbo.MacchineStandard (CodiceMacchina, NomeMacchina, IdFormato, LarghezzaMm, AltezzaMm, Attiva) VALUES
-    ('NOVACUT_106',       'NOVACUT 106',         @fmt106, 760, 1060, 1),
-    ('NOVACUT_145',       'NOVACUT 145',         @fmt145, 760, 1450, 1),
-    ('EXPERTCUT_106',     'EXPERTCUT 106',       @fmt106, 760, 1060, 1),
-    ('EXPERTCUT_145',     'EXPERTCUT 145',       @fmt145, 760, 1450, 1),
-    ('SPRINTERA_106PER',  'SPRINTERA 106 PER',   @fmt106, 760, 1060, 1),
-    ('MASTERCUT_VECCHIO', 'MASTERCUT (vecchio)', @fmt88,  600,  880, 0);
+INSERT INTO dbo.MacchineStandard
+    (CodiceMacchina, NomeMacchina, IdFormato,
+     LarghezzaMinimaFoglioMm, AltezzaMinimaFoglioMm, LarghezzaMassimaFoglioMm, AltezzaMassimaFoglioMm, Attiva) VALUES
+    ('NOVACUT_106',       'NOVACUT 106',         @fmt106, 400, 350, 760, 1060, 1),
+    ('NOVACUT_145',       'NOVACUT 145',         @fmt145, 400, 400, 760, 1450, 1),
+    ('EXPERTCUT_106',     'EXPERTCUT 106',       @fmt106, 400, 350, 760, 1060, 1),
+    ('EXPERTCUT_145',     'EXPERTCUT 145',       @fmt145, 400, 400, 760, 1450, 1),
+    ('SPRINTERA_106PER',  'SPRINTERA 106 PER',   @fmt106, 400, 350, 760, 1060, 1),
+    ('MASTERCUT_VECCHIO', 'MASTERCUT (vecchio)', @fmt88,  350, 300, 600,  880, 0);
 
 -- Piastre (Stato: Attiva=0, Obsoleta=1, DaVerificare=2 | TipoPiastra: Standard=0)
 DECLARE @now datetime2 = GETUTCDATE();

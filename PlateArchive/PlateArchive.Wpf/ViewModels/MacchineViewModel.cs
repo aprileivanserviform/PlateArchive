@@ -44,8 +44,10 @@ public class MacchineViewModel : ViewModelBase
     private string              _formNomeMacchina        = string.Empty;
     private FormatoMacchina?    _formFormatoSelezionato;
     private ProduttoreMacchina? _formProduttoreSelezionato;
-    private string              _formLarghezza           = string.Empty;
-    private string              _formAltezza             = string.Empty;
+    private string              _formLarghezzaMinima     = string.Empty;
+    private string              _formAltezzaMinima       = string.Empty;
+    private string              _formLarghezzaMassima    = string.Empty;
+    private string              _formAltezzaMassima      = string.Empty;
     private string              _formVersione            = string.Empty;
     private string              _formNote                = string.Empty;
     private string?             _avvisoDuplicato;
@@ -276,16 +278,28 @@ public class MacchineViewModel : ViewModelBase
         set => SetField(ref _formProduttoreSelezionato, value);
     }
 
-    public string FormLarghezza
+    public string FormLarghezzaMinima
     {
-        get => _formLarghezza;
-        set => SetField(ref _formLarghezza, value);
+        get => _formLarghezzaMinima;
+        set => SetField(ref _formLarghezzaMinima, value);
     }
 
-    public string FormAltezza
+    public string FormAltezzaMinima
     {
-        get => _formAltezza;
-        set => SetField(ref _formAltezza, value);
+        get => _formAltezzaMinima;
+        set => SetField(ref _formAltezzaMinima, value);
+    }
+
+    public string FormLarghezzaMassima
+    {
+        get => _formLarghezzaMassima;
+        set => SetField(ref _formLarghezzaMassima, value);
+    }
+
+    public string FormAltezzaMassima
+    {
+        get => _formAltezzaMassima;
+        set => SetField(ref _formAltezzaMassima, value);
     }
 
     public string FormVersione
@@ -429,8 +443,10 @@ public class MacchineViewModel : ViewModelBase
         FormNomeMacchina          = MacchinaSelezionata.NomeMacchina;
         FormFormatoSelezionato    = FormatiMacchine.FirstOrDefault(f => f.IdFormato    == MacchinaSelezionata.IdFormato);
         FormProduttoreSelezionato = ProduttoriMacchine.FirstOrDefault(p => p.IdProduttore == MacchinaSelezionata.IdProduttore);
-        FormLarghezza             = MacchinaSelezionata.LarghezzaMm?.ToString("F2") ?? string.Empty;
-        FormAltezza               = MacchinaSelezionata.AltezzaMm?.ToString("F2")   ?? string.Empty;
+        FormLarghezzaMinima       = MacchinaSelezionata.LarghezzaMinimaFoglioMm?.ToString("F2")  ?? string.Empty;
+        FormAltezzaMinima         = MacchinaSelezionata.AltezzaMinimaFoglioMm?.ToString("F2")    ?? string.Empty;
+        FormLarghezzaMassima      = MacchinaSelezionata.LarghezzaMassimaFoglioMm?.ToString("F2") ?? string.Empty;
+        FormAltezzaMassima        = MacchinaSelezionata.AltezzaMassimaFoglioMm?.ToString("F2")   ?? string.Empty;
         FormVersione              = MacchinaSelezionata.Versione ?? string.Empty;
         FormNote                  = MacchinaSelezionata.Note    ?? string.Empty;
         AvvisoDuplicato           = null;
@@ -446,8 +462,9 @@ public class MacchineViewModel : ViewModelBase
 
     private void ResetForm()
     {
-        FormCodiceMacchina        = FormNomeMacchina = FormLarghezza =
-        FormAltezza = FormVersione = FormNote        = string.Empty;
+        FormCodiceMacchina     = FormNomeMacchina      = FormVersione       = FormNote =
+        FormLarghezzaMinima    = FormAltezzaMinima     =
+        FormLarghezzaMassima   = FormAltezzaMassima    = string.Empty;
         FormFormatoSelezionato    = null;
         FormProduttoreSelezionato = null;
         AvvisoDuplicato           = null;
@@ -467,8 +484,10 @@ public class MacchineViewModel : ViewModelBase
             m.NomeMacchina   = FormNomeMacchina.Trim();
             m.IdFormato      = FormFormatoSelezionato?.IdFormato;
             m.IdProduttore   = FormProduttoreSelezionato?.IdProduttore;
-            m.LarghezzaMm    = ParseDecimal(FormLarghezza);
-            m.AltezzaMm      = ParseDecimal(FormAltezza);
+            m.LarghezzaMinimaFoglioMm  = ParseDecimal(FormLarghezzaMinima);
+            m.AltezzaMinimaFoglioMm    = ParseDecimal(FormAltezzaMinima);
+            m.LarghezzaMassimaFoglioMm = ParseDecimal(FormLarghezzaMassima);
+            m.AltezzaMassimaFoglioMm   = ParseDecimal(FormAltezzaMassima);
             m.Versione       = N(FormVersione);
             m.Note           = N(FormNote);
             // Aggiorna anche le navigazioni in memoria per il binding nella lista.
@@ -485,8 +504,10 @@ public class MacchineViewModel : ViewModelBase
                 NomeMacchina   = FormNomeMacchina.Trim(),
                 IdFormato      = FormFormatoSelezionato?.IdFormato,
                 IdProduttore   = FormProduttoreSelezionato?.IdProduttore,
-                LarghezzaMm    = ParseDecimal(FormLarghezza),
-                AltezzaMm      = ParseDecimal(FormAltezza),
+                LarghezzaMinimaFoglioMm  = ParseDecimal(FormLarghezzaMinima),
+                AltezzaMinimaFoglioMm    = ParseDecimal(FormAltezzaMinima),
+                LarghezzaMassimaFoglioMm = ParseDecimal(FormLarghezzaMassima),
+                AltezzaMassimaFoglioMm   = ParseDecimal(FormAltezzaMassima),
                 Versione       = N(FormVersione),
                 Note           = N(FormNote),
                 Attiva         = true

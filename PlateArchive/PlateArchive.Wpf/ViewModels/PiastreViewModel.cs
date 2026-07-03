@@ -52,7 +52,6 @@ public class PiastreViewModel : ViewModelBase
     private string             _formCodiceArticolo       = string.Empty;
     private string             _formDescrizione          = string.Empty;
     private StatoPiastra       _formStato                = StatoPiastra.Attiva;
-    private TipoPiastra        _formTipo                 = TipoPiastra.Standard;
     private CategoriaPiastra?  _formCategoriaSelezionata;
     private FormatoMacchina?   _formFormatoSelezionato;
     private string             _formLarghezza            = string.Empty;
@@ -87,6 +86,10 @@ public class PiastreViewModel : ViewModelBase
     private Cliente?      _clienteSelezionato;
     private List<Cliente> _tuttiClientiDisponibili = [];
     private string        _filtroCliente           = string.Empty;
+
+    // ── Form: macchine compatibili da associare in creazione (stile tabella) ──
+    private bool              _isFormAggiungiMacchinaVisible;
+    private MacchinaStandard? _formMacchinaDaAggiungere;
 
     private Task _loadDettaglioTask = Task.CompletedTask;
 
@@ -144,6 +147,10 @@ public class PiastreViewModel : ViewModelBase
         RimuoviClienteEsclusivoCommand          = new RelayCommand(_ => FormClienteEsclusivo = null);
         SelezionaClienteAssociatoFormCommand    = new RelayCommand(p => AggiungiClienteAssociatoForm((Cliente)p!));
         RimuoviClienteAssociatoFormCommand      = new RelayCommand(p => RimuoviClienteAssociatoForm((Cliente)p!));
+        AggiungiMacchinaFormCommand             = new RelayCommand(async _ => await ApriFormAggiungiMacchinaAsync());
+        ConfermaAggiungiMacchinaFormCommand     = new RelayCommand(_ => ConfermaFormAggiungiMacchina(), _ => FormMacchinaDaAggiungere is not null);
+        AnnullaAggiungiMacchinaFormCommand      = new RelayCommand(_ => ChiudiFormAggiungiMacchina());
+        RimuoviMacchinaFormCommand              = new RelayCommand(p => RimuoviMacchinaForm((MacchinaStandard)p!));
         SfogliaFileDettaglioCommand             = new RelayCommand(async _ => await SfogliaFileDettaglioAsync(), _ => PiastraSelezionata is not null && DisegnoCorrente is null);
     }
 
@@ -167,7 +174,7 @@ public class PiastreViewModel : ViewModelBase
     public FiltroColonna FiltroCategoria     { get; } = new("Categoria",       FiltroColonnaTipo.Enum);
     public FiltroColonna FiltroFormato       { get; } = new("Formato",         FiltroColonnaTipo.Enum);
     public FiltroColonna FiltroTipo          { get; } = new("Tipo",            FiltroColonnaTipo.Enum);
-    public FiltroColonna FiltroStato         { get; } = new("Stato",           FiltroColonnaTipo.Enum);
+    public FiltroColonna FiltroStato         { get; } = new("Stato piastra",   FiltroColonnaTipo.Enum);
     public FiltroColonna FiltroLarghezza     { get; } = new("Larghezza",       FiltroColonnaTipo.Numerico);
     public FiltroColonna FiltroAltezza       { get; } = new("Altezza",         FiltroColonnaTipo.Numerico);
     public FiltroColonna FiltroSpessore      { get; } = new("Spessore",        FiltroColonnaTipo.Numerico);
@@ -177,7 +184,6 @@ public class PiastreViewModel : ViewModelBase
     public FiltroColonna FiltroDataModifica  { get; } = new("Ultima modifica", FiltroColonnaTipo.Data);
 
     public IEnumerable<StatoPiastra> StatiPiastra { get; } = Enum.GetValues<StatoPiastra>();
-    public IEnumerable<TipoPiastra>  TipiPiastra  { get; } = Enum.GetValues<TipoPiastra>();
 
     public ObservableCollection<Piastra> PiastreFiltrate { get; } = [];
 
@@ -430,28 +436,18 @@ public class PiastreViewModel : ViewModelBase
         set => SetField(ref _formStato, value);
     }
 
-    public TipoPiastra FormTipo
-    {
-        get => _formTipo;
-        set
-        {
-            if (SetField(ref _formTipo, value))
-            {
-                if (value == TipoPiastra.Standard)
-                {
-                    FormClienteEsclusivo        = null;
-                    IsClienteEsclusivoNonValido = false;
-                }
-                OnPropertyChanged(nameof(IsClienteEsclusivoVisible));
-                OnPropertyChanged(nameof(IsAssociazioneClientiVisible));
-            }
-        }
-    }
+    /// <summary>
+    /// True quando la categoria selezionata è "Speciale Cliente" (Codice "SPE").
+    /// In tal caso il cliente esclusivo diventa obbligatorio e la piastra viene salvata
+    /// come <see cref="TipoPiastra.SpecialeCliente"/>. Tipo e categoria coincidono:
+    /// la categoria SPE è l'unico driver (nessun dropdown "Tipo piastra" separato).
+    /// </summary>
+    public bool IsSpecialeCliente => FormCategoriaSelezionata?.Codice == "SPE";
 
     /// <summary>True se la sezione "cliente esclusivo" deve essere visibile nel form.</summary>
-    public bool IsClienteEsclusivoVisible    => FormTipo == TipoPiastra.SpecialeCliente;
-    /// <summary>True se la sezione "associa a clienti" (Standard) deve essere visibile nel form.</summary>
-    public bool IsAssociazioneClientiVisible => FormTipo == TipoPiastra.Standard;
+    public bool IsClienteEsclusivoVisible    => IsSpecialeCliente;
+    /// <summary>True se la sezione "associa a clienti" (opzionale) deve essere visibile nel form.</summary>
+    public bool IsAssociazioneClientiVisible => !IsSpecialeCliente;
 
     // ── Typeahead cliente esclusivo nel form ──────────────────────────────────
 
@@ -500,10 +496,44 @@ public class PiastreViewModel : ViewModelBase
 
     public bool IsFormClientiAssociatiSuggerimentiVisible => FormClientiAssociatiSuggeriti.Count > 0;
 
+    // ── Form: macchine compatibili da associare in creazione (stile tabella) ──
+
+    /// <summary>Macchine già selezionate come compatibili nel form (persistite al salvataggio).</summary>
+    public ObservableCollection<MacchinaStandard> FormMacchineDaAssociare { get; } = [];
+
+    /// <summary>Macchine disponibili nel ComboBox inline (attive, non ancora aggiunte).</summary>
+    public ObservableCollection<MacchinaStandard> FormMacchineDisponibili { get; } = [];
+
+    public bool IsFormAggiungiMacchinaVisible
+    {
+        get => _isFormAggiungiMacchinaVisible;
+        set => SetField(ref _isFormAggiungiMacchinaVisible, value);
+    }
+
+    public MacchinaStandard? FormMacchinaDaAggiungere
+    {
+        get => _formMacchinaDaAggiungere;
+        set => SetField(ref _formMacchinaDaAggiungere, value);
+    }
+
     public CategoriaPiastra? FormCategoriaSelezionata
     {
         get => _formCategoriaSelezionata;
-        set => SetField(ref _formCategoriaSelezionata, value);
+        set
+        {
+            if (SetField(ref _formCategoriaSelezionata, value))
+            {
+                // Uscendo dalla categoria "Speciale Cliente" azzera il cliente esclusivo.
+                if (!IsSpecialeCliente)
+                {
+                    FormClienteEsclusivo        = null;
+                    IsClienteEsclusivoNonValido = false;
+                }
+                OnPropertyChanged(nameof(IsSpecialeCliente));
+                OnPropertyChanged(nameof(IsClienteEsclusivoVisible));
+                OnPropertyChanged(nameof(IsAssociazioneClientiVisible));
+            }
+        }
     }
 
     public FormatoMacchina? FormFormatoSelezionato
@@ -603,6 +633,10 @@ public class PiastreViewModel : ViewModelBase
     public ICommand RimuoviClienteEsclusivoCommand          { get; }
     public ICommand SelezionaClienteAssociatoFormCommand    { get; }
     public ICommand RimuoviClienteAssociatoFormCommand      { get; }
+    public ICommand AggiungiMacchinaFormCommand             { get; }
+    public ICommand ConfermaAggiungiMacchinaFormCommand     { get; }
+    public ICommand AnnullaAggiungiMacchinaFormCommand      { get; }
+    public ICommand RimuoviMacchinaFormCommand              { get; }
     public ICommand SfogliaFileDettaglioCommand             { get; }
 
     // ─── Inizializzazione navigazione ─────────────────────────────────────────
@@ -743,7 +777,6 @@ public class PiastreViewModel : ViewModelBase
         FormCodiceArticolo       = PiastraSelezionata.CodiceArticoloGestionale  ?? string.Empty;
         FormDescrizione          = PiastraSelezionata.Descrizione                ?? string.Empty;
         FormStato                = PiastraSelezionata.Stato;
-        FormTipo                 = PiastraSelezionata.TipoPiastra;
         FormCategoriaSelezionata = CategoriePiastre.FirstOrDefault(c => c.IdCategoriaPiastra == PiastraSelezionata.IdCategoriaPiastra);
         FormFormatoSelezionato   = FormatiMacchine.FirstOrDefault(f => f.IdFormato == PiastraSelezionata.IdFormato);
         FormLarghezza            = PiastraSelezionata.LarghezzaMm?.ToString("F1")  ?? string.Empty;
@@ -775,7 +808,6 @@ public class PiastreViewModel : ViewModelBase
         FormCodicePiastra = FormCodiceArticolo = FormDescrizione = FormNote = string.Empty;
         FormLarghezza = FormAltezza = FormSpessore = FormDurezza = FormPeso = string.Empty;
         FormStato                = StatoPiastra.Attiva;
-        FormTipo                 = TipoPiastra.Standard;
         FormCategoriaSelezionata = CategoriePiastre.FirstOrDefault(c => c.Codice == "STD");
         FormFormatoSelezionato   = null;
         FormClienteEsclusivo     = null;
@@ -792,14 +824,21 @@ public class PiastreViewModel : ViewModelBase
         FormClientiAssociatiSuggeriti.Clear();
         OnPropertyChanged(nameof(IsClientiEsclusiviSuggerimentiVisible));
         OnPropertyChanged(nameof(IsFormClientiAssociatiSuggerimentiVisible));
+        FormMacchineDaAssociare.Clear();
+        IsFormAggiungiMacchinaVisible = false;
+        FormMacchinaDaAggiungere      = null;
+        FormMacchineDisponibili.Clear();
     }
 
     private async Task SalvaAsync()
     {
         IsCodicePiastraNonValido    = string.IsNullOrWhiteSpace(FormCodicePiastra);
-        IsClienteEsclusivoNonValido = FormTipo == TipoPiastra.SpecialeCliente && FormClienteEsclusivo is null;
+        IsClienteEsclusivoNonValido = IsSpecialeCliente && FormClienteEsclusivo is null;
         if (IsCodicePiastraNonValido || IsClienteEsclusivoNonValido) return;
         if (IsErroreVisible) return;
+
+        // Tipo derivato dalla categoria: SPE ⇒ SpecialeCliente, altrimenti Standard.
+        var tipo = IsSpecialeCliente ? TipoPiastra.SpecialeCliente : TipoPiastra.Standard;
 
         Piastra piastraSalvata;
         if (IsModifica)
@@ -810,9 +849,9 @@ public class PiastreViewModel : ViewModelBase
             p.CodiceArticoloGestionale = N(FormCodiceArticolo);
             p.Descrizione              = N(FormDescrizione);
             p.Stato                    = FormStato;
-            p.TipoPiastra              = FormTipo;
-            p.IdClienteEsclusivo       = FormClienteEsclusivo?.IdCliente;
-            p.ClienteEsclusivo         = FormClienteEsclusivo;
+            p.TipoPiastra              = tipo;
+            p.IdClienteEsclusivo       = IsSpecialeCliente ? FormClienteEsclusivo?.IdCliente : null;
+            p.ClienteEsclusivo         = IsSpecialeCliente ? FormClienteEsclusivo : null;
             p.IdCategoriaPiastra       = FormCategoriaSelezionata?.IdCategoriaPiastra;
             p.Categoria                = FormCategoriaSelezionata;
             p.IdFormato                = FormFormatoSelezionato?.IdFormato;
@@ -834,9 +873,9 @@ public class PiastreViewModel : ViewModelBase
                 CodiceArticoloGestionale = N(FormCodiceArticolo),
                 Descrizione              = N(FormDescrizione),
                 Stato                    = FormStato,
-                TipoPiastra              = FormTipo,
-                IdClienteEsclusivo       = FormClienteEsclusivo?.IdCliente,
-                ClienteEsclusivo         = FormClienteEsclusivo,
+                TipoPiastra              = tipo,
+                IdClienteEsclusivo       = IsSpecialeCliente ? FormClienteEsclusivo?.IdCliente : null,
+                ClienteEsclusivo         = IsSpecialeCliente ? FormClienteEsclusivo : null,
                 IdCategoriaPiastra       = FormCategoriaSelezionata?.IdCategoriaPiastra,
                 Categoria                = FormCategoriaSelezionata,
                 IdFormato                = FormFormatoSelezionato?.IdFormato,
@@ -862,7 +901,7 @@ public class PiastreViewModel : ViewModelBase
         {
             var clientiDaAssociare = FormClientiDaAssociare.ToList();
             // Per SpecialeCliente, il cliente esclusivo viene incluso anche come associazione
-            if (FormTipo == TipoPiastra.SpecialeCliente && FormClienteEsclusivo is not null
+            if (IsSpecialeCliente && FormClienteEsclusivo is not null
                 && !clientiDaAssociare.Contains(FormClienteEsclusivo))
                 clientiDaAssociare.Add(FormClienteEsclusivo);
 
@@ -878,6 +917,19 @@ public class PiastreViewModel : ViewModelBase
                     Piastra          = piastraSalvata
                 };
                 await _clientiPiastreRepo.AddAsync(cp);
+            }
+
+            // Associa le macchine compatibili selezionate nel form (solo in creazione;
+            // in modifica si usa il pannello dettaglio).
+            foreach (var macchina in FormMacchineDaAssociare)
+            {
+                var compat = new PiastraMacchinaCompatibile
+                {
+                    IdPiastra          = piastraSalvata.IdPiastra,
+                    IdMacchinaStandard = macchina.IdMacchinaStandard,
+                    Attiva             = true
+                };
+                await _compatRepo.AddAsync(compat);
             }
         }
 
@@ -1229,6 +1281,47 @@ public class PiastreViewModel : ViewModelBase
     private void RimuoviClienteAssociatoForm(Cliente cliente)
     {
         FormClientiDaAssociare.Remove(cliente);
+    }
+
+    // ─── Macchine compatibili nel form (creazione, stile tabella) ─────────────
+
+    private async Task ApriFormAggiungiMacchinaAsync()
+    {
+        var tutte      = await _macchineRepo.GetAllAsync();
+        var idGiaScelte = FormMacchineDaAssociare.Select(m => m.IdMacchinaStandard).ToHashSet();
+        // Se è stato scelto un formato, mostra solo le macchine di quel formato.
+        var idFormato   = FormFormatoSelezionato?.IdFormato;
+
+        FormMacchineDisponibili.Clear();
+        foreach (var m in tutte.Where(m =>
+            m.Attiva
+            && !idGiaScelte.Contains(m.IdMacchinaStandard)
+            && (idFormato is null || m.IdFormato == idFormato)))
+        {
+            FormMacchineDisponibili.Add(m);
+        }
+        FormMacchinaDaAggiungere      = null;
+        IsFormAggiungiMacchinaVisible = true;
+    }
+
+    private void ConfermaFormAggiungiMacchina()
+    {
+        if (FormMacchinaDaAggiungere is null) return;
+        if (!FormMacchineDaAssociare.Contains(FormMacchinaDaAggiungere))
+            FormMacchineDaAssociare.Add(FormMacchinaDaAggiungere);
+        ChiudiFormAggiungiMacchina();
+    }
+
+    private void ChiudiFormAggiungiMacchina()
+    {
+        IsFormAggiungiMacchinaVisible = false;
+        FormMacchinaDaAggiungere      = null;
+        FormMacchineDisponibili.Clear();
+    }
+
+    private void RimuoviMacchinaForm(MacchinaStandard macchina)
+    {
+        FormMacchineDaAssociare.Remove(macchina);
     }
 
     // ─── Sfoglia file nel form ────────────────────────────────────────────────

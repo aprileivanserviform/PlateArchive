@@ -18,9 +18,15 @@ public class MacchinaStandard
     public int?   IdFormato         { get; set; }
     public int?   IdProduttore      { get; set; }
 
-    /// <summary>Dimensioni fisiche della macchina in millimetri.</summary>
-    public decimal? LarghezzaMm     { get; set; }
-    public decimal? AltezzaMm       { get; set; }
+    /// <summary>
+    /// Dimensioni del foglio lavorabile dalla macchina di fustellatura, in millimetri.
+    /// Il formato che la macchina può fustellare è compreso tra il minimo e il massimo
+    /// (larghezza × altezza).
+    /// </summary>
+    public decimal? LarghezzaMinimaFoglioMm  { get; set; }
+    public decimal? AltezzaMinimaFoglioMm    { get; set; }
+    public decimal? LarghezzaMassimaFoglioMm { get; set; }
+    public decimal? AltezzaMassimaFoglioMm   { get; set; }
 
     public string?  Versione        { get; set; }
 
