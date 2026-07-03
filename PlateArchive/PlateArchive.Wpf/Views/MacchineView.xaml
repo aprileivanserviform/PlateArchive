@@ -302,15 +302,12 @@
                                     Margin="0,0,0,4" MaxHeight="180">
                                 <DataGrid ItemsSource="{Binding PiastreCompatibili}"
                                           CanUserAddRows="False" IsReadOnly="True"
+                                          FrozenColumnCount="1"
                                           RowHeight="30" ColumnHeaderHeight="30">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Codice"
-                                                           Binding="{Binding Piastra.CodicePiastra}"
-                                                           Width="100"/>
-                                        <DataGridTextColumn Header="Descrizione"
-                                                           Binding="{Binding Piastra.Descrizione}"
-                                                           Width="*"/>
-                                        <DataGridTemplateColumn Header="" Width="44">
+                                        <!-- Colonna azioni: prima, fissa, non ridimensionabile né spostabile. -->
+                                        <DataGridTemplateColumn Header="" Width="44"
+                                                                CanUserResize="False" CanUserReorder="False">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <Button Style="{StaticResource Button.IconDanger}"
@@ -324,6 +321,12 @@
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
+                                        <DataGridTextColumn Header="Codice"
+                                                           Binding="{Binding Piastra.CodicePiastra}"
+                                                           Width="100"/>
+                                        <DataGridTextColumn Header="Descrizione"
+                                                           Binding="{Binding Piastra.Descrizione}"
+                                                           Width="*"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Border>
@@ -438,15 +441,12 @@
                                     MaxHeight="150">
                                 <DataGrid ItemsSource="{Binding ClientiAssociati}"
                                           CanUserAddRows="False" IsReadOnly="True"
+                                          FrozenColumnCount="1"
                                           RowHeight="30" ColumnHeaderHeight="30">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Ragione Sociale"
-                                                           Binding="{Binding Cliente.RagioneSociale}"
-                                                           Width="*"/>
-                                        <DataGridTextColumn Header="Matricola"
-                                                           Binding="{Binding Matricola}"
-                                                           Width="90"/>
-                                        <DataGridTemplateColumn Header="" Width="44">
+                                        <!-- Colonna azioni: prima, fissa, non ridimensionabile né spostabile. -->
+                                        <DataGridTemplateColumn Header="" Width="44"
+                                                                CanUserResize="False" CanUserReorder="False">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <Button Style="{StaticResource Button.IconDanger}"
@@ -460,6 +460,12 @@
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
+                                        <DataGridTextColumn Header="Ragione Sociale"
+                                                           Binding="{Binding Cliente.RagioneSociale}"
+                                                           Width="*"/>
+                                        <DataGridTextColumn Header="Matricola"
+                                                           Binding="{Binding Matricola}"
+                                                           Width="90"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Border>

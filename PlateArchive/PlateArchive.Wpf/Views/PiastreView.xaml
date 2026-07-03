@@ -1158,15 +1158,12 @@
                                     Margin="0,0,0,4" MaxHeight="180">
                                 <DataGrid ItemsSource="{Binding MacchineCompatibili}"
                                           CanUserAddRows="False" IsReadOnly="True"
+                                          FrozenColumnCount="1"
                                           RowHeight="30" ColumnHeaderHeight="30">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Macchina"
-                                                           Binding="{Binding MacchinaStandard.NomeMacchina}"
-                                                           Width="*"/>
-                                        <DataGridTextColumn Header="Codice"
-                                                           Binding="{Binding MacchinaStandard.CodiceMacchina}"
-                                                           Width="110"/>
-                                        <DataGridTemplateColumn Header="" Width="44">
+                                        <!-- Colonna azioni: prima, fissa, non ridimensionabile né spostabile. -->
+                                        <DataGridTemplateColumn Header="" Width="44"
+                                                                CanUserResize="False" CanUserReorder="False">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <Button Style="{StaticResource Button.IconDanger}"
@@ -1180,6 +1177,12 @@
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
+                                        <DataGridTextColumn Header="Macchina"
+                                                           Binding="{Binding MacchinaStandard.NomeMacchina}"
+                                                           Width="*"/>
+                                        <DataGridTextColumn Header="Codice"
+                                                           Binding="{Binding MacchinaStandard.CodiceMacchina}"
+                                                           Width="110"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Border>
@@ -1284,15 +1287,12 @@
                                     BorderThickness="1" MaxHeight="160">
                                 <DataGrid ItemsSource="{Binding ClientiAssociati}"
                                           CanUserAddRows="False" IsReadOnly="True"
+                                          FrozenColumnCount="1"
                                           RowHeight="30" ColumnHeaderHeight="30">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Cliente"
-                                                           Binding="{Binding Cliente.RagioneSociale}"
-                                                           Width="*"/>
-                                        <DataGridTextColumn Header="Macchina"
-                                                           Binding="{Binding ClienteMacchina.MacchinaStandard.NomeMacchina}"
-                                                           Width="120"/>
-                                        <DataGridTemplateColumn Header="" Width="44">
+                                        <!-- Colonna azioni: prima, fissa, non ridimensionabile né spostabile. -->
+                                        <DataGridTemplateColumn Header="" Width="44"
+                                                                CanUserResize="False" CanUserReorder="False">
                                             <DataGridTemplateColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <Button Style="{StaticResource Button.IconDanger}"
@@ -1306,6 +1306,12 @@
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
+                                        <DataGridTextColumn Header="Cliente"
+                                                           Binding="{Binding Cliente.RagioneSociale}"
+                                                           Width="*"/>
+                                        <DataGridTextColumn Header="Macchina"
+                                                           Binding="{Binding ClienteMacchina.MacchinaStandard.NomeMacchina}"
+                                                           Width="120"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Border>
