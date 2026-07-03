@@ -197,14 +197,14 @@
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Macchina"
                                                    Binding="{Binding MacchinaStandard.NomeMacchina}"
-                                                   Width="*"/>
+                                                   Width="Auto"/>
                                 <DataGridTextColumn Header="Matricola"
                                                    Binding="{Binding Matricola}"
-                                                   Width="140"/>
+                                                   Width="Auto"/>
                                 <DataGridTextColumn Header="Codice interno"
                                                    Binding="{Binding CodiceInternoCliente}"
-                                                   Width="130"/>
-                                <DataGridTemplateColumn Header="Stato" Width="90">
+                                                   Width="Auto"/>
+                                <DataGridTemplateColumn Header="Stato" Width="Auto">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Border Padding="5,2" CornerRadius="3"
@@ -436,14 +436,14 @@
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Codice Piastra"
                                                    Binding="{Binding Piastra.CodicePiastra}"
-                                                   Width="140"/>
+                                                   Width="Auto"/>
                                 <DataGridTextColumn Header="Descrizione"
                                                    Binding="{Binding Piastra.Descrizione}"
-                                                   Width="*"/>
+                                                   Width="Auto"/>
                                 <DataGridTextColumn Header="Macchina"
                                                    Binding="{Binding ClienteMacchina.MacchinaStandard.NomeMacchina}"
-                                                   Width="160"/>
-                                <DataGridTemplateColumn Header="Stato" Width="90">
+                                                   Width="Auto"/>
+                                <DataGridTemplateColumn Header="Stato" Width="Auto">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Border Padding="5,2" CornerRadius="3"
@@ -588,16 +588,16 @@
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Macchina"
                                                    Binding="{Binding NomeMacchina}"
-                                                   Width="180"/>
+                                                   Width="Auto"/>
                                 <DataGridTextColumn Header="Piastra"
                                                    Binding="{Binding CodicePiastra}"
-                                                   Width="140"/>
+                                                   Width="Auto"/>
                                 <DataGridTextColumn Header="Descrizione"
                                                    Binding="{Binding DescrizionePiastra}"
-                                                   Width="*"/>
+                                                   Width="Auto"/>
                                 <DataGridCheckBoxColumn Header="Att."
                                                        Binding="{Binding Attiva}"
-                                                       Width="50"/>
+                                                       Width="Auto"/>
                             </DataGrid.Columns>
                         </DataGrid>
                     </Border>

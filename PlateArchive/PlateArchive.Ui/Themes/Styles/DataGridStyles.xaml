@@ -31,6 +31,12 @@
         <Setter Property="SelectionUnit"           Value="FullRow"/>
         <Setter Property="CanUserResizeRows"       Value="False"/>
         <Setter Property="AutoGenerateColumns"     Value="False"/>
+        <!-- Larghezza colonne "Auto" per tutte le griglie: si dimensionano al contenuto e,
+             quando la somma supera la larghezza della tabella, compare la scrollbar orizzontale
+             in basso. Vale come default per ogni DataGrid; le singole colonne icona/azione
+             possono comunque fissare una larghezza esplicita. -->
+        <Setter Property="ColumnWidth"             Value="Auto"/>
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
         <Setter Property="GridLinesVisibility"     Value="Horizontal"/>
         <Setter Property="HeadersVisibility"       Value="Column"/>
         <Setter Property="SnapsToDevicePixels"     Value="True"/>

@@ -345,98 +345,98 @@
                             <!-- Codice -->
                             <DataGridTextColumn x:Name="ColCodice"
                                                 Binding="{Binding CodicePiastra}"
-                                                Width="120"
+                                                Width="Auto"
                                                 SortMemberPath="CodicePiastra"
                                                 HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
 
                             <!-- Descrizione -->
                             <DataGridTextColumn x:Name="ColDescrizione"
                                                 Binding="{Binding Descrizione}"
-                                                Width="180"
+                                                Width="Auto"
                                                 SortMemberPath="Descrizione"
                                                 HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
 
                             <!-- Articolo gestionale -->
                             <DataGridTextColumn x:Name="ColArtGestionale"
                                                 Binding="{Binding CodiceArticoloGestionale}"
-                                                Width="130"
+                                                Width="Auto"
                                                 SortMemberPath="CodiceArticoloGestionale"
                                                 HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
 
                             <!-- Categoria -->
                             <DataGridTextColumn x:Name="ColCategoria"
                                                 Binding="{Binding Categoria.Descrizione}"
-                                                Width="90"
+                                                Width="Auto"
                                                 SortMemberPath="Categoria.Descrizione"
                                                 HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
 
                             <!-- Formato macchina -->
                             <DataGridTextColumn x:Name="ColFormato"
                                                 Binding="{Binding Formato.NomeFormato}"
-                                                Width="75"
+                                                Width="Auto"
                                                 SortMemberPath="Formato.NomeFormato"
                                                 HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
 
                             <!-- Tipo piastra -->
                             <DataGridTextColumn x:Name="ColTipo"
                                                 Binding="{Binding TipoPiastra}"
-                                                Width="90"
+                                                Width="Auto"
                                                 SortMemberPath="TipoPiastra"
                                                 HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
 
                             <!-- Stato -->
                             <DataGridTextColumn x:Name="ColStato"
                                                 Binding="{Binding Stato}"
-                                                Width="115"
+                                                Width="Auto"
                                                 SortMemberPath="Stato"
                                                 HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
 
                             <!-- Larghezza -->
                             <DataGridTextColumn x:Name="ColLarghezza"
                                                 Binding="{Binding LarghezzaMm, StringFormat='{}{0:F1}', TargetNullValue='—'}"
-                                                Width="68"
+                                                Width="Auto"
                                                 SortMemberPath="LarghezzaMm"
                                                 HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
 
                             <!-- Altezza -->
                             <DataGridTextColumn x:Name="ColAltezza"
                                                 Binding="{Binding AltezzaMm, StringFormat='{}{0:F1}', TargetNullValue='—'}"
-                                                Width="60"
+                                                Width="Auto"
                                                 SortMemberPath="AltezzaMm"
                                                 HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
 
                             <!-- Spessore -->
                             <DataGridTextColumn x:Name="ColSpessore"
                                                 Binding="{Binding SpessoreMm, StringFormat='{}{0:F2}', TargetNullValue='—'}"
-                                                Width="68"
+                                                Width="Auto"
                                                 SortMemberPath="SpessoreMm"
                                                 HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
 
                             <!-- Durezza -->
                             <DataGridTextColumn x:Name="ColDurezza"
                                                 Binding="{Binding Durezza, StringFormat='{}{0:F1}', TargetNullValue='—'}"
-                                                Width="60"
+                                                Width="Auto"
                                                 SortMemberPath="Durezza"
                                                 HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
 
                             <!-- Peso -->
                             <DataGridTextColumn x:Name="ColPeso"
                                                 Binding="{Binding Peso, StringFormat='{}{0:F3}', TargetNullValue='—'}"
-                                                Width="65"
+                                                Width="Auto"
                                                 SortMemberPath="Peso"
                                                 HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
 
                             <!-- Data creazione -->
                             <DataGridTextColumn x:Name="ColDataCreazione"
                                                 Binding="{Binding DataCreazione, StringFormat='dd/MM/yyyy'}"
-                                                Width="100"
+                                                Width="Auto"
                                                 SortMemberPath="DataCreazione"
                                                 HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
 
                             <!-- Ultima modifica -->
                             <DataGridTextColumn x:Name="ColDataModifica"
                                                 Binding="{Binding DataUltimaModifica, StringFormat='dd/MM/yyyy'}"
-                                                Width="110"
+                                                Width="Auto"
                                                 SortMemberPath="DataUltimaModifica"
                                                 HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
 
@@ -1179,10 +1179,10 @@
                                         </DataGridTemplateColumn>
                                         <DataGridTextColumn Header="Macchina"
                                                            Binding="{Binding MacchinaStandard.NomeMacchina}"
-                                                           Width="*"/>
+                                                           Width="Auto"/>
                                         <DataGridTextColumn Header="Codice"
                                                            Binding="{Binding MacchinaStandard.CodiceMacchina}"
-                                                           Width="110"/>
+                                                           Width="Auto"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Border>
@@ -1308,10 +1308,10 @@
                                         </DataGridTemplateColumn>
                                         <DataGridTextColumn Header="Cliente"
                                                            Binding="{Binding Cliente.RagioneSociale}"
-                                                           Width="*"/>
+                                                           Width="Auto"/>
                                         <DataGridTextColumn Header="Macchina"
                                                            Binding="{Binding ClienteMacchina.MacchinaStandard.NomeMacchina}"
-                                                           Width="120"/>
+                                                           Width="Auto"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Border>

@@ -76,19 +76,19 @@
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Codice"
                                            Binding="{Binding CodiceMacchina}"
-                                           Width="160"/>
+                                           Width="Auto"/>
                         <DataGridTextColumn Header="Nome"
                                            Binding="{Binding NomeMacchina}"
-                                           Width="*"/>
+                                           Width="Auto"/>
                         <DataGridTextColumn Header="Formato"
                                            Binding="{Binding Formato.NomeFormato}"
-                                           Width="110"/>
+                                           Width="Auto"/>
                         <DataGridTextColumn Header="Produttore"
                                            Binding="{Binding Produttore.NomeProduttore}"
-                                           Width="110"/>
+                                           Width="Auto"/>
                         <DataGridCheckBoxColumn Header="Att."
                                                Binding="{Binding Attiva}"
-                                               Width="45"/>
+                                               Width="Auto"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Border>
@@ -323,10 +323,10 @@
                                         </DataGridTemplateColumn>
                                         <DataGridTextColumn Header="Codice"
                                                            Binding="{Binding Piastra.CodicePiastra}"
-                                                           Width="100"/>
+                                                           Width="Auto"/>
                                         <DataGridTextColumn Header="Descrizione"
                                                            Binding="{Binding Piastra.Descrizione}"
-                                                           Width="*"/>
+                                                           Width="Auto"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Border>
@@ -462,10 +462,10 @@
                                         </DataGridTemplateColumn>
                                         <DataGridTextColumn Header="Ragione Sociale"
                                                            Binding="{Binding Cliente.RagioneSociale}"
-                                                           Width="*"/>
+                                                           Width="Auto"/>
                                         <DataGridTextColumn Header="Matricola"
                                                            Binding="{Binding Matricola}"
-                                                           Width="90"/>
+                                                           Width="Auto"/>
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Border>

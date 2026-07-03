@@ -56,10 +56,10 @@
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Formato"
                                            Binding="{Binding NomeFormato}"
-                                           Width="160"/>
+                                           Width="Auto"/>
                         <DataGridTextColumn Header="Note"
                                            Binding="{Binding Note}"
-                                           Width="*"/>
+                                           Width="Auto"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Border>

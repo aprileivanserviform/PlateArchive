@@ -126,11 +126,11 @@
                     </DataGridTemplateColumn>
                     <DataGridTextColumn Header="Codice"
                                        Binding="{Binding CodiceClienteGestionale}"
-                                       Width="140"/>
+                                       Width="Auto"/>
                     <DataGridTextColumn Header="Ragione Sociale"
                                        Binding="{Binding RagioneSociale}"
-                                       Width="*"/>
-                    <DataGridTemplateColumn Header="Stato" Width="110">
+                                       Width="Auto"/>
+                    <DataGridTemplateColumn Header="Stato" Width="Auto">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <Border Padding="5,2" CornerRadius="3"

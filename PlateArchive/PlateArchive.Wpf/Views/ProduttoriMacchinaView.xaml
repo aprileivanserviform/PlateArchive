@@ -53,10 +53,10 @@
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Produttore"
                                            Binding="{Binding NomeProduttore}"
-                                           Width="180"/>
+                                           Width="Auto"/>
                         <DataGridTextColumn Header="Note"
                                            Binding="{Binding Note}"
-                                           Width="*"/>
+                                           Width="Auto"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Border>
