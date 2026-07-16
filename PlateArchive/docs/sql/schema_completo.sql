@@ -3,13 +3,13 @@
 --
 -- GENERATO da EF Core Migrations (NON modificare a mano).
 -- Rigenerare con:
---   dotnet ef migrations script -i \
+--   dotnet ef migrations script --idempotent \
 --     --project PlateArchive.Data/PlateArchive.Data.csproj \
 --     --startup-project PlateArchive.Wpf/PlateArchive.Wpf.csproj \
---     -o docs/sql/schema_completo.sql
+--     --output docs/sql/schema_completo.sql
 --
--- Idempotente (-i): crea/applica solo ciò che manca, in base a __EFMigrationsHistory.
--- Riflette tutte le migrazioni fino a 20260709080730_AssociazioneMacchinePiastre.
+-- Idempotente: crea/applica solo ciò che manca, in base a __EFMigrationsHistory.
+-- Riflette tutte le migrazioni fino a 20260716063245_AllegatiNoteCliente.
 -- =============================================================================
 
 IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
@@ -1038,6 +1038,77 @@ IF NOT EXISTS (
 BEGIN
     INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
     VALUES (N'20260709080730_AssociazioneMacchinePiastre', N'8.0.0');
+END;
+GO
+
+COMMIT;
+GO
+
+BEGIN TRANSACTION;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260716063245_AllegatiNoteCliente'
+)
+BEGIN
+    CREATE TABLE [AllegatiClienti] (
+        [IdAllegato] int NOT NULL IDENTITY,
+        [IdCliente] int NOT NULL,
+        [NomeFile] nvarchar(max) NOT NULL,
+        [PercorsoFile] nvarchar(max) NOT NULL,
+        [Descrizione] nvarchar(max) NULL,
+        [DimensioneBytes] bigint NOT NULL,
+        [DataCaricamento] datetime2 NOT NULL,
+        CONSTRAINT [PK_AllegatiClienti] PRIMARY KEY ([IdAllegato]),
+        CONSTRAINT [FK_AllegatiClienti_Clienti_IdCliente] FOREIGN KEY ([IdCliente]) REFERENCES [Clienti] ([IdCliente]) ON DELETE CASCADE
+    );
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260716063245_AllegatiNoteCliente'
+)
+BEGIN
+    CREATE TABLE [NoteTecnicheClienti] (
+        [IdNota] int NOT NULL IDENTITY,
+        [IdCliente] int NOT NULL,
+        [Titolo] nvarchar(max) NOT NULL,
+        [Testo] nvarchar(max) NULL,
+        [DataCreazione] datetime2 NOT NULL,
+        [DataModifica] datetime2 NOT NULL,
+        CONSTRAINT [PK_NoteTecnicheClienti] PRIMARY KEY ([IdNota]),
+        CONSTRAINT [FK_NoteTecnicheClienti_Clienti_IdCliente] FOREIGN KEY ([IdCliente]) REFERENCES [Clienti] ([IdCliente]) ON DELETE CASCADE
+    );
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260716063245_AllegatiNoteCliente'
+)
+BEGIN
+    CREATE INDEX [IX_AllegatiClienti_IdCliente] ON [AllegatiClienti] ([IdCliente]);
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260716063245_AllegatiNoteCliente'
+)
+BEGIN
+    CREATE INDEX [IX_NoteTecnicheClienti_IdCliente] ON [NoteTecnicheClienti] ([IdCliente]);
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260716063245_AllegatiNoteCliente'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20260716063245_AllegatiNoteCliente', N'8.0.0');
 END;
 GO
 
