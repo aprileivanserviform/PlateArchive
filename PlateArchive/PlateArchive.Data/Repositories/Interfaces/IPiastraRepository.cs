@@ -26,4 +26,10 @@ public interface IPiastraRepository : IRepository<Piastra>
 
     /// <summary>Imposta <c>IsEliminata = true</c> senza eliminare il record fisicamente.</summary>
     Task EliminaLogicamenteAsync(int idPiastra);
+
+    /// <summary>
+    /// Restituisce il prossimo codice PLT-XXXXXX disponibile, calcolato come
+    /// MAX(numero estratto da tutti i codici PLT-) + 1.
+    /// </summary>
+    Task<string> GetNextCodiceSuggerito();
 }

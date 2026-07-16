@@ -300,9 +300,15 @@
                         <TextBlock DockPanel.Dock="Left" VerticalAlignment="Center"
                                    Style="{StaticResource TextBlock.Subtitle}"
                                    Text="Piastre associate"/>
-                        <Button DockPanel.Dock="Right"
-                                Content="+ Aggiungi"
-                                Command="{Binding AggiungiPiastraCommand}"/>
+                        <!-- Due bottoni: associa una esistente / crea una nuova -->
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button Content="+ Nuova piastra"
+                                    Style="{StaticResource Button.Secondary}"
+                                    Command="{Binding NuovaPiastraCommand}"
+                                    Margin="0,0,8,0"/>
+                            <Button Content="+ Aggiungi esistente"
+                                    Command="{Binding AggiungiPiastraCommand}"/>
+                        </StackPanel>
                         <CheckBox DockPanel.Dock="Left"
                                   Content="Mostra storiche"
                                   IsChecked="{Binding MostraStoriche}"
@@ -388,6 +394,86 @@
                                     Padding="10,7" Margin="0,10,0,0"
                                     Visibility="{Binding IsErrorePiastraVisible, Converter={StaticResource BoolToVis}}">
                                 <TextBlock Text="{Binding ErrorePiastraEsistente}"
+                                           FontSize="{StaticResource FontSize.Caption}"
+                                           Foreground="{DynamicResource Brush.Error}"/>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Form crea nuova piastra (inline, collassabile) -->
+                    <Border DockPanel.Dock="Top"
+                            Visibility="{Binding IsNuovaPiastraVisible, Converter={StaticResource BoolToVis}}"
+                            Background="{DynamicResource Brush.Surface}"
+                            BorderBrush="{DynamicResource Brush.Primary}"
+                            BorderThickness="1"
+                            CornerRadius="{StaticResource Radius.S}"
+                            Padding="16" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Crea nuova piastra"
+                                       Style="{StaticResource TextBlock.Subtitle}"
+                                       Margin="0,0,0,12"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="160"/>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="140"/>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Codice piastra -->
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Codice *" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox Text="{Binding FormNuovaCodice, UpdateSourceTrigger=PropertyChanged}"
+                                             Style="{StaticResource FieldBox}"/>
+                                </StackPanel>
+
+                                <!-- Descrizione -->
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Descrizione" Style="{StaticResource FieldLabel}"/>
+                                    <TextBox Text="{Binding FormNuovaDescrizione, UpdateSourceTrigger=PropertyChanged}"
+                                             Style="{StaticResource FieldBox}"/>
+                                </StackPanel>
+
+                                <!-- Categoria -->
+                                <StackPanel Grid.Column="4">
+                                    <TextBlock Text="Categoria *" Style="{StaticResource FieldLabel}"/>
+                                    <ComboBox ItemsSource="{Binding CategoriePiastre}"
+                                              SelectedItem="{Binding FormNuovaCategoria}"
+                                              DisplayMemberPath="Descrizione"/>
+                                </StackPanel>
+
+                                <!-- Macchina cliente (opzionale — riusa lo stesso campo dell'altra form) -->
+                                <StackPanel Grid.Column="6">
+                                    <TextBlock Text="Macchina (opzionale)" Style="{StaticResource FieldLabel}"/>
+                                    <ComboBox ItemsSource="{Binding Macchine}"
+                                              SelectedItem="{Binding MacchinaPerPiastra}"
+                                              DisplayMemberPath="MacchinaStandard.NomeMacchina"/>
+                                </StackPanel>
+
+                                <!-- Bottoni -->
+                                <StackPanel Grid.Column="8" Orientation="Horizontal" VerticalAlignment="Bottom">
+                                    <Button Content="Crea e associa"
+                                            Command="{Binding ConfermaNuovaPiastraCommand}"
+                                            Margin="0,0,8,0"/>
+                                    <Button Content="Annulla"
+                                            Command="{Binding AnnullaNuovaPiastraCommand}"
+                                            Style="{StaticResource Button.Secondary}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Errore creazione -->
+                            <Border Background="{DynamicResource Brush.ErrorSurface}"
+                                    BorderBrush="{DynamicResource Brush.Error}"
+                                    BorderThickness="1"
+                                    CornerRadius="{StaticResource Radius.S}"
+                                    Padding="10,7" Margin="0,10,0,0"
+                                    Visibility="{Binding IsErroreNuovaPiastraVisible, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="{Binding ErroreNuovaPiastra}"
                                            FontSize="{StaticResource FontSize.Caption}"
                                            Foreground="{DynamicResource Brush.Error}"/>
                             </Border>

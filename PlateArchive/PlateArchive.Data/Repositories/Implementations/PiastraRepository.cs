@@ -93,6 +93,22 @@ public class PiastraRepository(PlateArchiveDbContext db) : IPiastraRepository
         await db.SaveChangesAsync();
     }
 
+    public async Task<string> GetNextCodiceSuggerito()
+    {
+        var codici = await db.Piastre
+            .IgnoreQueryFilters()
+            .Select(p => p.CodicePiastra)
+            .ToListAsync();
+
+        var maxNum = codici
+            .Where(c => c.StartsWith("PLT-", StringComparison.OrdinalIgnoreCase))
+            .Select(c => int.TryParse(c[4..], out var n) ? n : 0)
+            .DefaultIfEmpty(0)
+            .Max();
+
+        return $"PLT-{maxNum + 1:D6}";
+    }
+
     public async Task DeleteAsync(int id)
     {
         // IgnoreQueryFilters: trova anche piastre già eliminate logicamente (es. cleanup fisico).
