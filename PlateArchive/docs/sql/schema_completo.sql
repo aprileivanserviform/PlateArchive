@@ -5,11 +5,11 @@
 -- Rigenerare con:
 --   dotnet ef migrations script -i \
 --     --project PlateArchive.Data/PlateArchive.Data.csproj \
---     --startup-project PlateArchive.Data/PlateArchive.Data.csproj \
+--     --startup-project PlateArchive.Wpf/PlateArchive.Wpf.csproj \
 --     -o docs/sql/schema_completo.sql
 --
 -- Idempotente (-i): crea/applica solo ciò che manca, in base a __EFMigrationsHistory.
--- Riflette tutte le migrazioni fino a 20260703091911_MacchineDimensioniFoglio.
+-- Riflette tutte le migrazioni fino a 20260709080730_AssociazioneMacchinePiastre.
 -- =============================================================================
 
 IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
@@ -947,6 +947,97 @@ IF NOT EXISTS (
 BEGIN
     INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
     VALUES (N'20260703091911_MacchineDimensioniFoglio', N'8.0.0');
+END;
+GO
+
+COMMIT;
+GO
+
+BEGIN TRANSACTION;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260709080730_AssociazioneMacchinePiastre'
+)
+BEGIN
+    DECLARE @var7 sysname;
+    SELECT @var7 = [d].[name]
+    FROM [sys].[default_constraints] [d]
+    INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+    WHERE ([d].[parent_object_id] = OBJECT_ID(N'[MacchineStandard]') AND [c].[name] = N'AltezzaMassimaFoglioMm');
+    IF @var7 IS NOT NULL EXEC(N'ALTER TABLE [MacchineStandard] DROP CONSTRAINT [' + @var7 + '];');
+    ALTER TABLE [MacchineStandard] DROP COLUMN [AltezzaMassimaFoglioMm];
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260709080730_AssociazioneMacchinePiastre'
+)
+BEGIN
+    DECLARE @var8 sysname;
+    SELECT @var8 = [d].[name]
+    FROM [sys].[default_constraints] [d]
+    INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+    WHERE ([d].[parent_object_id] = OBJECT_ID(N'[MacchineStandard]') AND [c].[name] = N'AltezzaMinimaFoglioMm');
+    IF @var8 IS NOT NULL EXEC(N'ALTER TABLE [MacchineStandard] DROP CONSTRAINT [' + @var8 + '];');
+    ALTER TABLE [MacchineStandard] DROP COLUMN [AltezzaMinimaFoglioMm];
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260709080730_AssociazioneMacchinePiastre'
+)
+BEGIN
+    DECLARE @var9 sysname;
+    SELECT @var9 = [d].[name]
+    FROM [sys].[default_constraints] [d]
+    INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+    WHERE ([d].[parent_object_id] = OBJECT_ID(N'[MacchineStandard]') AND [c].[name] = N'LarghezzaMassimaFoglioMm');
+    IF @var9 IS NOT NULL EXEC(N'ALTER TABLE [MacchineStandard] DROP CONSTRAINT [' + @var9 + '];');
+    ALTER TABLE [MacchineStandard] DROP COLUMN [LarghezzaMassimaFoglioMm];
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260709080730_AssociazioneMacchinePiastre'
+)
+BEGIN
+    DECLARE @var10 sysname;
+    SELECT @var10 = [d].[name]
+    FROM [sys].[default_constraints] [d]
+    INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+    WHERE ([d].[parent_object_id] = OBJECT_ID(N'[MacchineStandard]') AND [c].[name] = N'LarghezzaMinimaFoglioMm');
+    IF @var10 IS NOT NULL EXEC(N'ALTER TABLE [MacchineStandard] DROP CONSTRAINT [' + @var10 + '];');
+    ALTER TABLE [MacchineStandard] DROP COLUMN [LarghezzaMinimaFoglioMm];
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260709080730_AssociazioneMacchinePiastre'
+)
+BEGIN
+    DECLARE @var11 sysname;
+    SELECT @var11 = [d].[name]
+    FROM [sys].[default_constraints] [d]
+    INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+    WHERE ([d].[parent_object_id] = OBJECT_ID(N'[ClientiMacchine]') AND [c].[name] = N'Matricola');
+    IF @var11 IS NOT NULL EXEC(N'ALTER TABLE [ClientiMacchine] DROP CONSTRAINT [' + @var11 + '];');
+    ALTER TABLE [ClientiMacchine] DROP COLUMN [Matricola];
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20260709080730_AssociazioneMacchinePiastre'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20260709080730_AssociazioneMacchinePiastre', N'8.0.0');
 END;
 GO
 

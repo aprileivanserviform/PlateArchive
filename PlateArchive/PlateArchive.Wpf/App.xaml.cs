@@ -57,6 +57,8 @@ public partial class App : Application
         services.AddScoped<ICategoriaPiastraRepository, CategoriaPiastraRepository>();
         services.AddScoped<IFormatoMacchinaRepository, FormatoMacchinaRepository>();
         services.AddScoped<IProduttoreMacchinaRepository, ProduttoreMacchinaRepository>();
+        services.AddScoped<INotaTecnicaClienteRepository, NotaTecnicaClienteRepository>();
+        services.AddScoped<IAllegatoClienteRepository, AllegatoClienteRepository>();
 
         // ─── Servizi infrastrutturali ─────────────────────────────────────────
 

@@ -25,6 +25,8 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
     public DbSet<PiastraMacchinaCompatibile> PiastreMacchineCompatibili => Set<PiastraMacchinaCompatibile>();
     public DbSet<ClienteMacchina>            ClientiMacchine            => Set<ClienteMacchina>();
     public DbSet<ClientePiastra>             ClientiPiastre             => Set<ClientePiastra>();
+    public DbSet<NotaTecnicaCliente>         NoteTecnicheClienti        => Set<NotaTecnicaCliente>();
+    public DbSet<AllegatoCliente>            AllegatiClienti            => Set<AllegatoCliente>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -41,6 +43,8 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
         mb.Entity<PiastraMacchinaCompatibile>().HasKey(x => x.IdCompatibilita);
         mb.Entity<ClienteMacchina>().HasKey(cm => cm.IdClienteMacchina);
         mb.Entity<ClientePiastra>().HasKey(cp => cp.IdClientePiastra);
+        mb.Entity<NotaTecnicaCliente>().HasKey(n => n.IdNota);
+        mb.Entity<AllegatoCliente>().HasKey(a => a.IdAllegato);
 
         // ─── Query filter soft-delete ─────────────────────────────────────────
         // Le entità con IsEliminata = true vengono automaticamente escluse da tutte le query.
@@ -182,5 +186,19 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
             .HasForeignKey(cp => cp.IdClienteMacchina)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.ClientSetNull);
+
+        // ─── NotaTecnicaCliente → Cliente ─────────────────────────────────────
+        mb.Entity<NotaTecnicaCliente>()
+            .HasOne(n => n.Cliente)
+            .WithMany(c => c.NoteTecniche)
+            .HasForeignKey(n => n.IdCliente)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ─── AllegatoCliente → Cliente ────────────────────────────────────────
+        mb.Entity<AllegatoCliente>()
+            .HasOne(a => a.Cliente)
+            .WithMany(c => c.Allegati)
+            .HasForeignKey(a => a.IdCliente)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

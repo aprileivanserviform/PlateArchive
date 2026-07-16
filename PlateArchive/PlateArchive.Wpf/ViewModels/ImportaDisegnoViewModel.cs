@@ -417,7 +417,9 @@ public class ImportaDisegnoViewModel : ViewModelBase
             piastra = nuova;
 
             var percorsoEffettivo = await _fileArchivio.ArchiviaDisegnoAsync(
-                PercorsoFile, piastra.CodicePiastra, piastra.TipoPiastra)
+                PercorsoFile, piastra.CodicePiastra, piastra.TipoPiastra,
+                isSpeciale ? FormCliente?.CodiceClienteGestionale : null,
+                isSpeciale ? FormCliente?.RagioneSociale           : null)
                 ?? PercorsoFile;
 
             var nuovoDisegno = new Disegno
@@ -440,7 +442,9 @@ public class ImportaDisegnoViewModel : ViewModelBase
             piastra = PiastraSelezionata;
 
             var percorsoEffettivo = await _fileArchivio.ArchiviaDisegnoAsync(
-                PercorsoFile, piastra.CodicePiastra, piastra.TipoPiastra)
+                PercorsoFile, piastra.CodicePiastra, piastra.TipoPiastra,
+                piastra.ClienteEsclusivo?.CodiceClienteGestionale,
+                piastra.ClienteEsclusivo?.RagioneSociale)
                 ?? PercorsoFile;
 
             var nuovoDisegno = new Disegno

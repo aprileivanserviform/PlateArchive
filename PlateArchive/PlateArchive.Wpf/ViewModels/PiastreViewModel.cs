@@ -923,6 +923,11 @@ public class PiastreViewModel : ViewModelBase
             // in modifica si usa il pannello dettaglio).
             foreach (var macchina in FormMacchineDaAssociare)
             {
+                // Vincolo: se la piastra è Standard, salta le macchine che ne hanno già una.
+                if (tipo == TipoPiastra.Standard
+                    && await _compatRepo.HasPiastraStandardAsync(macchina.IdMacchinaStandard))
+                    continue;
+
                 var compat = new PiastraMacchinaCompatibile
                 {
                     IdPiastra          = piastraSalvata.IdPiastra,
@@ -983,10 +988,17 @@ public class PiastreViewModel : ViewModelBase
         var idGiaCompat = MacchineCompatibili.Select(c => c.IdMacchinaStandard).ToHashSet();
         var idFormatoPiastra = PiastraSelezionata?.IdFormato;
 
+        // Se questa piastra è Standard, escludi le macchine che ne hanno già una:
+        // una macchina può avere al più una piastra Standard.
+        var idMacchineConStandard = PiastraSelezionata?.TipoPiastra == TipoPiastra.Standard
+            ? (await _compatRepo.GetIdMacchineConPiastraStandardAsync()).ToHashSet()
+            : [];
+
         MacchineDisponibili.Clear();
         foreach (var m in tutte.Where(m =>
             m.Attiva
             && !idGiaCompat.Contains(m.IdMacchinaStandard)
+            && !idMacchineConStandard.Contains(m.IdMacchinaStandard)
             && (idFormatoPiastra is null || m.IdFormato == idFormatoPiastra)))
         {
             MacchineDisponibili.Add(m);
@@ -998,6 +1010,19 @@ public class PiastreViewModel : ViewModelBase
     private async Task ConfermaAggiungiMacchinaAsync()
     {
         if (PiastraSelezionata is null || MacchinaCompatibileDaAggiungere is null) return;
+
+        // Vincolo: una macchina può avere al più una piastra Standard.
+        if (PiastraSelezionata.TipoPiastra == TipoPiastra.Standard
+            && await _compatRepo.HasPiastraStandardAsync(MacchinaCompatibileDaAggiungere.IdMacchinaStandard))
+        {
+            MessageBox.Show(
+                $"La macchina '{MacchinaCompatibileDaAggiungere.NomeMacchina}' ha già una piastra Standard associata.",
+                "Piastra Standard già presente",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
         var nuova = new PiastraMacchinaCompatibile
         {
             IdPiastra          = PiastraSelezionata.IdPiastra,
@@ -1068,12 +1093,14 @@ public class PiastreViewModel : ViewModelBase
 
         var disegnoEsistente = await _disegniRepo.GetByPiastraAsync(piastra.IdPiastra);
 
-        var codiceCliente = piastra.IdClienteEsclusivo.HasValue
-            ? _tuttiClienti.FirstOrDefault(c => c.IdCliente == piastra.IdClienteEsclusivo)?.CodiceClienteGestionale
+        var clienteEsclusivo  = piastra.IdClienteEsclusivo.HasValue
+            ? _tuttiClienti.FirstOrDefault(c => c.IdCliente == piastra.IdClienteEsclusivo)
             : null;
+        var codiceCliente  = clienteEsclusivo?.CodiceClienteGestionale;
+        var ragioneSociale = clienteEsclusivo?.RagioneSociale;
 
         var percorsoEffettivo = await _fileArchivio.ArchiviaDisegnoAsync(
-            percorsoFile, piastra.CodicePiastra, piastra.TipoPiastra, codiceCliente)
+            percorsoFile, piastra.CodicePiastra, piastra.TipoPiastra, codiceCliente, ragioneSociale)
             ?? percorsoFile;
 
         var formato = Path.GetExtension(percorsoEffettivo).TrimStart('.').ToUpper();
@@ -1292,10 +1319,17 @@ public class PiastreViewModel : ViewModelBase
         // Se è stato scelto un formato, mostra solo le macchine di quel formato.
         var idFormato   = FormFormatoSelezionato?.IdFormato;
 
+        // La piastra in creazione è Standard quando non è SpecialeCliente: in quel caso
+        // escludi le macchine che hanno già una piastra Standard (al più una per macchina).
+        var idMacchineConStandard = !IsSpecialeCliente
+            ? (await _compatRepo.GetIdMacchineConPiastraStandardAsync()).ToHashSet()
+            : [];
+
         FormMacchineDisponibili.Clear();
         foreach (var m in tutte.Where(m =>
             m.Attiva
             && !idGiaScelte.Contains(m.IdMacchinaStandard)
+            && !idMacchineConStandard.Contains(m.IdMacchinaStandard)
             && (idFormato is null || m.IdFormato == idFormato)))
         {
             FormMacchineDisponibili.Add(m);

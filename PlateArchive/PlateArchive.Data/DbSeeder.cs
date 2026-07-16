@@ -34,12 +34,12 @@ public static class DbSeeder
         // fmt106 = formati[0], fmt145 = formati[1], fmt88 = formati[2]
         var macchine = new[]
         {
-            new MacchinaStandard { CodiceMacchina = "NOVACUT_106",       NomeMacchina = "NOVACUT 106",         IdFormato = formati[0].IdFormato, LarghezzaMinimaFoglioMm = 400, AltezzaMinimaFoglioMm = 350, LarghezzaMassimaFoglioMm = 760, AltezzaMassimaFoglioMm = 1060, Attiva = true  },
-            new MacchinaStandard { CodiceMacchina = "NOVACUT_145",       NomeMacchina = "NOVACUT 145",         IdFormato = formati[1].IdFormato, LarghezzaMinimaFoglioMm = 400, AltezzaMinimaFoglioMm = 400, LarghezzaMassimaFoglioMm = 760, AltezzaMassimaFoglioMm = 1450, Attiva = true  },
-            new MacchinaStandard { CodiceMacchina = "EXPERTCUT_106",     NomeMacchina = "EXPERTCUT 106",       IdFormato = formati[0].IdFormato, LarghezzaMinimaFoglioMm = 400, AltezzaMinimaFoglioMm = 350, LarghezzaMassimaFoglioMm = 760, AltezzaMassimaFoglioMm = 1060, Attiva = true  },
-            new MacchinaStandard { CodiceMacchina = "EXPERTCUT_145",     NomeMacchina = "EXPERTCUT 145",       IdFormato = formati[1].IdFormato, LarghezzaMinimaFoglioMm = 400, AltezzaMinimaFoglioMm = 400, LarghezzaMassimaFoglioMm = 760, AltezzaMassimaFoglioMm = 1450, Attiva = true  },
-            new MacchinaStandard { CodiceMacchina = "SPRINTERA_106PER",  NomeMacchina = "SPRINTERA 106 PER",   IdFormato = formati[0].IdFormato, LarghezzaMinimaFoglioMm = 400, AltezzaMinimaFoglioMm = 350, LarghezzaMassimaFoglioMm = 760, AltezzaMassimaFoglioMm = 1060, Attiva = true  },
-            new MacchinaStandard { CodiceMacchina = "MASTERCUT_VECCHIO", NomeMacchina = "MASTERCUT (vecchio)", IdFormato = formati[2].IdFormato, LarghezzaMinimaFoglioMm = 350, AltezzaMinimaFoglioMm = 300, LarghezzaMassimaFoglioMm = 600, AltezzaMassimaFoglioMm = 880,  Attiva = false },
+            new MacchinaStandard { CodiceMacchina = "NOVACUT_106",       NomeMacchina = "NOVACUT 106",         IdFormato = formati[0].IdFormato, Attiva = true  },
+            new MacchinaStandard { CodiceMacchina = "NOVACUT_145",       NomeMacchina = "NOVACUT 145",         IdFormato = formati[1].IdFormato, Attiva = true  },
+            new MacchinaStandard { CodiceMacchina = "EXPERTCUT_106",     NomeMacchina = "EXPERTCUT 106",       IdFormato = formati[0].IdFormato, Attiva = true  },
+            new MacchinaStandard { CodiceMacchina = "EXPERTCUT_145",     NomeMacchina = "EXPERTCUT 145",       IdFormato = formati[1].IdFormato, Attiva = true  },
+            new MacchinaStandard { CodiceMacchina = "SPRINTERA_106PER",  NomeMacchina = "SPRINTERA 106 PER",   IdFormato = formati[0].IdFormato, Attiva = true  },
+            new MacchinaStandard { CodiceMacchina = "MASTERCUT_VECCHIO", NomeMacchina = "MASTERCUT (vecchio)", IdFormato = formati[2].IdFormato, Attiva = false },
         };
         db.MacchineStandard.AddRange(macchine);
 
@@ -83,12 +83,12 @@ public static class DbSeeder
         // ── ClienteMacchina ──────────────────────────────────────
         var clientiMacchine = new[]
         {
-            new ClienteMacchina { IdCliente = clienti[0].IdCliente, IdMacchinaStandard = macchine[0].IdMacchinaStandard, Matricola = "NC106-2019-001", DataAssociazione = now.AddYears(-4) },
-            new ClienteMacchina { IdCliente = clienti[0].IdCliente, IdMacchinaStandard = macchine[2].IdMacchinaStandard, Matricola = "EC106-2021-007", DataAssociazione = now.AddYears(-2) },
-            new ClienteMacchina { IdCliente = clienti[1].IdCliente, IdMacchinaStandard = macchine[0].IdMacchinaStandard, Matricola = "NC106-2020-003", DataAssociazione = now.AddYears(-3) },
-            new ClienteMacchina { IdCliente = clienti[1].IdCliente, IdMacchinaStandard = macchine[1].IdMacchinaStandard, Matricola = "NC145-2022-002", DataAssociazione = now.AddYears(-1) },
-            new ClienteMacchina { IdCliente = clienti[2].IdCliente, IdMacchinaStandard = macchine[4].IdMacchinaStandard, Matricola = "SP106-2023-001", DataAssociazione = now.AddMonths(-8) },
-            new ClienteMacchina { IdCliente = clienti[3].IdCliente, IdMacchinaStandard = macchine[5].IdMacchinaStandard, Matricola = "MC88-2015-001",  DataAssociazione = now.AddYears(-8) },
+            new ClienteMacchina { IdCliente = clienti[0].IdCliente, IdMacchinaStandard = macchine[0].IdMacchinaStandard, DataAssociazione = now.AddYears(-4) },
+            new ClienteMacchina { IdCliente = clienti[0].IdCliente, IdMacchinaStandard = macchine[2].IdMacchinaStandard, DataAssociazione = now.AddYears(-2) },
+            new ClienteMacchina { IdCliente = clienti[1].IdCliente, IdMacchinaStandard = macchine[0].IdMacchinaStandard, DataAssociazione = now.AddYears(-3) },
+            new ClienteMacchina { IdCliente = clienti[1].IdCliente, IdMacchinaStandard = macchine[1].IdMacchinaStandard, DataAssociazione = now.AddYears(-1) },
+            new ClienteMacchina { IdCliente = clienti[2].IdCliente, IdMacchinaStandard = macchine[4].IdMacchinaStandard, DataAssociazione = now.AddMonths(-8) },
+            new ClienteMacchina { IdCliente = clienti[3].IdCliente, IdMacchinaStandard = macchine[5].IdMacchinaStandard, DataAssociazione = now.AddYears(-8) },
         };
         db.ClientiMacchine.AddRange(clientiMacchine);
 

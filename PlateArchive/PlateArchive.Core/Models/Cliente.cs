@@ -25,8 +25,14 @@ public class Cliente
     // ─── Navigazioni ─────────────────────────────────────────────────────────
 
     /// <summary>Macchine standard acquistate/utilizzate da questo cliente.</summary>
-    public ICollection<ClienteMacchina> Macchine { get; set; } = [];
+    public ICollection<ClienteMacchina>    Macchine     { get; set; } = [];
 
     /// <summary>Piastre associate a questo cliente.</summary>
-    public ICollection<ClientePiastra>  Piastre  { get; set; } = [];
+    public ICollection<ClientePiastra>     Piastre      { get; set; } = [];
+
+    /// <summary>Note tecniche / specifiche del cliente.</summary>
+    public ICollection<NotaTecnicaCliente> NoteTecniche { get; set; } = [];
+
+    /// <summary>Allegati caricati per il cliente (PDF, immagini, documenti).</summary>
+    public ICollection<AllegatoCliente>    Allegati     { get; set; } = [];
 }
