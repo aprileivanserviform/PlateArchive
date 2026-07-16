@@ -641,14 +641,14 @@
                                         </TextBlock.Style>
                                     </TextBlock>
 
-                                    <TextBlock Text="Titolo *" Style="{StaticResource TextBlock.Caption}" Margin="0,0,0,3"/>
+                                    <TextBlock Text="Titolo *" Style="{StaticResource FieldLabel}" Margin="0,0,0,3"/>
                                     <TextBox Text="{Binding FormNotaTitolo, UpdateSourceTrigger=PropertyChanged}"
-                                             Style="{StaticResource TextBox.Base}"
+                                             Style="{StaticResource FieldBox}"
                                              Margin="0,0,0,8"/>
 
-                                    <TextBlock Text="Testo" Style="{StaticResource TextBlock.Caption}" Margin="0,0,0,3"/>
+                                    <TextBlock Text="Testo" Style="{StaticResource FieldLabel}" Margin="0,0,0,3"/>
                                     <TextBox Text="{Binding FormNotaTesto, UpdateSourceTrigger=PropertyChanged}"
-                                             Style="{StaticResource TextBox.Base}"
+                                             Style="{StaticResource FieldBox}"
                                              AcceptsReturn="True"
                                              TextWrapping="Wrap"
                                              MinHeight="80"
