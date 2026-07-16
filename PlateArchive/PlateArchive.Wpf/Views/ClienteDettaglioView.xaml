@@ -630,7 +630,7 @@
                                 <StackPanel>
                                     <TextBlock Margin="0,0,0,4">
                                         <TextBlock.Style>
-                                            <Style TargetType="TextBlock" BasedOn="{StaticResource TextBlock.Label}">
+                                            <Style TargetType="TextBlock" BasedOn="{StaticResource TextBlock.Caption}">
                                                 <Setter Property="Text" Value="Nuova nota"/>
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding IsModificaNota}" Value="True">
@@ -641,12 +641,12 @@
                                         </TextBlock.Style>
                                     </TextBlock>
 
-                                    <TextBlock Text="Titolo *" Style="{StaticResource TextBlock.Label}" Margin="0,0,0,3"/>
+                                    <TextBlock Text="Titolo *" Style="{StaticResource TextBlock.Caption}" Margin="0,0,0,3"/>
                                     <TextBox Text="{Binding FormNotaTitolo, UpdateSourceTrigger=PropertyChanged}"
                                              Style="{StaticResource TextBox.Base}"
                                              Margin="0,0,0,8"/>
 
-                                    <TextBlock Text="Testo" Style="{StaticResource TextBlock.Label}" Margin="0,0,0,3"/>
+                                    <TextBlock Text="Testo" Style="{StaticResource TextBlock.Caption}" Margin="0,0,0,3"/>
                                     <TextBox Text="{Binding FormNotaTesto, UpdateSourceTrigger=PropertyChanged}"
                                              Style="{StaticResource TextBox.Base}"
                                              AcceptsReturn="True"
