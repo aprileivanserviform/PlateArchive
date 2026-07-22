@@ -11,9 +11,9 @@ public interface IPiastraRepository : IRepository<Piastra>
     /// <summary>Ricerca per codice piastra esatto (case-insensitive).</summary>
     Task<Piastra?> GetByCodicePiastraAsync(string codice);
 
-    /// <summary>Ricerca per codice articolo gestionale esatto — usato per collegare le righe
-    /// ordine di vendita (gestionale) alla piastra corrispondente.</summary>
-    Task<Piastra?> GetByCodiceArticoloGestionaleAsync(string codiceArticolo);
+    /// <summary>Piastre SpecialeCliente esclusive del cliente indicato — usate nel match
+    /// cliente+formato delle righe ordine di vendita (possono non avere una riga ClientePiastra).</summary>
+    Task<IEnumerable<Piastra>> GetByClienteEsclusivoAsync(int idCliente);
 
     /// <summary>Ricerca full-text su codice, descrizione e codice articolo gestionale.</summary>
     Task<IEnumerable<Piastra>> SearchAsync(string query);

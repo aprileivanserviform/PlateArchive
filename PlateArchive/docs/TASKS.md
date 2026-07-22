@@ -1179,6 +1179,60 @@ L'operatore deve poter cercare tra le righe ordine inevase e aprire direttamente
 
 ---
 
+## TASK-18 — Match piastre ↔ righe ordine per cliente + formato (nuova codifica articoli)
+
+**Priorità:** Alta
+**Stato:** `[x]` — implementato 2026-07-22 (branch feat/articolo-gestionale-cliente), da verificare a video con VPN attiva
+
+**Dipende da:** TASK-16, TASK-17
+
+### Contesto
+
+Gli articoli del gestionale vengono ricodificati (file `Codici Piastre.xlsx`): il nuovo codice è
+**16 cifre + suffisso** (es. `3010351020000000-G`) e codifica famiglia (pos 1-2 = `30`),
+spessore (pos 3-4, es. `10` = 1,0 mm), durezza (pos 5-6, es. `35` = 35 HRC) e **formato in
+pos 7-10 espresso in decimi** (`1020` → formato 102, `0760` → 76; `000` = lastra grezza).
+
+Il codice nuovo è quindi **generico** (identifica spessore+durezza+formato, non una singola
+piastra) e i codici vecchi (con lettere, es. `30C1K2K310SP160M-G`) **verranno sospesi**: il
+match esatto per `CodiceArticoloGestionale` (TASK-15/17) è stato sostituito integralmente.
+
+### Realizzato
+
+- `PlateArchive.Core/Servizi/CodiceArticoloPanthera.cs` — parsing nuova codifica
+  (`IsNuovaCodifica`, `TryEstraiFormato`, `IsGrezza`, `FormatoCompatibile`)
+- **Nuovo match per riga ordine**: cliente (`R_CLIENTE` → `Cliente.CodiceClienteGestionale`) +
+  formato del codice articolo, confrontato con `Piastra.Formato.NomeFormato` delle piastre del
+  cliente (`ClientePiastra` in **qualsiasi stato, Obsolete incluse ma marcate** + piastre
+  `SpecialeCliente` con `IdClienteEsclusivo`); lookup batch in memoria (niente query per riga)
+- **Righe di lastre grezze (formato `000`) nascoste** dalla vista: il disegno non serve
+- Righe con codice vecchio residuo: visibili come "non trovata", nessun match tentato, solo
+  indicatore (nessuna azione Associa)
+- Stati riga: 1 compatibile → comportamento precedente (apri disegno / doppio clic dettaglio);
+  N compatibili → pulsante con conteggio o doppio clic aprono `SceltaPiastraOrdineWindow`
+  (nuova: lista compatibili con badge **Obsoleta**, apri disegno / dettaglio);
+  0 compatibili → riga evidenziata + "Associa piastra"
+- `AssociaPiastraOrdineWindow` — ora **crea l'associazione `ClientePiastra`** (stato Attiva) col
+  cliente della riga invece di scrivere il codice articolo sulla piastra; avviso non bloccante
+  se il formato della piastra non coincide con quello del codice; a filtro vuoto suggerisce le
+  piastre del formato richiesto
+- `IPiastraRepository`: rimosso `GetByCodiceArticoloGestionaleAsync` (non più chiamato),
+  aggiunto `GetByClienteEsclusivoAsync`; `ClientePiastraRepository` include ora
+  `Piastra.Formato`
+- Rimossa l'auto-associazione `ClientePiastra` al caricamento (TASK-17): con il match per
+  formato le piastre trovate sono già associate al cliente per definizione
+
+### Acceptance criteria
+
+- [ ] **Da verificare a video con VPN attiva**:
+  - riga con codice nuovo e 1 piastra del formato del cliente → trovata automaticamente
+  - riga con più piastre stesso formato → dialog di scelta, badge Obsoleta visibile
+  - righe di lastre grezze non visibili in griglia
+  - "Associa piastra" crea la `ClientePiastra` e la riga si aggiorna; avviso su formato diverso
+  - righe con codice vecchio → segnalate senza azioni, nessun errore
+
+---
+
 ## Evolutivi futuri (fuori scope MVP)
 
 | Funzione | Riferimento |

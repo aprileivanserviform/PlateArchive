@@ -1,36 +1,54 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
+using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
+using PlateArchive.Core.Servizi;
 using PlateArchive.Data.Repositories.Interfaces;
 using PlateArchive.Wpf.Commands;
 
 namespace PlateArchive.Wpf.ViewModels;
 
 /// <summary>
-/// ViewModel del dialog "Associa piastra" — collega l'articolo di una riga ordine (che non ha
-/// ancora corrispondenza) a una piastra esistente, impostandone il <c>CodiceArticoloGestionale</c>.
+/// ViewModel del dialog "Associa piastra" — associa una piastra esistente al cliente della
+/// riga ordine (crea la <c>ClientePiastra</c>, stato Attiva): con la nuova codifica articoli
+/// (TASK-18) il codice è generico per cliente, quindi il collegamento è commerciale
+/// (cliente ↔ piastra), non più via <c>CodiceArticoloGestionale</c> sulla piastra.
 /// Aperto da <c>OrdiniVenditaView</c> per le righe con <c>PiastraNonTrovata</c>.
+/// La piastra scelta comparirà nel match automatico solo se il suo formato coincide con
+/// quello del codice articolo: in caso contrario il dialog mostra un avviso non bloccante.
 /// </summary>
 public class AssociaPiastraOrdineViewModel : ViewModelBase
 {
-    private readonly IPiastraRepository _piastreRepo;
+    private readonly IPiastraRepository        _piastreRepo;
+    private readonly IClienteRepository        _clientiRepo;
+    private readonly IClientePiastraRepository _clientiPiastreRepo;
 
     private List<Piastra> _tuttePiastre = [];
+    private Cliente?      _cliente;
+    private decimal?      _formatoCodice;
 
     private string   _codiceArticolo      = string.Empty;
     private string   _descrizioneArticolo = string.Empty;
     private string   _filtroPiastra       = string.Empty;
     private Piastra? _piastraSelezionata;
     private string?  _errore;
+    private string?  _avviso;
     private bool     _confermato;
 
-    public AssociaPiastraOrdineViewModel(IPiastraRepository piastreRepo)
+    public AssociaPiastraOrdineViewModel(
+        IPiastraRepository        piastreRepo,
+        IClienteRepository        clientiRepo,
+        IClientePiastraRepository clientiPiastreRepo)
     {
-        _piastreRepo = piastreRepo;
+        _piastreRepo        = piastreRepo;
+        _clientiRepo        = clientiRepo;
+        _clientiPiastreRepo = clientiPiastreRepo;
 
-        ConfermaCommand = new RelayCommand(async _ => await ConfermaAsync(), _ => PiastraSelezionata is not null);
+        ConfermaCommand = new RelayCommand(
+            async _ => await ConfermaAsync(),
+            _ => PiastraSelezionata is not null && _cliente is not null);
         AnnullaCommand  = new RelayCommand(_ => Annulla());
-        SelezionaPiastraCommand         = new RelayCommand(p => PiastraSelezionata = (Piastra)p!);
+        SelezionaPiastraCommand          = new RelayCommand(p => PiastraSelezionata = (Piastra)p!);
         RimuoviPiastraSelezionataCommand = new RelayCommand(_ => PiastraSelezionata = null);
     }
 
@@ -52,6 +70,9 @@ public class AssociaPiastraOrdineViewModel : ViewModelBase
     }
 
     public bool IsDescrizioneArticoloVisible => !string.IsNullOrEmpty(_descrizioneArticolo);
+
+    /// <summary>Ragione sociale del cliente della riga ordine (a cui verrà associata la piastra).</summary>
+    public string RagioneSocialeCliente => _cliente?.RagioneSociale ?? string.Empty;
 
     public ObservableCollection<Piastra> PiastreSuggerite { get; } = [];
 
@@ -75,6 +96,7 @@ public class AssociaPiastraOrdineViewModel : ViewModelBase
                     PiastreSuggerite.Clear();
                     OnPropertyChanged(nameof(IsSuggerimentiVisible));
                 }
+                AggiornaAvvisoFormato();
                 OnPropertyChanged(nameof(IsPiastraSelezionataVisible));
                 OnPropertyChanged(nameof(IsPiastraSearchVisible));
             }
@@ -93,6 +115,15 @@ public class AssociaPiastraOrdineViewModel : ViewModelBase
 
     public bool IsErroreVisible => !string.IsNullOrEmpty(_errore);
 
+    /// <summary>Avviso non bloccante: formato piastra assente o diverso da quello del codice.</summary>
+    public string? Avviso
+    {
+        get => _avviso;
+        private set { if (SetField(ref _avviso, value)) OnPropertyChanged(nameof(IsAvvisoVisible)); }
+    }
+
+    public bool IsAvvisoVisible => !string.IsNullOrEmpty(_avviso);
+
     public bool Confermato
     {
         get => _confermato;
@@ -106,37 +137,86 @@ public class AssociaPiastraOrdineViewModel : ViewModelBase
     public ICommand SelezionaPiastraCommand          { get; }
     public ICommand RimuoviPiastraSelezionataCommand { get; }
 
-    public async Task InitAsync(string codiceArticolo, string descrizioneArticolo = "")
+    public async Task InitAsync(string codiceArticolo, string codiceClienteGestionale, string descrizioneArticolo = "")
     {
         CodiceArticolo      = codiceArticolo;
         DescrizioneArticolo = descrizioneArticolo;
-        _tuttePiastre       = (await _piastreRepo.GetAllAsync()).ToList();
+
+        _formatoCodice = CodiceArticoloPanthera.TryEstraiFormato(codiceArticolo, out var formato)
+            ? formato : null;
+
+        _tuttePiastre = (await _piastreRepo.GetAllAsync()).ToList();
+
+        _cliente = string.IsNullOrWhiteSpace(codiceClienteGestionale)
+            ? null
+            : await _clientiRepo.GetByCodiceGestionaleAsync(codiceClienteGestionale);
+        if (_cliente is null)
+            Errore = "Cliente della riga ordine non trovato in PlateArchive: " +
+                     "sincronizzare i clienti dal gestionale prima di associare la piastra.";
+        OnPropertyChanged(nameof(RagioneSocialeCliente));
+
+        AggiornaSuggerimenti();
     }
 
     private void AggiornaSuggerimenti()
     {
         PiastreSuggerite.Clear();
         var f = _filtroPiastra.Trim().ToLower();
-        if (!string.IsNullOrEmpty(f))
-        {
-            foreach (var p in _tuttePiastre
-                .Where(p => p.CodicePiastra.ToLower().Contains(f)
-                         || (p.Descrizione?.ToLower().Contains(f) ?? false))
-                .Take(8))
-                PiastreSuggerite.Add(p);
-        }
+        var candidate = string.IsNullOrEmpty(f)
+            // A filtro vuoto proponiamo le piastre col formato richiesto dal codice articolo:
+            // sono le uniche che parteciperanno al match automatico.
+            ? _tuttePiastre.Where(p => _formatoCodice is not null
+                && CodiceArticoloPanthera.FormatoCompatibile(_formatoCodice.Value, p.Formato?.NomeFormato))
+            : _tuttePiastre.Where(p => p.CodicePiastra.ToLower().Contains(f)
+                || (p.Descrizione?.ToLower().Contains(f) ?? false));
+
+        foreach (var p in candidate.Take(8))
+            PiastreSuggerite.Add(p);
+
         OnPropertyChanged(nameof(IsSuggerimentiVisible));
     }
 
+    private void AggiornaAvvisoFormato()
+    {
+        var piastra = PiastraSelezionata;
+        if (piastra is null || _formatoCodice is null)
+        {
+            Avviso = null;
+            return;
+        }
+
+        if (piastra.Formato is null)
+            Avviso = $"La piastra non ha un formato impostato: non comparirà nel match " +
+                     $"automatico dell'articolo (formato {FormatoTesto(_formatoCodice.Value)}).";
+        else if (!CodiceArticoloPanthera.FormatoCompatibile(_formatoCodice.Value, piastra.Formato.NomeFormato))
+            Avviso = $"La piastra ha formato {piastra.Formato.NomeFormato}, l'articolo richiede " +
+                     $"{FormatoTesto(_formatoCodice.Value)}: non comparirà nel match automatico.";
+        else
+            Avviso = null;
+    }
+
+    private static string FormatoTesto(decimal formato) => formato.ToString("0.#");
+
     private async Task ConfermaAsync()
     {
-        if (PiastraSelezionata is null) return;
+        if (PiastraSelezionata is null || _cliente is null) return;
         Errore = null;
 
         try
         {
-            PiastraSelezionata.CodiceArticoloGestionale = CodiceArticolo;
-            await _piastreRepo.UpdateAsync(PiastraSelezionata);
+            var esiste = await _clientiPiastreRepo.ExistsAsync(_cliente.IdCliente, PiastraSelezionata.IdPiastra);
+            if (!esiste)
+            {
+                await _clientiPiastreRepo.AddAsync(new ClientePiastra
+                {
+                    IdCliente        = _cliente.IdCliente,
+                    IdPiastra        = PiastraSelezionata.IdPiastra,
+                    DataAssociazione = DateTime.UtcNow,
+                    Stato            = StatoClientePiastra.Attiva,
+                    Cliente          = _cliente,
+                    Piastra          = PiastraSelezionata
+                });
+            }
         }
         catch (Exception ex)
         {

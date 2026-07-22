@@ -40,13 +40,15 @@ public class PiastraRepository(PlateArchiveDbContext db) : IPiastraRepository
             .Include(p => p.Disegno)
             .FirstOrDefaultAsync(p => p.CodicePiastra == codice);
 
-    public async Task<Piastra?> GetByCodiceArticoloGestionaleAsync(string codiceArticolo) =>
+    public async Task<IEnumerable<Piastra>> GetByClienteEsclusivoAsync(int idCliente) =>
         await db.Piastre
             .Include(p => p.Categoria)
             .Include(p => p.Formato)
             .Include(p => p.DurezzaStandard)
             .Include(p => p.Disegno)
-            .FirstOrDefaultAsync(p => p.CodiceArticoloGestionale == codiceArticolo);
+            .Where(p => p.IdClienteEsclusivo == idCliente)
+            .OrderBy(p => p.CodicePiastra)
+            .ToListAsync();
 
     public async Task<IEnumerable<Piastra>> SearchAsync(string query)
     {
