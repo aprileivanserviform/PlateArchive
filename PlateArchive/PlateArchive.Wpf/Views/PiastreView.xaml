@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:PlateArchive.Wpf.ViewModels"
              xmlns:conv="clr-namespace:PlateArchive.Wpf.Converters"
-             xmlns:b="clr-namespace:PlateArchive.Wpf.Behaviors">
+             xmlns:b="clr-namespace:PlateArchive.Wpf.Behaviors"
+             xmlns:ctrl="clr-namespace:PlateArchive.Wpf.Controls">
 
     <UserControl.Resources>
 
@@ -414,9 +415,9 @@
 
                             <!-- Durezza -->
                             <DataGridTextColumn x:Name="ColDurezza"
-                                                Binding="{Binding Durezza, StringFormat='{}{0:F1}', TargetNullValue='—'}"
+                                                Binding="{Binding DurezzaStandard.Valore, TargetNullValue='—'}"
                                                 Width="Auto"
-                                                SortMemberPath="Durezza"
+                                                SortMemberPath="DurezzaStandard.Valore"
                                                 HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
 
                             <!-- Peso -->
@@ -493,11 +494,17 @@
                                        Foreground="{DynamicResource Brush.Error}"/>
                         </Border>
 
-                        <TextBlock Text="Codice piastra *" Style="{StaticResource FieldLabel}"/>
-                        <TextBox Text="{Binding FormCodicePiastra, UpdateSourceTrigger=PropertyChanged}">
+                        <TextBlock Text="Codice piastra" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FormCodicePiastra, UpdateSourceTrigger=PropertyChanged}"
+                                 IsReadOnly="{Binding IsCodicePiastraReadOnly}">
                             <TextBox.Style>
                                 <Style TargetType="TextBox" BasedOn="{StaticResource FieldBox}">
                                     <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCodicePiastraReadOnly}" Value="True">
+                                            <Setter Property="Background" Value="{DynamicResource Brush.SurfaceAlt}"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}"/>
+                                            <Setter Property="Cursor" Value="Arrow"/>
+                                        </DataTrigger>
                                         <DataTrigger Binding="{Binding IsCodicePiastraNonValido}" Value="True">
                                             <Setter Property="BorderBrush" Value="{DynamicResource Brush.Error}"/>
                                             <Setter Property="BorderThickness" Value="2"/>
@@ -657,11 +664,15 @@
                             </StackPanel>
                             <StackPanel Grid.Column="4">
                                 <TextBlock Text="Spessore" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Text="{Binding FormSpessore, UpdateSourceTrigger=PropertyChanged}"/>
+                                <ctrl:NumericBox Value="{Binding FormSpessore}"
+                                                 Step="0.1" DecimalPlaces="2" Minimum="0"/>
                             </StackPanel>
                             <StackPanel Grid.Column="6">
                                 <TextBlock Text="Durezza" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Text="{Binding FormDurezza, UpdateSourceTrigger=PropertyChanged}"/>
+                                <ComboBox ItemsSource="{Binding DurezzePiastre}"
+                                          SelectedItem="{Binding FormDurezzaSelezionata, Mode=TwoWay}"
+                                          DisplayMemberPath="Valore"
+                                          IsEditable="False"/>
                             </StackPanel>
                         </Grid>
 
@@ -1029,13 +1040,7 @@
                                     </StackPanel>
                                     <StackPanel Grid.Column="3">
                                         <TextBlock Text="Durezza" Style="{StaticResource TextBlock.Caption}"/>
-                                        <TextBlock>
-                                            <TextBlock.Text>
-                                                <Binding Path="PiastraSelezionata.Durezza"
-                                                         StringFormat="{}{0:F1}"
-                                                         FallbackValue="—" TargetNullValue="—"/>
-                                            </TextBlock.Text>
-                                        </TextBlock>
+                                        <TextBlock Text="{Binding PiastraSelezionata.DurezzaStandard.Valore, FallbackValue='—', TargetNullValue='—'}"/>
                                     </StackPanel>
                                 </Grid>
                             </Border>

@@ -31,5 +31,16 @@ public interface IFileArchivioService
         string codiceCliente,
         string ragioneSociale);
 
+    /// <summary>
+    /// Restituisce il percorso di destinazione che verrebbe usato da <see cref="ArchiviaDisegnoAsync"/>
+    /// senza copiare il file. Utile per controllare se esiste già un conflitto di nome.
+    /// Restituisce null se la cartella non è configurata.
+    /// </summary>
+    string? GetPercorsoDestinazioneDisegno(
+        string      percorsoOrigine,
+        TipoPiastra tipoPiastra,
+        string?     codiceCliente  = null,
+        string?     ragioneSociale = null);
+
     bool IsConfigurato { get; }
 }

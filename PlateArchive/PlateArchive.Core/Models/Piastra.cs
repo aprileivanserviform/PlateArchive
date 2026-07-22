@@ -41,11 +41,13 @@ public class Piastra
     /// <summary>True = eliminata logicamente. Filtrata automaticamente da EF Core (HasQueryFilter).</summary>
     public bool    IsEliminata              { get; set; } = false;
 
+    /// <summary>FK verso <see cref="DurezzaStandard"/>: valore di durezza selezionato dal dropdown (nullable).</summary>
+    public int? IdDurezza { get; set; }
+
     // ─── Misure fisiche ───────────────────────────────────────────────────────
     public decimal? LarghezzaMm { get; set; }
     public decimal? AltezzaMm   { get; set; }
     public decimal? SpessoreMm  { get; set; }
-    public decimal? Durezza     { get; set; }
     public decimal? Peso        { get; set; }
 
     public string?  Note            { get; set; }
@@ -56,6 +58,7 @@ public class Piastra
 
     public CategoriaPiastra? Categoria        { get; set; }
     public FormatoMacchina?  Formato          { get; set; }
+    public DurezzaStandard?  DurezzaStandard  { get; set; }
     public Cliente?          ClienteEsclusivo { get; set; }
 
     /// <summary>Disegno tecnico associato (relazione 1:1 — una piastra ha al più un disegno).</summary>

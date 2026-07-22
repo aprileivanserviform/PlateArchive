@@ -408,7 +408,7 @@ public class ImportaDisegnoViewModel : ViewModelBase
                 LarghezzaMm                = decimal.TryParse(FormLarghezza, out var l) ? l : null,
                 AltezzaMm                  = decimal.TryParse(FormAltezza,   out var a) ? a : null,
                 SpessoreMm                 = decimal.TryParse(FormSpessore,  out var s) ? s : null,
-                Durezza                    = decimal.TryParse(FormDurezza,   out var d) ? d : null,
+                IdDurezza                  = null,
                 Peso                       = decimal.TryParse(FormPeso,      out var p) ? p : null,
                 Note                       = string.IsNullOrWhiteSpace(FormNote) ? null : FormNote.Trim(),
             };

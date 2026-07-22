@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Input;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Win32;
 using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
@@ -47,7 +48,6 @@ public class ClienteDettaglioViewModel : ViewModelBase
     private readonly INotaTecnicaClienteRepository    _noteRepo;
     private readonly IAllegatoClienteRepository       _allegatiRepo;
     private readonly IFileArchivioService             _fileArchivio;
-    private readonly ICategoriaPiastraRepository      _categorieRepo;
     private readonly NavigationService                _navigation;
 
     private int     _idCliente;
@@ -64,13 +64,6 @@ public class ClienteDettaglioViewModel : ViewModelBase
     private ClienteMacchina? _macchinaPerPiastra;
     private string?         _errorePiastraEsistente;
     private string?         _erroreDisegno;
-
-    // Form crea nuova piastra
-    private bool              _isNuovaPiastraVisible;
-    private string            _formNuovaCodice      = string.Empty;
-    private string            _formNuovaDescrizione = string.Empty;
-    private CategoriaPiastra? _formNuovaCategoria;
-    private string?           _erroreNuovaPiastra;
 
     // Lista completa piastre del cliente — filtrata in Piastre (storiche on/off).
     private readonly ObservableCollection<ClientePiastra> _tuttePiastre = [];
@@ -97,7 +90,6 @@ public class ClienteDettaglioViewModel : ViewModelBase
         INotaTecnicaClienteRepository    noteRepo,
         IAllegatoClienteRepository       allegatiRepo,
         IFileArchivioService             fileArchivio,
-        ICategoriaPiastraRepository      categorieRepo,
         NavigationService                navigation)
     {
         _clienteRepo     = clienteRepo;
@@ -109,7 +101,6 @@ public class ClienteDettaglioViewModel : ViewModelBase
         _noteRepo        = noteRepo;
         _allegatiRepo    = allegatiRepo;
         _fileArchivio    = fileArchivio;
-        _categorieRepo   = categorieRepo;
         _navigation      = navigation;
 
         // Torna alla lista clienti
@@ -143,14 +134,24 @@ public class ClienteDettaglioViewModel : ViewModelBase
 
         AnnullaAggiungiPiastraCommand = new RelayCommand(_ => ChiudiFormPiastra());
 
-        // Crea nuova piastra e associa
-        NuovaPiastraCommand = new RelayCommand(async _ => await ApriNuovaPiastraAsync());
-
-        ConfermaNuovaPiastraCommand = new RelayCommand(
-            async _ => await ConfermaNuovaPiastraAsync(),
-            _ => !string.IsNullOrWhiteSpace(FormNuovaCodice) && FormNuovaCategoria is not null);
-
-        AnnullaNuovaPiastraCommand = new RelayCommand(_ => ChiudiNuovaPiastra());
+        // Mostra dialog "Nuova piastra" con cliente pre-impostato; al salvataggio ricarica le piastre.
+        NuovaPiastraCommand = new RelayCommand(async _ =>
+        {
+            if (Cliente is null) return;
+            using var scope = App.ServiceProvider.CreateScope();
+            var vm = scope.ServiceProvider.GetRequiredService<NuovaPiastraDialogViewModel>();
+            vm.PreimpostaCliente(Cliente);
+            var dialog = new Views.NuovaPiastraDialog
+            {
+                Owner = System.Windows.Application.Current.MainWindow
+            };
+            dialog.DataContext = vm;
+            vm.ChiudiDialog = result => { dialog.DialogResult = result; dialog.Close(); };
+            await vm.LoadAsync();
+            dialog.ShowDialog();
+            if (vm.PiastraCreata is not null)
+                await CaricaPiastreAsync();
+        });
 
         AprirDisegnoCommand = new RelayCommand(
             p => AprirDisegno((ClientePiastra)p!),
@@ -240,9 +241,6 @@ public class ClienteDettaglioViewModel : ViewModelBase
     /// <summary>Incrociato macchine × piastre compatibili (riepilogo sola lettura).</summary>
     public ObservableCollection<CompatibilitaRow>  Compatibilita       { get; } = [];
 
-    /// <summary>Categorie piastra — STD / SPE — usate nel form "Crea nuova piastra".</summary>
-    public ObservableCollection<CategoriaPiastra>   CategoriePiastre    { get; } = [];
-
     /// <summary>Note tecniche del cliente, ordinate per data modifica decrescente.</summary>
     public ObservableCollection<NotaTecnicaCliente> NoteTecniche        { get; } = [];
 
@@ -297,40 +295,6 @@ public class ClienteDettaglioViewModel : ViewModelBase
     }
 
     public bool IsErroreDisegnoVisible => !string.IsNullOrEmpty(_erroreDisegno);
-
-    // ─── Form crea nuova piastra ──────────────────────────────────────────────
-
-    public bool IsNuovaPiastraVisible
-    {
-        get => _isNuovaPiastraVisible;
-        set => SetField(ref _isNuovaPiastraVisible, value);
-    }
-
-    public string FormNuovaCodice
-    {
-        get => _formNuovaCodice;
-        set { if (SetField(ref _formNuovaCodice, value)) CommandManager.InvalidateRequerySuggested(); }
-    }
-
-    public string FormNuovaDescrizione
-    {
-        get => _formNuovaDescrizione;
-        set => SetField(ref _formNuovaDescrizione, value);
-    }
-
-    public CategoriaPiastra? FormNuovaCategoria
-    {
-        get => _formNuovaCategoria;
-        set { if (SetField(ref _formNuovaCategoria, value)) CommandManager.InvalidateRequerySuggested(); }
-    }
-
-    public string? ErroreNuovaPiastra
-    {
-        get => _erroreNuovaPiastra;
-        set { if (SetField(ref _erroreNuovaPiastra, value)) OnPropertyChanged(nameof(IsErroreNuovaPiastraVisible)); }
-    }
-
-    public bool IsErroreNuovaPiastraVisible => !string.IsNullOrEmpty(_erroreNuovaPiastra);
 
     // ─── Proprietà form nota ──────────────────────────────────────────────────
 
@@ -394,10 +358,8 @@ public class ClienteDettaglioViewModel : ViewModelBase
     public ICommand AprirDisegnoCommand             { get; }
     public ICommand ToggleStatoPiastraCommand       { get; }
 
-    // Crea nuova piastra
-    public ICommand NuovaPiastraCommand          { get; }
-    public ICommand ConfermaNuovaPiastraCommand  { get; }
-    public ICommand AnnullaNuovaPiastraCommand   { get; }
+    // Crea nuova piastra (naviga a PiastreView con cliente pre-impostato)
+    public ICommand NuovaPiastraCommand { get; }
 
     // Note tecniche
     public ICommand AggiungiNotaCommand  { get; }
@@ -429,7 +391,6 @@ public class ClienteDettaglioViewModel : ViewModelBase
         await CaricaMacchineAsync();
         await CaricaPiastreAsync();
         await CaricaMacchineDisponibiliAsync();
-        await CaricaCategoriePiastreAsync();
         // Compatibilità dipende da Macchine → eseguita dopo.
         await CaricaCompatibilitaAsync();
         await CaricaNoteAsync();
@@ -650,85 +611,6 @@ public class ClienteDettaglioViewModel : ViewModelBase
         {
             ErroreDisegno = $"Impossibile aprire il file: {ex.Message}";
         }
-    }
-
-    private async Task CaricaCategoriePiastreAsync()
-    {
-        CategoriePiastre.Clear();
-        foreach (var c in await _categorieRepo.GetAllAsync())
-            CategoriePiastre.Add(c);
-    }
-
-    // ─── Crea nuova piastra ───────────────────────────────────────────────────
-
-    private async Task ApriNuovaPiastraAsync()
-    {
-        // Chiude l'eventuale form "aggiungi esistente" aperto.
-        ChiudiFormPiastra();
-
-        // Suggerisce il prossimo codice PLT disponibile.
-        FormNuovaCodice      = await _piastraRepo.GetNextCodiceSuggerito();
-        FormNuovaDescrizione = string.Empty;
-        // Pre-seleziona "SPE" (Speciale) se disponibile — contesto cliente.
-        FormNuovaCategoria   = CategoriePiastre.FirstOrDefault(c => c.Codice == "SPE")
-                               ?? CategoriePiastre.FirstOrDefault();
-        ErroreNuovaPiastra   = null;
-        IsNuovaPiastraVisible = true;
-    }
-
-    private async Task ConfermaNuovaPiastraAsync()
-    {
-        if (string.IsNullOrWhiteSpace(FormNuovaCodice) || FormNuovaCategoria is null || Cliente is null)
-            return;
-
-        ErroreNuovaPiastra = null;
-
-        // La piastra è SpecialeCliente se categoria = SPE.
-        var isSpeciale = FormNuovaCategoria.Codice == "SPE";
-        var tipo = isSpeciale ? TipoPiastra.SpecialeCliente : TipoPiastra.Standard;
-
-        var nuovaPiastra = new Piastra
-        {
-            CodicePiastra      = FormNuovaCodice.Trim().ToUpper(),
-            Descrizione        = string.IsNullOrWhiteSpace(FormNuovaDescrizione) ? null : FormNuovaDescrizione.Trim(),
-            IdCategoriaPiastra = FormNuovaCategoria.IdCategoriaPiastra,
-            Categoria          = FormNuovaCategoria,
-            TipoPiastra        = tipo,
-            IdClienteEsclusivo = isSpeciale ? Cliente.IdCliente : null,
-            Stato              = StatoPiastra.Attiva,
-        };
-
-        try
-        {
-            await _piastraRepo.AddAsync(nuovaPiastra);
-        }
-        catch (Exception ex)
-        {
-            ErroreNuovaPiastra = ex.InnerException?.Message ?? ex.Message;
-            return;
-        }
-
-        // Associa automaticamente al cliente con la macchina selezionata (opzionale).
-        await _piastreRepo.AddAsync(new ClientePiastra
-        {
-            IdCliente         = Cliente.IdCliente,
-            IdPiastra         = nuovaPiastra.IdPiastra,
-            IdClienteMacchina = MacchinaPerPiastra?.IdClienteMacchina,
-            Stato             = StatoClientePiastra.Attiva
-        });
-
-        await CaricaPiastreAsync();
-        ChiudiNuovaPiastra();
-    }
-
-    private void ChiudiNuovaPiastra()
-    {
-        IsNuovaPiastraVisible = false;
-        FormNuovaCodice       = string.Empty;
-        FormNuovaDescrizione  = string.Empty;
-        FormNuovaCategoria    = null;
-        MacchinaPerPiastra    = null;
-        ErroreNuovaPiastra    = null;
     }
 
     // ─── Note tecniche ────────────────────────────────────────────────────────

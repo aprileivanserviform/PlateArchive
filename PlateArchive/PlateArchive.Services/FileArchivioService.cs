@@ -31,8 +31,8 @@ public class FileArchivioService(string cartellaBase) : IFileArchivioService
 
         Directory.CreateDirectory(sottocartella);
 
-        var ext                  = Path.GetExtension(percorsoOrigine);
-        var percorsoDestinazione = Path.Combine(sottocartella, $"{codicePiastra}{ext}");
+        var nomeFile             = Path.GetFileName(percorsoOrigine);
+        var percorsoDestinazione = Path.Combine(sottocartella, nomeFile);
 
         await Task.Run(() => File.Copy(percorsoOrigine, percorsoDestinazione, overwrite: true));
 
@@ -66,6 +66,21 @@ public class FileArchivioService(string cartellaBase) : IFileArchivioService
         await Task.Run(() => File.Copy(percorsoOrigine, percorsoDestinazione));
 
         return percorsoDestinazione;
+    }
+
+    public string? GetPercorsoDestinazioneDisegno(
+        string      percorsoOrigine,
+        TipoPiastra tipoPiastra,
+        string?     codiceCliente  = null,
+        string?     ragioneSociale = null)
+    {
+        if (!IsConfigurato) return null;
+
+        var sottocartella = tipoPiastra == TipoPiastra.SpecialeCliente && !string.IsNullOrWhiteSpace(codiceCliente)
+            ? GetCartellaCliente(codiceCliente, ragioneSociale)
+            : Path.Combine(cartellaBase, "Standard");
+
+        return Path.Combine(sottocartella, Path.GetFileName(percorsoOrigine));
     }
 
     // ─── helpers ──────────────────────────────────────────────────────────────

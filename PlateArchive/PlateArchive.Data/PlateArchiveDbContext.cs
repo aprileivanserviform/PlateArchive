@@ -25,6 +25,7 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
     public DbSet<PiastraMacchinaCompatibile> PiastreMacchineCompatibili => Set<PiastraMacchinaCompatibile>();
     public DbSet<ClienteMacchina>            ClientiMacchine            => Set<ClienteMacchina>();
     public DbSet<ClientePiastra>             ClientiPiastre             => Set<ClientePiastra>();
+    public DbSet<DurezzaStandard>             DurezzePiastre             => Set<DurezzaStandard>();
     public DbSet<NotaTecnicaCliente>         NoteTecnicheClienti        => Set<NotaTecnicaCliente>();
     public DbSet<AllegatoCliente>            AllegatiClienti            => Set<AllegatoCliente>();
 
@@ -43,6 +44,8 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
         mb.Entity<PiastraMacchinaCompatibile>().HasKey(x => x.IdCompatibilita);
         mb.Entity<ClienteMacchina>().HasKey(cm => cm.IdClienteMacchina);
         mb.Entity<ClientePiastra>().HasKey(cp => cp.IdClientePiastra);
+        mb.Entity<DurezzaStandard>().HasKey(d => d.IdDurezza);
+        mb.Entity<DurezzaStandard>().HasQueryFilter(d => !d.IsEliminata);
         mb.Entity<NotaTecnicaCliente>().HasKey(n => n.IdNota);
         mb.Entity<AllegatoCliente>().HasKey(a => a.IdAllegato);
 
@@ -108,6 +111,14 @@ public class PlateArchiveDbContext(DbContextOptions<PlateArchiveDbContext> optio
             .HasForeignKey(p => p.IdFormato)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.ClientSetNull);
+
+        // FK Piastra → DurezzePiastre (SetNull — percorso unico)
+        mb.Entity<Piastra>()
+            .HasOne(p => p.DurezzaStandard)
+            .WithMany(d => d.Piastre)
+            .HasForeignKey(p => p.IdDurezza)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // ─── Disegno → Piastra (1:1) ─────────────────────────────────────────
         // Ogni disegno appartiene a esattamente una piastra.

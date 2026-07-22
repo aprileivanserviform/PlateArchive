@@ -52,6 +52,7 @@ public class MainWindowViewModel : ViewModelBase
         NavigateToFormatiMacchinaCommand    = new RelayCommand(_ => _navigation.Navigate<FormatiMacchinaViewModel>());
         NavigateToCategoriePiastreCommand   = new RelayCommand(_ => _navigation.Navigate<CategoriePiastreViewModel>());
         NavigateToProduttoriMacchinaCommand = new RelayCommand(_ => _navigation.Navigate<ProduttoriMacchinaViewModel>());
+        NavigateToDurezzePiastraCommand     = new RelayCommand(_ => _navigation.Navigate<DurezzePiastraViewModel>());
         ToggleImpostazioniCommand           = new RelayCommand(_ => IsImpostazioniExpanded = !IsImpostazioniExpanded);
     }
 
@@ -97,5 +98,6 @@ public class MainWindowViewModel : ViewModelBase
     public ICommand NavigateToFormatiMacchinaCommand    { get; }
     public ICommand NavigateToCategoriePiastreCommand   { get; }
     public ICommand NavigateToProduttoriMacchinaCommand { get; }
+    public ICommand NavigateToDurezzePiastraCommand     { get; }
     public ICommand ToggleImpostazioniCommand           { get; }
 }
