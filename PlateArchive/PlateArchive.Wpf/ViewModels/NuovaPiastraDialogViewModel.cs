@@ -5,6 +5,7 @@ using System.Windows.Input;
 using Microsoft.Win32;
 using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
+using PlateArchive.Core.Servizi;
 using PlateArchive.Data.Repositories.Interfaces;
 using PlateArchive.Services;
 using PlateArchive.Wpf.Commands;
@@ -52,7 +53,8 @@ public class NuovaPiastraDialogViewModel : ViewModelBase
         IDurezzaStandardRepository  durezzaRepo,
         IDisegnoRepository          disegniRepo,
         IFileArchivioService        fileArchivio,
-        IClientePiastraRepository   clientiPiastreRepo)
+        IClientePiastraRepository   clientiPiastreRepo,
+        IArticoliGestionaleService  articoliService)
     {
         _piastreRepo        = piastreRepo;
         _categorieRepo      = categorieRepo;
@@ -61,6 +63,9 @@ public class NuovaPiastraDialogViewModel : ViewModelBase
         _disegniRepo        = disegniRepo;
         _fileArchivio       = fileArchivio;
         _clientiPiastreRepo = clientiPiastreRepo;
+
+        SelettoreArticolo = new SelettoreArticoloGestionaleViewModel(articoliService);
+        SelettoreArticolo.ArticoloScelto += ProponiFormatoDaArticolo;
 
         SalvaCommand      = new RelayCommand(async _ => await SalvaAsync(), _ => !IsCodicePiastraNonValido && ErroreCodiceDuplicato is null);
         AnnullaCommand    = new RelayCommand(_ => ChiudiDialog?.Invoke(false));
@@ -128,7 +133,34 @@ public class NuovaPiastraDialogViewModel : ViewModelBase
     public CategoriaPiastra? FormCategoriaSelezionata
     {
         get => _formCategoriaSelezionata;
-        set => SetField(ref _formCategoriaSelezionata, value);
+        set
+        {
+            if (SetField(ref _formCategoriaSelezionata, value))
+                OnPropertyChanged(nameof(IsSpecialeCliente));
+        }
+    }
+
+    /// <summary>True quando la categoria è Speciale Cliente: solo allora il codice articolo
+    /// si sceglie dal selettore gestionale (TASK-19), altrimenti resta testo libero.</summary>
+    public bool IsSpecialeCliente => FormCategoriaSelezionata?.Codice == "SPE";
+
+    /// <summary>Selettore articolo gestionale reale, usato per le piastre Speciale Cliente.</summary>
+    public SelettoreArticoloGestionaleViewModel SelettoreArticolo { get; }
+
+    private void ProponiFormatoDaArticolo(ArticoloGestionale articolo)
+    {
+        SelettoreArticolo.Avviso = null;
+        if (FormFormatoSelezionato is not null) return;
+        if (!CodiceArticoloPanthera.TryEstraiFormato(articolo.Codice, out var formato) || formato == 0) return;
+
+        var corrispondente = FormatiMacchine
+            .FirstOrDefault(f => CodiceArticoloPanthera.FormatoCompatibile(formato, f.NomeFormato));
+        if (corrispondente is not null)
+            FormFormatoSelezionato = corrispondente;
+        else
+            SelettoreArticolo.Avviso =
+                $"Il formato {formato:0.#} del codice scelto non è tra i Formati macchina: " +
+                "crearlo in Impostazioni e impostarlo sulla piastra per il match negli ordini.";
     }
 
     public FormatoMacchina? FormFormatoSelezionato
@@ -236,6 +268,8 @@ public class NuovaPiastraDialogViewModel : ViewModelBase
                                    ?? CategoriePiastre.FirstOrDefault();
 
         FormCodicePiastra = await _piastreRepo.GetNextCodiceSuggerito();
+
+        await SelettoreArticolo.InitAsync();
     }
 
     // ── Persistenza ───────────────────────────────────────────────────────────
@@ -245,13 +279,16 @@ public class NuovaPiastraDialogViewModel : ViewModelBase
         IsCodicePiastraNonValido = string.IsNullOrWhiteSpace(FormCodicePiastra);
         if (IsCodicePiastraNonValido || IsErroreVisible) return;
 
-        var isSpeciale = FormCategoriaSelezionata?.Codice == "SPE";
+        var isSpeciale = IsSpecialeCliente;
         var tipo       = isSpeciale ? TipoPiastra.SpecialeCliente : TipoPiastra.Standard;
+
+        // Speciale Cliente: codice dal selettore articoli reali (TASK-19); altrimenti testo libero.
+        var codiceArticolo = isSpeciale ? SelettoreArticolo.CodiceCorrente : N(FormCodiceArticolo);
 
         var nuova = new Piastra
         {
             CodicePiastra            = FormCodicePiastra.Trim(),
-            CodiceArticoloGestionale = N(FormCodiceArticolo),
+            CodiceArticoloGestionale = codiceArticolo,
             Descrizione              = N(FormDescrizione),
             Stato                    = FormStato,
             TipoPiastra              = tipo,

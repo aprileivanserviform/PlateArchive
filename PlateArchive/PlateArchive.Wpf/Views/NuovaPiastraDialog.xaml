@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ctrl="clr-namespace:PlateArchive.Wpf.Controls"
+        xmlns:views="clr-namespace:PlateArchive.Wpf.Views"
         Title="Nuova piastra"
         Width="720" Height="860"
         MinWidth="640" MinHeight="560"
@@ -91,8 +92,24 @@
                         </StackPanel>
                         <StackPanel Grid.Column="2">
                             <TextBlock Text="Codice articolo gestionale" Style="{StaticResource FieldLabel}"/>
-                            <TextBox Text="{Binding FormCodiceArticolo, UpdateSourceTrigger=PropertyChanged}"
-                                     Style="{StaticResource FieldBox}"/>
+                            <!-- Speciale Cliente: selettore articolo reale dal gestionale (TASK-19).
+                                 Altre categorie: testo libero. -->
+                            <views:SelettoreArticoloGestionaleControl
+                                    DataContext="{Binding SelettoreArticolo}"
+                                    Visibility="{Binding IsSpecialeCliente, Converter={StaticResource BoolToVis},
+                                                 RelativeSource={RelativeSource AncestorType=Window}}"/>
+                            <TextBox Text="{Binding FormCodiceArticolo, UpdateSourceTrigger=PropertyChanged}">
+                                <TextBox.Style>
+                                    <Style TargetType="TextBox" BasedOn="{StaticResource FieldBox}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsSpecialeCliente}" Value="True">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBox.Style>
+                            </TextBox>
                         </StackPanel>
                     </Grid>
 

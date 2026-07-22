@@ -3,6 +3,7 @@ using System.IO;
 using System.Windows.Input;
 using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
+using PlateArchive.Core.Servizi;
 using PlateArchive.Data.Repositories.Interfaces;
 using PlateArchive.Services;
 using PlateArchive.Wpf.Commands;
@@ -60,7 +61,8 @@ public class ImportaDisegnoViewModel : ViewModelBase
         IFormatoMacchinaRepository  formatiRepo,
         IClienteRepository          clientiRepo,
         IClientePiastraRepository   clientiPiastreRepo,
-        IFileArchivioService        fileArchivio)
+        IFileArchivioService        fileArchivio,
+        IArticoliGestionaleService  articoliService)
     {
         _disegniRepo        = disegniRepo;
         _piastreRepo        = piastreRepo;
@@ -69,6 +71,9 @@ public class ImportaDisegnoViewModel : ViewModelBase
         _clientiRepo        = clientiRepo;
         _clientiPiastreRepo = clientiPiastreRepo;
         _fileArchivio       = fileArchivio;
+
+        SelettoreArticolo = new SelettoreArticoloGestionaleViewModel(articoliService);
+        SelettoreArticolo.ArticoloScelto += ProponiFormatoDaArticolo;
 
         ConfermaCommand         = new RelayCommand(async _ => await ConfermaAsync(), _ => PuoConfermare());
         AnnullaCommand          = new RelayCommand(_ => Annulla());
@@ -210,6 +215,26 @@ public class ImportaDisegnoViewModel : ViewModelBase
 
     /// <summary>True quando la categoria selezionata è "Speciale Cliente" (SPE) — il cliente diventa obbligatorio.</summary>
     public bool IsClienteObbligatorio => FormCategoria?.Codice == "SPE";
+
+    /// <summary>Selettore articolo gestionale reale (TASK-19): mostrato al posto del TextBox
+    /// libero quando la categoria è Speciale Cliente.</summary>
+    public SelettoreArticoloGestionaleViewModel SelettoreArticolo { get; }
+
+    private void ProponiFormatoDaArticolo(ArticoloGestionale articolo)
+    {
+        SelettoreArticolo.Avviso = null;
+        if (FormFormato is not null) return;
+        if (!CodiceArticoloPanthera.TryEstraiFormato(articolo.Codice, out var formato) || formato == 0) return;
+
+        var corrispondente = FormatiMacchine
+            .FirstOrDefault(f => CodiceArticoloPanthera.FormatoCompatibile(formato, f.NomeFormato));
+        if (corrispondente is not null)
+            FormFormato = corrispondente;
+        else
+            SelettoreArticolo.Avviso =
+                $"Il formato {formato:0.#} del codice scelto non è tra i Formati macchina: " +
+                "crearlo in Impostazioni e impostarlo sulla piastra per il match negli ordini.";
+    }
 
     public FormatoMacchina? FormFormato
     {
@@ -356,6 +381,9 @@ public class ImportaDisegnoViewModel : ViewModelBase
         var clienti = await _clientiRepo.GetAllAsync();
         _tuttiClienti.AddRange(clienti.OrderBy(c => c.RagioneSociale));
 
+        // Carica la lista articoli e ripristina l'eventuale codice pre-compilato come chip.
+        await SelettoreArticolo.InitAsync(codiceArticoloPrecompilato);
+
         OnPropertyChanged(nameof(TitoloStato));
     }
 
@@ -392,10 +420,14 @@ public class ImportaDisegnoViewModel : ViewModelBase
         else if (IsCreaNuovaPiastraMode)
         {
             var isSpeciale = IsClienteObbligatorio;
+            // Speciale Cliente: codice dal selettore articoli reali (TASK-19); altrimenti testo libero.
+            var codiceArticolo = isSpeciale
+                ? SelettoreArticolo.CodiceCorrente
+                : (string.IsNullOrWhiteSpace(FormCodiceArticolo) ? null : FormCodiceArticolo.Trim());
             var nuova = new Piastra
             {
                 CodicePiastra              = FormCodicePiastra.Trim(),
-                CodiceArticoloGestionale   = string.IsNullOrWhiteSpace(FormCodiceArticolo) ? null : FormCodiceArticolo.Trim(),
+                CodiceArticoloGestionale   = codiceArticolo,
                 Descrizione                = string.IsNullOrWhiteSpace(FormDescrizione)    ? null : FormDescrizione.Trim(),
                 Stato                      = FormStato,
                 TipoPiastra                = isSpeciale ? TipoPiastra.SpecialeCliente : TipoPiastra.Standard,

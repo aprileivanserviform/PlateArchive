@@ -1233,6 +1233,61 @@ match esatto per `CodiceArticoloGestionale` (TASK-15/17) è stato sostituito int
 
 ---
 
+## TASK-19 — Selettore articolo gestionale reale per piastre Speciale Cliente
+
+**Priorità:** Alta
+**Stato:** `[x]` — implementato 2026-07-22 (branch feat/articolo-gestionale-cliente), da verificare a video con VPN attiva
+
+**Dipende da:** TASK-18
+
+### Contesto
+
+Codificando una piastra **Speciale Cliente**, il campo "Codice articolo gestionale" (prima
+testo libero) permette ora di **scegliere un articolo reale del gestionale** (`THIP.ARTICOLI`).
+Così la piastra nasce collegata a cliente + codifica e la view Ordini vendita (TASK-18) la trova.
+
+Semantica **1:N via formato**: la stessa piastra (disegno) serve più articoli con spessori/durezze
+diversi ma stesso formato (es. formato 106 a gestionale è codificato sia spessore 05 che 1). Il
+match Ordini vendita resta quindi **solo cliente+formato** — spessore/durezza non partecipano.
+La scelta dell'articolo serve a **derivare il formato** (pos 7-10, proposto solo se il campo è
+vuoto) e a salvare il codice come **riferimento** in `CodiceArticoloGestionale`.
+
+### Realizzato
+
+- `PlateArchive.Services`: `ArticoloGestionale` (record), `IArticoliGestionaleService` /
+  `ArticoliGestionaleService` — lettura ODBC di `THIP.ARTICOLI` (query configurabile
+  `Db2:QueryArticoli`, 1ª col codice / 2ª descrizione) con **cache di sessione**; registrato
+  **singleton** in [App.xaml.cs](../PlateArchive.Wpf/App.xaml.cs). Sono mostrati **solo gli
+  articoli della nuova codifica** (primi 16 caratteri numerici, filtro `CodiceArticoloPanthera.IsNuovaCodifica`
+  lato servizio + `LIKE '30%-G'` nella query): il solo `LIKE '30%'` pescava anche software,
+  moduli e licenze
+- `SelettoreArticoloGestionaleViewModel` + `SelettoreArticoloGestionaleControl` (UserControl
+  riusabile): autocomplete chip+suggerimenti, ricarica cache, **fallback a testo libero** se la
+  VPN è giù; `InitAsync(codiceEsistente)` ripristina il codice salvato come chip
+- Selettore attivo **solo con categoria SPE** nei tre form di codifica:
+  [PiastreView](../PlateArchive.Wpf/Views/PiastreView.xaml),
+  [NuovaPiastraDialog](../PlateArchive.Wpf/Views/NuovaPiastraDialog.xaml),
+  [ImportaDisegnoWindow](../PlateArchive.Wpf/Views/ImportaDisegnoWindow.xaml); per le Standard
+  resta il TextBox libero
+- Alla scelta dell'articolo, **solo se il formato è vuoto**, viene proposto il formato derivato
+  dal codice (`CodiceArticoloPanthera.TryEstraiFormato` + `FormatoCompatibile`); se il formato non
+  è tra i Formati macchina locali, avviso non bloccante. Spessore/durezza mai toccati.
+- Nuova cifra estratta non serve al match (resta cliente+formato): il codice salvato è solo un
+  riferimento sulla singola piastra
+
+### Acceptance criteria
+
+- [ ] **Da verificare a video con VPN attiva**:
+  - form piastra categoria Speciale Cliente → selettore con articoli dal gestionale, ricerca per
+    codice/descrizione, scelta salva codice + propone formato (se vuoto)
+  - stessa prova su NuovaPiastraDialog e ImportaDisegnoWindow
+  - modifica piastra SPE esistente → codice come chip
+  - Ordini vendita: la piastra è trovata per il suo cliente su tutti gli articoli di quel formato
+  - senza VPN: avviso + inserimento manuale, form non bloccato
+  - categoria Standard: TextBox libero invariato
+
+---
+
 ## Evolutivi futuri (fuori scope MVP)
 
 | Funzione | Riferimento |

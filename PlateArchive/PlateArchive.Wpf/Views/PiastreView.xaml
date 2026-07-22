@@ -4,7 +4,8 @@
              xmlns:vm="clr-namespace:PlateArchive.Wpf.ViewModels"
              xmlns:conv="clr-namespace:PlateArchive.Wpf.Converters"
              xmlns:b="clr-namespace:PlateArchive.Wpf.Behaviors"
-             xmlns:ctrl="clr-namespace:PlateArchive.Wpf.Controls">
+             xmlns:ctrl="clr-namespace:PlateArchive.Wpf.Controls"
+             xmlns:views="clr-namespace:PlateArchive.Wpf.Views">
 
     <UserControl.Resources>
 
@@ -520,8 +521,24 @@
                                    Visibility="{Binding IsCodicePiastraNonValido, Converter={StaticResource BoolToVis}}"/>
 
                         <TextBlock Text="Codice articolo gestionale" Style="{StaticResource FieldLabel}"/>
-                        <TextBox Text="{Binding FormCodiceArticolo, UpdateSourceTrigger=PropertyChanged}"
-                                 Style="{StaticResource FieldBox}"/>
+                        <!-- Speciale Cliente: selettore articolo reale dal gestionale (TASK-19).
+                             Altre categorie: testo libero. -->
+                        <views:SelettoreArticoloGestionaleControl
+                                DataContext="{Binding SelettoreArticolo}"
+                                Visibility="{Binding IsSpecialeCliente, Converter={StaticResource BoolToVis},
+                                             RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                        <TextBox Text="{Binding FormCodiceArticolo, UpdateSourceTrigger=PropertyChanged}">
+                            <TextBox.Style>
+                                <Style TargetType="TextBox" BasedOn="{StaticResource FieldBox}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsSpecialeCliente}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
 
                         <TextBlock Text="Descrizione" Style="{StaticResource FieldLabel}"/>
                         <TextBox Text="{Binding FormDescrizione, UpdateSourceTrigger=PropertyChanged}"

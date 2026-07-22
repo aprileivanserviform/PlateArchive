@@ -7,6 +7,7 @@ using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
+using PlateArchive.Core.Servizi;
 using PlateArchive.Data.Repositories.Interfaces;
 using PlateArchive.Services;
 using PlateArchive.Wpf.Commands;
@@ -108,7 +109,8 @@ public class PiastreViewModel : ViewModelBase
         ICategoriaPiastraRepository categorieRepo,
         IFormatoMacchinaRepository  formatiRepo,
         IClienteRepository          clientiRepo,
-        IDurezzaStandardRepository  durezzaRepo)
+        IDurezzaStandardRepository  durezzaRepo,
+        IArticoliGestionaleService  articoliService)
     {
         _piastreRepo        = piastreRepo;
         _compatRepo         = compatRepo;
@@ -120,6 +122,9 @@ public class PiastreViewModel : ViewModelBase
         _formatiRepo        = formatiRepo;
         _clientiRepo        = clientiRepo;
         _durezzaRepo        = durezzaRepo;
+
+        SelettoreArticolo = new SelettoreArticoloGestionaleViewModel(articoliService);
+        SelettoreArticolo.ArticoloScelto += ProponiFormatoDaArticolo;
 
         // Registra tutti i filtri colonna → riesegui AggiornaFiltro al cambio
         foreach (var f in new[] {
@@ -166,6 +171,29 @@ public class PiastreViewModel : ViewModelBase
     public ObservableCollection<CategoriaPiastra> CategoriePiastre { get; } = [];
     public ObservableCollection<FormatoMacchina>  FormatiMacchine  { get; } = [];
     public ObservableCollection<DurezzaStandard>  DurezzePiastre   { get; } = [];
+
+    /// <summary>Selettore articolo gestionale reale (TASK-19), mostrato al posto del TextBox
+    /// libero quando la categoria è Speciale Cliente.</summary>
+    public SelettoreArticoloGestionaleViewModel SelettoreArticolo { get; }
+
+    /// <summary>Alla scelta di un articolo reale propone il formato derivato dalle pos 7-10
+    /// del codice, solo se il campo formato è ancora vuoto (spessore e durezza non si toccano:
+    /// la stessa piastra serve più articoli con spessori/durezze diversi).</summary>
+    private void ProponiFormatoDaArticolo(ArticoloGestionale articolo)
+    {
+        SelettoreArticolo.Avviso = null;
+        if (FormFormatoSelezionato is not null) return;
+        if (!CodiceArticoloPanthera.TryEstraiFormato(articolo.Codice, out var formato) || formato == 0) return;
+
+        var corrispondente = FormatiMacchine
+            .FirstOrDefault(f => CodiceArticoloPanthera.FormatoCompatibile(formato, f.NomeFormato));
+        if (corrispondente is not null)
+            FormFormatoSelezionato = corrispondente;
+        else
+            SelettoreArticolo.Avviso =
+                $"Il formato {formato:0.#} del codice scelto non è tra i Formati macchina: " +
+                "crearlo in Impostazioni e impostarlo sulla piastra per il match negli ordini.";
+    }
 
     // ─── Filtri lista ─────────────────────────────────────────────────────────
 
@@ -796,6 +824,9 @@ public class PiastreViewModel : ViewModelBase
         IsModifica      = false;
         DisegnoCorrente = null;
         ResetForm();
+        // Fire-and-forget: la prima lettura articoli via VPN può essere lenta,
+        // il form si apre subito e i suggerimenti arrivano appena pronti.
+        _ = SelettoreArticolo.InitAsync();
         FormCodicePiastra = await _piastreRepo.GetNextCodiceSuggerito();
         IsFormVisible = true;
     }
@@ -806,6 +837,7 @@ public class PiastreViewModel : ViewModelBase
         _idPiastraInModifica     = PiastraSelezionata.IdPiastra;
         FormCodicePiastra        = PiastraSelezionata.CodicePiastra;
         FormCodiceArticolo       = PiastraSelezionata.CodiceArticoloGestionale  ?? string.Empty;
+        _ = SelettoreArticolo.InitAsync(PiastraSelezionata.CodiceArticoloGestionale);
         FormDescrizione          = PiastraSelezionata.Descrizione                ?? string.Empty;
         FormStato                = PiastraSelezionata.Stato;
         FormCategoriaSelezionata = CategoriePiastre.FirstOrDefault(c => c.IdCategoriaPiastra == PiastraSelezionata.IdCategoriaPiastra);
@@ -873,13 +905,17 @@ public class PiastreViewModel : ViewModelBase
         // Tipo derivato dalla categoria: SPE ⇒ SpecialeCliente, altrimenti Standard.
         var tipo = IsSpecialeCliente ? TipoPiastra.SpecialeCliente : TipoPiastra.Standard;
 
+        // Per le Speciale Cliente il codice viene dal selettore articoli reali (TASK-19);
+        // per le Standard resta il testo libero.
+        var codiceArticolo = IsSpecialeCliente ? SelettoreArticolo.CodiceCorrente : N(FormCodiceArticolo);
+
         Piastra piastraSalvata;
         if (IsModifica)
         {
             var p = _tutti.FirstOrDefault(x => x.IdPiastra == _idPiastraInModifica);
             if (p is null) return;
             p.CodicePiastra            = FormCodicePiastra.Trim();
-            p.CodiceArticoloGestionale = N(FormCodiceArticolo);
+            p.CodiceArticoloGestionale = codiceArticolo;
             p.Descrizione              = N(FormDescrizione);
             p.Stato                    = FormStato;
             p.TipoPiastra              = tipo;
@@ -904,7 +940,7 @@ public class PiastreViewModel : ViewModelBase
             var nuova = new Piastra
             {
                 CodicePiastra            = FormCodicePiastra.Trim(),
-                CodiceArticoloGestionale = N(FormCodiceArticolo),
+                CodiceArticoloGestionale = codiceArticolo,
                 Descrizione              = N(FormDescrizione),
                 Stato                    = FormStato,
                 TipoPiastra              = tipo,
