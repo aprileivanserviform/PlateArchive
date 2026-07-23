@@ -7,7 +7,6 @@ using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
-using PlateArchive.Core.Servizi;
 using PlateArchive.Data.Repositories.Interfaces;
 using PlateArchive.Services;
 using PlateArchive.Wpf.Commands;
@@ -38,7 +37,6 @@ public class PiastreViewModel : ViewModelBase
     private readonly ICategoriaPiastraRepository _categorieRepo;
     private readonly IFormatoMacchinaRepository  _formatiRepo;
     private readonly IClienteRepository          _clientiRepo;
-    private readonly IDurezzaStandardRepository  _durezzaRepo;
 
     private readonly ObservableCollection<Piastra> _tutti = [];
     private List<Cliente> _tuttiClienti = [];
@@ -55,15 +53,12 @@ public class PiastreViewModel : ViewModelBase
 
     // ── Form campi ────────────────────────────────────────────────────────────
     private string             _formCodicePiastra        = string.Empty;
-    private string             _formCodiceArticolo       = string.Empty;
     private string             _formDescrizione          = string.Empty;
     private StatoPiastra       _formStato                = StatoPiastra.Attiva;
     private CategoriaPiastra?  _formCategoriaSelezionata;
     private FormatoMacchina?   _formFormatoSelezionato;
     private string             _formLarghezza            = string.Empty;
     private string             _formAltezza              = string.Empty;
-    private decimal?           _formSpessore;
-    private DurezzaStandard?   _formDurezzaSelezionata;
     private string             _formPeso                 = string.Empty;
     private string             _formNote                 = string.Empty;
     private string?            _erroreCodiceDuplicato;
@@ -71,6 +66,7 @@ public class PiastreViewModel : ViewModelBase
     private string?            _percorsoDisegnoPendente;
     private bool                _isCodicePiastraNonValido;
     private bool                _isClienteEsclusivoNonValido;
+    private bool                _isFormatoNonValido;
 
     // ── Form: metadati disegno associato (modifica in-place nel dettaglio) ────
     private string       _formRevisioneDisegno = string.Empty;
@@ -108,9 +104,7 @@ public class PiastreViewModel : ViewModelBase
         IFileArchivioService        fileArchivio,
         ICategoriaPiastraRepository categorieRepo,
         IFormatoMacchinaRepository  formatiRepo,
-        IClienteRepository          clientiRepo,
-        IDurezzaStandardRepository  durezzaRepo,
-        IArticoliGestionaleService  articoliService)
+        IClienteRepository          clientiRepo)
     {
         _piastreRepo        = piastreRepo;
         _compatRepo         = compatRepo;
@@ -121,16 +115,12 @@ public class PiastreViewModel : ViewModelBase
         _categorieRepo      = categorieRepo;
         _formatiRepo        = formatiRepo;
         _clientiRepo        = clientiRepo;
-        _durezzaRepo        = durezzaRepo;
-
-        SelettoreArticolo = new SelettoreArticoloGestionaleViewModel(articoliService);
-        SelettoreArticolo.ArticoloScelto += ProponiFormatoDaArticolo;
 
         // Registra tutti i filtri colonna → riesegui AggiornaFiltro al cambio
         foreach (var f in new[] {
-            FiltroCodice, FiltroDescrizione, FiltroArtGestionale,
+            FiltroCodice, FiltroDescrizione,
             FiltroCategoria, FiltroFormato, FiltroTipo, FiltroStato,
-            FiltroLarghezza, FiltroAltezza, FiltroSpessore, FiltroDurezza, FiltroPeso,
+            FiltroLarghezza, FiltroAltezza, FiltroPeso,
             FiltroDataCreazione, FiltroDataModifica })
         {
             f.Cambiato += AggiornaFiltro;
@@ -170,30 +160,6 @@ public class PiastreViewModel : ViewModelBase
 
     public ObservableCollection<CategoriaPiastra> CategoriePiastre { get; } = [];
     public ObservableCollection<FormatoMacchina>  FormatiMacchine  { get; } = [];
-    public ObservableCollection<DurezzaStandard>  DurezzePiastre   { get; } = [];
-
-    /// <summary>Selettore articolo gestionale reale (TASK-19), mostrato al posto del TextBox
-    /// libero quando la categoria è Speciale Cliente.</summary>
-    public SelettoreArticoloGestionaleViewModel SelettoreArticolo { get; }
-
-    /// <summary>Alla scelta di un articolo reale propone il formato derivato dalle pos 7-10
-    /// del codice, solo se il campo formato è ancora vuoto (spessore e durezza non si toccano:
-    /// la stessa piastra serve più articoli con spessori/durezze diversi).</summary>
-    private void ProponiFormatoDaArticolo(ArticoloGestionale articolo)
-    {
-        SelettoreArticolo.Avviso = null;
-        if (FormFormatoSelezionato is not null) return;
-        if (!CodiceArticoloPanthera.TryEstraiFormato(articolo.Codice, out var formato) || formato == 0) return;
-
-        var corrispondente = FormatiMacchine
-            .FirstOrDefault(f => CodiceArticoloPanthera.FormatoCompatibile(formato, f.NomeFormato));
-        if (corrispondente is not null)
-            FormFormatoSelezionato = corrispondente;
-        else
-            SelettoreArticolo.Avviso =
-                $"Il formato {formato:0.#} del codice scelto non è tra i Formati macchina: " +
-                "crearlo in Impostazioni e impostarlo sulla piastra per il match negli ordini.";
-    }
 
     // ─── Filtri lista ─────────────────────────────────────────────────────────
 
@@ -206,15 +172,12 @@ public class PiastreViewModel : ViewModelBase
     // Filtri per colonna (assegnati come Header delle DataGridColumn in code-behind)
     public FiltroColonna FiltroCodice        { get; } = new("Codice",          FiltroColonnaTipo.Testo);
     public FiltroColonna FiltroDescrizione   { get; } = new("Descrizione",     FiltroColonnaTipo.Testo);
-    public FiltroColonna FiltroArtGestionale { get; } = new("Art. gestionale", FiltroColonnaTipo.Testo);
     public FiltroColonna FiltroCategoria     { get; } = new("Categoria",       FiltroColonnaTipo.Enum);
     public FiltroColonna FiltroFormato       { get; } = new("Formato",         FiltroColonnaTipo.Enum);
     public FiltroColonna FiltroTipo          { get; } = new("Tipo",            FiltroColonnaTipo.Enum);
     public FiltroColonna FiltroStato         { get; } = new("Stato piastra",   FiltroColonnaTipo.Enum);
     public FiltroColonna FiltroLarghezza     { get; } = new("Larghezza",       FiltroColonnaTipo.Numerico);
     public FiltroColonna FiltroAltezza       { get; } = new("Altezza",         FiltroColonnaTipo.Numerico);
-    public FiltroColonna FiltroSpessore      { get; } = new("Spessore",        FiltroColonnaTipo.Numerico);
-    public FiltroColonna FiltroDurezza       { get; } = new("Durezza",         FiltroColonnaTipo.Testo);
     public FiltroColonna FiltroPeso          { get; } = new("Peso",            FiltroColonnaTipo.Numerico);
     public FiltroColonna FiltroDataCreazione { get; } = new("Data creazione",  FiltroColonnaTipo.Data);
     public FiltroColonna FiltroDataModifica  { get; } = new("Ultima modifica", FiltroColonnaTipo.Data);
@@ -458,10 +421,13 @@ public class PiastreViewModel : ViewModelBase
         set => SetField(ref _isClienteEsclusivoNonValido, value);
     }
 
-    public string FormCodiceArticolo
+    /// <summary>True quando "Salva" è stato premuto senza aver selezionato il formato macchina:
+    /// è obbligatorio perché è il criterio con cui la piastra viene abbinata alle righe ordine
+    /// (cliente + formato, TASK-18/21).</summary>
+    public bool IsFormatoNonValido
     {
-        get => _formCodiceArticolo;
-        set => SetField(ref _formCodiceArticolo, value);
+        get => _isFormatoNonValido;
+        set => SetField(ref _isFormatoNonValido, value);
     }
 
     public string FormDescrizione
@@ -579,7 +545,11 @@ public class PiastreViewModel : ViewModelBase
     public FormatoMacchina? FormFormatoSelezionato
     {
         get => _formFormatoSelezionato;
-        set => SetField(ref _formFormatoSelezionato, value);
+        set
+        {
+            if (SetField(ref _formFormatoSelezionato, value) && value is not null)
+                IsFormatoNonValido = false;
+        }
     }
 
     public string FormLarghezza
@@ -592,18 +562,6 @@ public class PiastreViewModel : ViewModelBase
     {
         get => _formAltezza;
         set => SetField(ref _formAltezza, value);
-    }
-
-    public decimal? FormSpessore
-    {
-        get => _formSpessore;
-        set => SetField(ref _formSpessore, value);
-    }
-
-    public DurezzaStandard? FormDurezzaSelezionata
-    {
-        get => _formDurezzaSelezionata;
-        set => SetField(ref _formDurezzaSelezionata, value);
     }
 
     public string FormPeso
@@ -709,9 +667,6 @@ public class PiastreViewModel : ViewModelBase
         var formati = await _formatiRepo.GetAllAsync();
         foreach (var f in formati) FormatiMacchine.Add(f);
 
-        var durezze = await _durezzaRepo.GetAllAsync();
-        foreach (var d in durezze) DurezzePiastre.Add(d);
-
         // Popola i valori disponibili nei filtri enum
         FiltroCategoria.ValoriEnum.AddRange(CategoriePiastre.Select(c => c.Descrizione));
         FiltroFormato.ValoriEnum.AddRange(FormatiMacchine.Select(f => f.NomeFormato));
@@ -777,12 +732,10 @@ public class PiastreViewModel : ViewModelBase
             // Ricerca testo globale (barra di ricerca in cima)
             (string.IsNullOrEmpty(f)
                 || p.CodicePiastra.ToLower().Contains(f)
-                || (p.CodiceArticoloGestionale?.ToLower().Contains(f) ?? false)
                 || (p.Descrizione?.ToLower().Contains(f) ?? false))
             // Filtri per colonna
             && FiltroCodice.ApplicaA(p.CodicePiastra)
             && FiltroDescrizione.ApplicaA(p.Descrizione)
-            && FiltroArtGestionale.ApplicaA(p.CodiceArticoloGestionale)
             && FiltroCategoria.ApplicaA(p.Categoria?.Descrizione)
             && FiltroFormato.ApplicaA(p.Formato?.NomeFormato)
             && FiltroTipo.ApplicaA(p.TipoPiastra.ToString())
@@ -791,9 +744,6 @@ public class PiastreViewModel : ViewModelBase
                 ? p.LarghezzaMm.Value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) : null)
             && FiltroAltezza.ApplicaA(p.AltezzaMm.HasValue
                 ? p.AltezzaMm.Value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) : null)
-            && FiltroSpessore.ApplicaA(p.SpessoreMm.HasValue
-                ? p.SpessoreMm.Value.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) : null)
-            && FiltroDurezza.ApplicaA(p.DurezzaStandard?.Valore)
             && FiltroPeso.ApplicaA(p.Peso.HasValue
                 ? p.Peso.Value.ToString("F3", System.Globalization.CultureInfo.InvariantCulture) : null)
             && FiltroDataCreazione.ApplicaA(p.DataCreazione.ToString("yyyy-MM-dd"))
@@ -824,9 +774,6 @@ public class PiastreViewModel : ViewModelBase
         IsModifica      = false;
         DisegnoCorrente = null;
         ResetForm();
-        // Fire-and-forget: la prima lettura articoli via VPN può essere lenta,
-        // il form si apre subito e i suggerimenti arrivano appena pronti.
-        _ = SelettoreArticolo.InitAsync();
         FormCodicePiastra = await _piastreRepo.GetNextCodiceSuggerito();
         IsFormVisible = true;
     }
@@ -836,16 +783,12 @@ public class PiastreViewModel : ViewModelBase
         if (PiastraSelezionata is null) return;
         _idPiastraInModifica     = PiastraSelezionata.IdPiastra;
         FormCodicePiastra        = PiastraSelezionata.CodicePiastra;
-        FormCodiceArticolo       = PiastraSelezionata.CodiceArticoloGestionale  ?? string.Empty;
-        _ = SelettoreArticolo.InitAsync(PiastraSelezionata.CodiceArticoloGestionale);
         FormDescrizione          = PiastraSelezionata.Descrizione                ?? string.Empty;
         FormStato                = PiastraSelezionata.Stato;
         FormCategoriaSelezionata = CategoriePiastre.FirstOrDefault(c => c.IdCategoriaPiastra == PiastraSelezionata.IdCategoriaPiastra);
         FormFormatoSelezionato   = FormatiMacchine.FirstOrDefault(f => f.IdFormato == PiastraSelezionata.IdFormato);
         FormLarghezza            = PiastraSelezionata.LarghezzaMm?.ToString("F1")  ?? string.Empty;
         FormAltezza              = PiastraSelezionata.AltezzaMm?.ToString("F1")    ?? string.Empty;
-        FormSpessore             = PiastraSelezionata.SpessoreMm;
-        FormDurezzaSelezionata   = DurezzePiastre.FirstOrDefault(d => d.IdDurezza == PiastraSelezionata.IdDurezza);
         FormPeso                 = PiastraSelezionata.Peso?.ToString("F3")         ?? string.Empty;
         FormNote                 = PiastraSelezionata.Note                          ?? string.Empty;
         FormClienteEsclusivo     = PiastraSelezionata.IdClienteEsclusivo.HasValue
@@ -854,6 +797,7 @@ public class PiastreViewModel : ViewModelBase
         ErroreCodiceDuplicato        = null;
         IsCodicePiastraNonValido     = false;
         IsClienteEsclusivoNonValido  = false;
+        IsFormatoNonValido           = false;
         IsModifica    = true;
         IsFormVisible = true;
     }
@@ -868,10 +812,8 @@ public class PiastreViewModel : ViewModelBase
 
     private void ResetForm()
     {
-        FormCodicePiastra = FormCodiceArticolo = FormDescrizione = FormNote = string.Empty;
+        FormCodicePiastra = FormDescrizione = FormNote = string.Empty;
         FormLarghezza = FormAltezza = FormPeso = string.Empty;
-        FormSpessore  = null;
-        FormDurezzaSelezionata = null;
         FormStato                = StatoPiastra.Attiva;
         FormCategoriaSelezionata = CategoriePiastre.FirstOrDefault(c => c.Codice == "STD");
         FormFormatoSelezionato   = null;
@@ -880,6 +822,7 @@ public class PiastreViewModel : ViewModelBase
         PercorsoDisegnoPendente  = null;
         IsCodicePiastraNonValido    = false;
         IsClienteEsclusivoNonValido = false;
+        IsFormatoNonValido          = false;
         _filtroClienteEsclusivo         = string.Empty;
         _formFiltroClienteAssociato     = string.Empty;
         OnPropertyChanged(nameof(FiltroClienteEsclusivo));
@@ -899,15 +842,12 @@ public class PiastreViewModel : ViewModelBase
     {
         IsCodicePiastraNonValido    = string.IsNullOrWhiteSpace(FormCodicePiastra);
         IsClienteEsclusivoNonValido = IsSpecialeCliente && FormClienteEsclusivo is null;
-        if (IsCodicePiastraNonValido || IsClienteEsclusivoNonValido) return;
+        IsFormatoNonValido          = FormFormatoSelezionato is null;
+        if (IsCodicePiastraNonValido || IsClienteEsclusivoNonValido || IsFormatoNonValido) return;
         if (IsErroreVisible) return;
 
         // Tipo derivato dalla categoria: SPE ⇒ SpecialeCliente, altrimenti Standard.
         var tipo = IsSpecialeCliente ? TipoPiastra.SpecialeCliente : TipoPiastra.Standard;
-
-        // Per le Speciale Cliente il codice viene dal selettore articoli reali (TASK-19);
-        // per le Standard resta il testo libero.
-        var codiceArticolo = IsSpecialeCliente ? SelettoreArticolo.CodiceCorrente : N(FormCodiceArticolo);
 
         Piastra piastraSalvata;
         if (IsModifica)
@@ -915,7 +855,6 @@ public class PiastreViewModel : ViewModelBase
             var p = _tutti.FirstOrDefault(x => x.IdPiastra == _idPiastraInModifica);
             if (p is null) return;
             p.CodicePiastra            = FormCodicePiastra.Trim();
-            p.CodiceArticoloGestionale = codiceArticolo;
             p.Descrizione              = N(FormDescrizione);
             p.Stato                    = FormStato;
             p.TipoPiastra              = tipo;
@@ -927,9 +866,6 @@ public class PiastreViewModel : ViewModelBase
             p.Formato                  = FormFormatoSelezionato;
             p.LarghezzaMm              = ParseDecimal(FormLarghezza);
             p.AltezzaMm                = ParseDecimal(FormAltezza);
-            p.SpessoreMm               = FormSpessore;
-            p.IdDurezza                = FormDurezzaSelezionata?.IdDurezza;
-            p.DurezzaStandard          = FormDurezzaSelezionata;
             p.Peso                     = ParseDecimal(FormPeso);
             p.Note                     = N(FormNote);
             await _piastreRepo.UpdateAsync(p);
@@ -940,7 +876,6 @@ public class PiastreViewModel : ViewModelBase
             var nuova = new Piastra
             {
                 CodicePiastra            = FormCodicePiastra.Trim(),
-                CodiceArticoloGestionale = codiceArticolo,
                 Descrizione              = N(FormDescrizione),
                 Stato                    = FormStato,
                 TipoPiastra              = tipo,
@@ -952,9 +887,6 @@ public class PiastreViewModel : ViewModelBase
                 Formato                  = FormFormatoSelezionato,
                 LarghezzaMm              = ParseDecimal(FormLarghezza),
                 AltezzaMm                = ParseDecimal(FormAltezza),
-                SpessoreMm               = FormSpessore,
-                IdDurezza                = FormDurezzaSelezionata?.IdDurezza,
-                DurezzaStandard          = FormDurezzaSelezionata,
                 Peso                     = ParseDecimal(FormPeso),
                 Note                     = N(FormNote)
             };

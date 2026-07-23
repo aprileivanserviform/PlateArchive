@@ -5,7 +5,6 @@ using System.Windows.Input;
 using Microsoft.Win32;
 using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
-using PlateArchive.Core.Servizi;
 using PlateArchive.Data.Repositories.Interfaces;
 using PlateArchive.Services;
 using PlateArchive.Wpf.Commands;
@@ -21,27 +20,24 @@ public class NuovaPiastraDialogViewModel : ViewModelBase
     private readonly IPiastraRepository          _piastreRepo;
     private readonly ICategoriaPiastraRepository _categorieRepo;
     private readonly IFormatoMacchinaRepository  _formatiRepo;
-    private readonly IDurezzaStandardRepository  _durezzaRepo;
     private readonly IDisegnoRepository          _disegniRepo;
     private readonly IFileArchivioService        _fileArchivio;
     private readonly IClientePiastraRepository   _clientiPiastreRepo;
 
     // ── Form backing fields ───────────────────────────────────────────────────
     private string            _formCodicePiastra        = string.Empty;
-    private string            _formCodiceArticolo       = string.Empty;
     private string            _formDescrizione          = string.Empty;
     private StatoPiastra      _formStato                = StatoPiastra.Attiva;
     private CategoriaPiastra? _formCategoriaSelezionata;
     private FormatoMacchina?  _formFormatoSelezionato;
     private string            _formLarghezza            = string.Empty;
     private string            _formAltezza              = string.Empty;
-    private decimal?          _formSpessore;
-    private DurezzaStandard?  _formDurezzaSelezionata;
     private string            _formPeso                 = string.Empty;
     private string            _formNote                 = string.Empty;
     private string?           _percorsoDisegnoPendente;
 
     private bool    _isCodicePiastraNonValido;
+    private bool    _isFormatoNonValido;
     private string? _erroreCodiceDuplicato;
 
     private Cliente? _clientePreimpostato;
@@ -50,22 +46,16 @@ public class NuovaPiastraDialogViewModel : ViewModelBase
         IPiastraRepository          piastreRepo,
         ICategoriaPiastraRepository categorieRepo,
         IFormatoMacchinaRepository  formatiRepo,
-        IDurezzaStandardRepository  durezzaRepo,
         IDisegnoRepository          disegniRepo,
         IFileArchivioService        fileArchivio,
-        IClientePiastraRepository   clientiPiastreRepo,
-        IArticoliGestionaleService  articoliService)
+        IClientePiastraRepository   clientiPiastreRepo)
     {
         _piastreRepo        = piastreRepo;
         _categorieRepo      = categorieRepo;
         _formatiRepo        = formatiRepo;
-        _durezzaRepo        = durezzaRepo;
         _disegniRepo        = disegniRepo;
         _fileArchivio       = fileArchivio;
         _clientiPiastreRepo = clientiPiastreRepo;
-
-        SelettoreArticolo = new SelettoreArticoloGestionaleViewModel(articoliService);
-        SelettoreArticolo.ArticoloScelto += ProponiFormatoDaArticolo;
 
         SalvaCommand      = new RelayCommand(async _ => await SalvaAsync(), _ => !IsCodicePiastraNonValido && ErroreCodiceDuplicato is null);
         AnnullaCommand    = new RelayCommand(_ => ChiudiDialog?.Invoke(false));
@@ -84,7 +74,6 @@ public class NuovaPiastraDialogViewModel : ViewModelBase
 
     public ObservableCollection<CategoriaPiastra> CategoriePiastre { get; } = [];
     public ObservableCollection<FormatoMacchina>  FormatiMacchine  { get; } = [];
-    public ObservableCollection<DurezzaStandard>  DurezzePiastre   { get; } = [];
     public IEnumerable<StatoPiastra>              StatiPiastra     { get; } = Enum.GetValues<StatoPiastra>();
 
     // ── Cliente preimpostato (readonly nel form) ───────────────────────────────
@@ -112,12 +101,6 @@ public class NuovaPiastraDialogViewModel : ViewModelBase
         }
     }
 
-    public string FormCodiceArticolo
-    {
-        get => _formCodiceArticolo;
-        set => SetField(ref _formCodiceArticolo, value);
-    }
-
     public string FormDescrizione
     {
         get => _formDescrizione;
@@ -133,40 +116,17 @@ public class NuovaPiastraDialogViewModel : ViewModelBase
     public CategoriaPiastra? FormCategoriaSelezionata
     {
         get => _formCategoriaSelezionata;
-        set
-        {
-            if (SetField(ref _formCategoriaSelezionata, value))
-                OnPropertyChanged(nameof(IsSpecialeCliente));
-        }
-    }
-
-    /// <summary>True quando la categoria è Speciale Cliente: solo allora il codice articolo
-    /// si sceglie dal selettore gestionale (TASK-19), altrimenti resta testo libero.</summary>
-    public bool IsSpecialeCliente => FormCategoriaSelezionata?.Codice == "SPE";
-
-    /// <summary>Selettore articolo gestionale reale, usato per le piastre Speciale Cliente.</summary>
-    public SelettoreArticoloGestionaleViewModel SelettoreArticolo { get; }
-
-    private void ProponiFormatoDaArticolo(ArticoloGestionale articolo)
-    {
-        SelettoreArticolo.Avviso = null;
-        if (FormFormatoSelezionato is not null) return;
-        if (!CodiceArticoloPanthera.TryEstraiFormato(articolo.Codice, out var formato) || formato == 0) return;
-
-        var corrispondente = FormatiMacchine
-            .FirstOrDefault(f => CodiceArticoloPanthera.FormatoCompatibile(formato, f.NomeFormato));
-        if (corrispondente is not null)
-            FormFormatoSelezionato = corrispondente;
-        else
-            SelettoreArticolo.Avviso =
-                $"Il formato {formato:0.#} del codice scelto non è tra i Formati macchina: " +
-                "crearlo in Impostazioni e impostarlo sulla piastra per il match negli ordini.";
+        set => SetField(ref _formCategoriaSelezionata, value);
     }
 
     public FormatoMacchina? FormFormatoSelezionato
     {
         get => _formFormatoSelezionato;
-        set => SetField(ref _formFormatoSelezionato, value);
+        set
+        {
+            if (SetField(ref _formFormatoSelezionato, value) && value is not null)
+                IsFormatoNonValido = false;
+        }
     }
 
     public string FormLarghezza
@@ -179,18 +139,6 @@ public class NuovaPiastraDialogViewModel : ViewModelBase
     {
         get => _formAltezza;
         set => SetField(ref _formAltezza, value);
-    }
-
-    public decimal? FormSpessore
-    {
-        get => _formSpessore;
-        set => SetField(ref _formSpessore, value);
-    }
-
-    public DurezzaStandard? FormDurezzaSelezionata
-    {
-        get => _formDurezzaSelezionata;
-        set => SetField(ref _formDurezzaSelezionata, value);
     }
 
     public string FormPeso
@@ -211,6 +159,14 @@ public class NuovaPiastraDialogViewModel : ViewModelBase
     {
         get => _isCodicePiastraNonValido;
         set => SetField(ref _isCodicePiastraNonValido, value);
+    }
+
+    /// <summary>True quando "Salva" è stato premuto senza formato macchina: è obbligatorio
+    /// perché è il criterio di abbinamento alle righe ordine (cliente + formato).</summary>
+    public bool IsFormatoNonValido
+    {
+        get => _isFormatoNonValido;
+        set => SetField(ref _isFormatoNonValido, value);
     }
 
     public string? ErroreCodiceDuplicato
@@ -261,15 +217,11 @@ public class NuovaPiastraDialogViewModel : ViewModelBase
         var formati = await _formatiRepo.GetAllAsync();
         foreach (var f in formati) FormatiMacchine.Add(f);
 
-        var durezze = await _durezzaRepo.GetAllAsync();
-        foreach (var d in durezze) DurezzePiastre.Add(d);
 
         FormCategoriaSelezionata = CategoriePiastre.FirstOrDefault(c => c.Codice == "SPE")
                                    ?? CategoriePiastre.FirstOrDefault();
 
         FormCodicePiastra = await _piastreRepo.GetNextCodiceSuggerito();
-
-        await SelettoreArticolo.InitAsync();
     }
 
     // ── Persistenza ───────────────────────────────────────────────────────────
@@ -277,18 +229,15 @@ public class NuovaPiastraDialogViewModel : ViewModelBase
     private async Task SalvaAsync()
     {
         IsCodicePiastraNonValido = string.IsNullOrWhiteSpace(FormCodicePiastra);
-        if (IsCodicePiastraNonValido || IsErroreVisible) return;
+        IsFormatoNonValido       = FormFormatoSelezionato is null;
+        if (IsCodicePiastraNonValido || IsFormatoNonValido || IsErroreVisible) return;
 
-        var isSpeciale = IsSpecialeCliente;
+        var isSpeciale = FormCategoriaSelezionata?.Codice == "SPE";
         var tipo       = isSpeciale ? TipoPiastra.SpecialeCliente : TipoPiastra.Standard;
-
-        // Speciale Cliente: codice dal selettore articoli reali (TASK-19); altrimenti testo libero.
-        var codiceArticolo = isSpeciale ? SelettoreArticolo.CodiceCorrente : N(FormCodiceArticolo);
 
         var nuova = new Piastra
         {
             CodicePiastra            = FormCodicePiastra.Trim(),
-            CodiceArticoloGestionale = codiceArticolo,
             Descrizione              = N(FormDescrizione),
             Stato                    = FormStato,
             TipoPiastra              = tipo,
@@ -300,8 +249,6 @@ public class NuovaPiastraDialogViewModel : ViewModelBase
             IdFormato                = FormFormatoSelezionato?.IdFormato,
             LarghezzaMm              = ParseDecimal(FormLarghezza),
             AltezzaMm                = ParseDecimal(FormAltezza),
-            SpessoreMm               = FormSpessore,
-            IdDurezza                = FormDurezzaSelezionata?.IdDurezza,
             Peso                     = ParseDecimal(FormPeso),
             Note                     = N(FormNote)
         };

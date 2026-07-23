@@ -1,7 +1,7 @@
 -- =============================================================================
 -- SCHEMA COMPLETO  PlateArchiveDB  (SQL Server)
 -- Generato: 2026-07-16
--- Stato:    riflette tutte le migrazioni EF Core fino a 20260716122907_DurezzaStandard
+-- Stato:    riflette tutte le migrazioni EF Core fino a 20260722143719_RimuoviSpessoreDurezzaPiastra
 --
 -- IDEMPOTENTE: ogni istruzione è protetta da IF NOT EXISTS / IF EXISTS.
 -- Sicuro da rieseguire su un DB già parzialmente configurato.
@@ -88,22 +88,6 @@ ELSE
     PRINT 'ProduttoriMacchine già esistente — saltato (dati esistenti preservati).';
 GO
 
--- DurezzePiastre --------------------------------------------------------------
-IF OBJECT_ID(N'[dbo].[DurezzePiastre]') IS NULL
-BEGIN
-    CREATE TABLE [dbo].[DurezzePiastre] (
-        [IdDurezza]   int           NOT NULL IDENTITY(1,1),
-        [Valore]      nvarchar(max) NOT NULL,
-        [Note]        nvarchar(max) NULL,
-        [IsEliminata] bit           NOT NULL DEFAULT 0,
-        CONSTRAINT [PK_DurezzePiastre] PRIMARY KEY ([IdDurezza])
-    );
-    PRINT 'Creata DurezzePiastre.';
-END
-ELSE
-    PRINT 'DurezzePiastre già esistente — saltato (dati esistenti preservati).';
-GO
-
 -- =============================================================================
 -- 2. CLIENTI
 -- =============================================================================
@@ -169,18 +153,15 @@ BEGIN
     CREATE TABLE [dbo].[Piastre] (
         [IdPiastra]                int            NOT NULL IDENTITY(1,1),
         [CodicePiastra]            nvarchar(450)  NOT NULL,
-        [CodiceArticoloGestionale] nvarchar(450)  NULL,
         [Descrizione]              nvarchar(max)  NULL,
         [Stato]                    int            NOT NULL DEFAULT 0,
         [TipoPiastra]              int            NOT NULL DEFAULT 0,
         [IdCategoriaPiastra]       int            NULL,
         [IdFormato]                int            NULL,
         [IdClienteEsclusivo]       int            NULL,
-        [IdDurezza]                int            NULL,
         [IsEliminata]              bit            NOT NULL DEFAULT 0,
         [LarghezzaMm]              decimal(18,2)  NULL,
         [AltezzaMm]                decimal(18,2)  NULL,
-        [SpessoreMm]               decimal(18,2)  NULL,
         [Peso]                     decimal(18,2)  NULL,
         [Note]                     nvarchar(max)  NULL,
         [DataCreazione]            datetime2      NOT NULL DEFAULT SYSUTCDATETIME(),
@@ -192,24 +173,16 @@ BEGIN
         CONSTRAINT [FK_Piastre_FormatiMacchine_IdFormato]
             FOREIGN KEY ([IdFormato]) REFERENCES [dbo].[FormatiMacchine] ([IdFormato]),
         CONSTRAINT [FK_Piastre_Clienti_IdClienteEsclusivo]
-            FOREIGN KEY ([IdClienteEsclusivo]) REFERENCES [dbo].[Clienti] ([IdCliente]),
-        CONSTRAINT [FK_Piastre_DurezzePiastre_IdDurezza]
-            FOREIGN KEY ([IdDurezza]) REFERENCES [dbo].[DurezzePiastre] ([IdDurezza])
-            ON DELETE SET NULL
+            FOREIGN KEY ([IdClienteEsclusivo]) REFERENCES [dbo].[Clienti] ([IdCliente])
     );
     CREATE UNIQUE INDEX [IX_Piastre_CodicePiastra]
         ON [dbo].[Piastre] ([CodicePiastra]);
-    EXEC(N'CREATE UNIQUE INDEX [IX_Piastre_CodiceArticoloGestionale]
-        ON [dbo].[Piastre] ([CodiceArticoloGestionale])
-        WHERE [CodiceArticoloGestionale] IS NOT NULL');
     CREATE INDEX [IX_Piastre_IdCategoriaPiastra]
         ON [dbo].[Piastre] ([IdCategoriaPiastra]);
     CREATE INDEX [IX_Piastre_IdFormato]
         ON [dbo].[Piastre] ([IdFormato]);
     CREATE INDEX [IX_Piastre_IdClienteEsclusivo]
         ON [dbo].[Piastre] ([IdClienteEsclusivo]);
-    CREATE INDEX [IX_Piastre_IdDurezza]
-        ON [dbo].[Piastre] ([IdDurezza]);
     PRINT 'Creata Piastre.';
 END
 ELSE
@@ -436,6 +409,12 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[__EFMigrationsHistory] WHERE [MigrationId] =
 
 IF NOT EXISTS (SELECT 1 FROM [dbo].[__EFMigrationsHistory] WHERE [MigrationId] = N'20260716122907_DurezzaStandard')
     INSERT INTO [dbo].[__EFMigrationsHistory] VALUES (N'20260716122907_DurezzaStandard', N'9.0.0');
+
+IF NOT EXISTS (SELECT 1 FROM [dbo].[__EFMigrationsHistory] WHERE [MigrationId] = N'20260722094803_RimuoviCodiceArticoloGestionalePiastra')
+    INSERT INTO [dbo].[__EFMigrationsHistory] VALUES (N'20260722094803_RimuoviCodiceArticoloGestionalePiastra', N'9.0.0');
+
+IF NOT EXISTS (SELECT 1 FROM [dbo].[__EFMigrationsHistory] WHERE [MigrationId] = N'20260722143719_RimuoviSpessoreDurezzaPiastra')
+    INSERT INTO [dbo].[__EFMigrationsHistory] VALUES (N'20260722143719_RimuoviSpessoreDurezzaPiastra', N'9.0.0');
 
 GO
 PRINT 'Schema PlateArchiveDB aggiornato.';

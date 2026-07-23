@@ -156,7 +156,6 @@ GO
 CREATE TABLE dbo.Piastre (
     IdPiastra                int           IDENTITY(1,1) NOT NULL,
     CodicePiastra            nvarchar(450) NOT NULL,
-    CodiceArticoloGestionale nvarchar(450) NULL,
     Descrizione              nvarchar(max) NULL,
     Stato                    int           NOT NULL,            -- StatoPiastra enum
     IdCategoriaPiastra       int           NULL,
@@ -164,8 +163,6 @@ CREATE TABLE dbo.Piastre (
     IsEliminata              bit           NOT NULL CONSTRAINT DF_Piastre_IsEliminata DEFAULT 0,
     LarghezzaMm              decimal(18,2) NULL,
     AltezzaMm                decimal(18,2) NULL,
-    SpessoreMm               decimal(18,2) NULL,
-    Durezza                  decimal(18,2) NULL,
     Peso                     decimal(18,2) NULL,
     Note                     nvarchar(max) NULL,
     DataCreazione            datetime2     NOT NULL CONSTRAINT DF_Piastre_DataCreazione DEFAULT GETUTCDATE(),
@@ -188,10 +185,6 @@ CREATE TABLE dbo.Piastre (
 );
 CREATE UNIQUE INDEX IX_Piastre_CodicePiastra
     ON dbo.Piastre (CodicePiastra);
--- Indice filtrato: CodiceArticoloGestionale univoco solo quando valorizzato
-CREATE UNIQUE INDEX IX_Piastre_CodiceArticoloGestionale
-    ON dbo.Piastre (CodiceArticoloGestionale)
-    WHERE [CodiceArticoloGestionale] IS NOT NULL;
 CREATE INDEX IX_Piastre_IdCategoriaPiastra
     ON dbo.Piastre (IdCategoriaPiastra);
 CREATE INDEX IX_Piastre_IdFormato
@@ -388,13 +381,13 @@ INSERT INTO dbo.MacchineStandard
 -- Piastre (Stato: Attiva=0, Obsoleta=1, DaVerificare=2 | TipoPiastra: Standard=0)
 DECLARE @now datetime2 = GETUTCDATE();
 
-INSERT INTO dbo.Piastre (CodicePiastra, CodiceArticoloGestionale, Descrizione, IdFormato,
+INSERT INTO dbo.Piastre (CodicePiastra, Descrizione, IdFormato,
                           Stato, TipoPiastra, DataCreazione, DataUltimaModifica) VALUES
-    ('PLT-000245', 'PLT-000245', 'Piastra frontale 106',          @fmt106, 0, 0, DATEADD(day,-120,@now), DATEADD(day,-30, @now)),
-    ('PLT-000312', 'PLT-000312', 'Piastra laterale 106 destra',   @fmt106, 0, 0, DATEADD(day,-90, @now), DATEADD(day,-10, @now)),
-    ('PLT-000418', 'PLT-000418', 'Piastra coperchio 145',         @fmt145, 0, 0, DATEADD(day,-60, @now), DATEADD(day,-5,  @now)),
-    ('PLT-000501', 'PLT-000501', 'Piastra base EXPERTCUT 106',    @fmt106, 2, 0, DATEADD(day,-20, @now), DATEADD(day,-2,  @now)),
-    ('PLT-000088', 'PLT-000088', 'Piastra obsoleta MASTERCUT 88', @fmt88,  1, 0, DATEADD(day,-500,@now), DATEADD(day,-200,@now));
+    ('PLT-000245', 'Piastra frontale 106',          @fmt106, 0, 0, DATEADD(day,-120,@now), DATEADD(day,-30, @now)),
+    ('PLT-000312', 'Piastra laterale 106 destra',   @fmt106, 0, 0, DATEADD(day,-90, @now), DATEADD(day,-10, @now)),
+    ('PLT-000418', 'Piastra coperchio 145',         @fmt145, 0, 0, DATEADD(day,-60, @now), DATEADD(day,-5,  @now)),
+    ('PLT-000501', 'Piastra base EXPERTCUT 106',    @fmt106, 2, 0, DATEADD(day,-20, @now), DATEADD(day,-2,  @now)),
+    ('PLT-000088', 'Piastra obsoleta MASTERCUT 88', @fmt88,  1, 0, DATEADD(day,-500,@now), DATEADD(day,-200,@now));
 
 -- Disegni 1:1 (Stato: Attivo=0, Obsoleto=1, DaVerificare=2)
 -- PLT-000088 non ha disegno → icona warning nell'interfaccia

@@ -18,8 +18,6 @@ public class Piastra
     /// <summary>Codice univoco interno (es. PLT-000001). Generato dall'app.</summary>
     public string  CodicePiastra            { get; set; } = string.Empty;
 
-    /// <summary>Codice articolo nel gestionale commerciale (nullable: non tutte le piastre sono ancora censite).</summary>
-    public string? CodiceArticoloGestionale { get; set; }
     public string? Descrizione              { get; set; }
     public StatoPiastra Stato               { get; set; }
 
@@ -41,13 +39,11 @@ public class Piastra
     /// <summary>True = eliminata logicamente. Filtrata automaticamente da EF Core (HasQueryFilter).</summary>
     public bool    IsEliminata              { get; set; } = false;
 
-    /// <summary>FK verso <see cref="DurezzaStandard"/>: valore di durezza selezionato dal dropdown (nullable).</summary>
-    public int? IdDurezza { get; set; }
-
     // ─── Misure fisiche ───────────────────────────────────────────────────────
+    // Spessore e durezza NON sono qui per scelta (TASK-21): sono dati di prodotto del
+    // gestionale — lo stesso disegno serve più spessori/durezze dello stesso formato.
     public decimal? LarghezzaMm { get; set; }
     public decimal? AltezzaMm   { get; set; }
-    public decimal? SpessoreMm  { get; set; }
     public decimal? Peso        { get; set; }
 
     public string?  Note            { get; set; }
@@ -58,7 +54,6 @@ public class Piastra
 
     public CategoriaPiastra? Categoria        { get; set; }
     public FormatoMacchina?  Formato          { get; set; }
-    public DurezzaStandard?  DurezzaStandard  { get; set; }
     public Cliente?          ClienteEsclusivo { get; set; }
 
     /// <summary>Disegno tecnico associato (relazione 1:1 — una piastra ha al più un disegno).</summary>

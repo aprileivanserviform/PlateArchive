@@ -47,11 +47,11 @@ public static class DbSeeder
         var now = DateTime.UtcNow;
         var piastre = new[]
         {
-            new Piastra { CodicePiastra = "PLT-000245", CodiceArticoloGestionale = "PLT-000245", Descrizione = "Piastra frontale 106",         IdFormato = formati[0].IdFormato, Stato = StatoPiastra.Attiva,       DataCreazione = now.AddDays(-120), DataUltimaModifica = now.AddDays(-30)  },
-            new Piastra { CodicePiastra = "PLT-000312", CodiceArticoloGestionale = "PLT-000312", Descrizione = "Piastra laterale 106 destra",   IdFormato = formati[0].IdFormato, Stato = StatoPiastra.Attiva,       DataCreazione = now.AddDays(-90),  DataUltimaModifica = now.AddDays(-10)  },
-            new Piastra { CodicePiastra = "PLT-000418", CodiceArticoloGestionale = "PLT-000418", Descrizione = "Piastra coperchio 145",         IdFormato = formati[1].IdFormato, Stato = StatoPiastra.Attiva,       DataCreazione = now.AddDays(-60),  DataUltimaModifica = now.AddDays(-5)   },
-            new Piastra { CodicePiastra = "PLT-000501", CodiceArticoloGestionale = "PLT-000501", Descrizione = "Piastra base EXPERTCUT 106",    IdFormato = formati[0].IdFormato, Stato = StatoPiastra.DaVerificare, DataCreazione = now.AddDays(-20),  DataUltimaModifica = now.AddDays(-2)   },
-            new Piastra { CodicePiastra = "PLT-000088", CodiceArticoloGestionale = "PLT-000088", Descrizione = "Piastra obsoleta MASTERCUT 88", IdFormato = formati[2].IdFormato, Stato = StatoPiastra.Obsoleta,     DataCreazione = now.AddDays(-500), DataUltimaModifica = now.AddDays(-200) },
+            new Piastra { CodicePiastra = "PLT-000245", Descrizione = "Piastra frontale 106",         IdFormato = formati[0].IdFormato, Stato = StatoPiastra.Attiva,       DataCreazione = now.AddDays(-120), DataUltimaModifica = now.AddDays(-30)  },
+            new Piastra { CodicePiastra = "PLT-000312", Descrizione = "Piastra laterale 106 destra",   IdFormato = formati[0].IdFormato, Stato = StatoPiastra.Attiva,       DataCreazione = now.AddDays(-90),  DataUltimaModifica = now.AddDays(-10)  },
+            new Piastra { CodicePiastra = "PLT-000418", Descrizione = "Piastra coperchio 145",         IdFormato = formati[1].IdFormato, Stato = StatoPiastra.Attiva,       DataCreazione = now.AddDays(-60),  DataUltimaModifica = now.AddDays(-5)   },
+            new Piastra { CodicePiastra = "PLT-000501", Descrizione = "Piastra base EXPERTCUT 106",    IdFormato = formati[0].IdFormato, Stato = StatoPiastra.DaVerificare, DataCreazione = now.AddDays(-20),  DataUltimaModifica = now.AddDays(-2)   },
+            new Piastra { CodicePiastra = "PLT-000088", Descrizione = "Piastra obsoleta MASTERCUT 88", IdFormato = formati[2].IdFormato, Stato = StatoPiastra.Obsoleta,     DataCreazione = now.AddDays(-500), DataUltimaModifica = now.AddDays(-200) },
         };
         db.Piastre.AddRange(piastre);
 

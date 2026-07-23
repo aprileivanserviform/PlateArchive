@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PlateArchive.Data;
 
@@ -11,9 +12,11 @@ using PlateArchive.Data;
 namespace PlateArchive.Data.Migrations
 {
     [DbContext(typeof(PlateArchiveDbContext))]
-    partial class PlateArchiveDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260722094803_RimuoviCodiceArticoloGestionalePiastra")]
+    partial class RimuoviCodiceArticoloGestionalePiastra
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -234,6 +237,29 @@ namespace PlateArchive.Data.Migrations
                     b.ToTable("Disegni");
                 });
 
+            modelBuilder.Entity("PlateArchive.Core.Models.DurezzaStandard", b =>
+                {
+                    b.Property<int>("IdDurezza")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdDurezza"));
+
+                    b.Property<bool>("IsEliminata")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Note")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Valore")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("IdDurezza");
+
+                    b.ToTable("DurezzePiastre");
+                });
+
             modelBuilder.Entity("PlateArchive.Core.Models.FormatoMacchina", b =>
                 {
                     b.Property<int>("IdFormato")
@@ -361,6 +387,9 @@ namespace PlateArchive.Data.Migrations
                     b.Property<int?>("IdClienteEsclusivo")
                         .HasColumnType("int");
 
+                    b.Property<int?>("IdDurezza")
+                        .HasColumnType("int");
+
                     b.Property<int?>("IdFormato")
                         .HasColumnType("int");
 
@@ -374,6 +403,9 @@ namespace PlateArchive.Data.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal?>("Peso")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("SpessoreMm")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("Stato")
@@ -390,6 +422,8 @@ namespace PlateArchive.Data.Migrations
                     b.HasIndex("IdCategoriaPiastra");
 
                     b.HasIndex("IdClienteEsclusivo");
+
+                    b.HasIndex("IdDurezza");
 
                     b.HasIndex("IdFormato");
 
@@ -561,6 +595,11 @@ namespace PlateArchive.Data.Migrations
                         .WithMany()
                         .HasForeignKey("IdClienteEsclusivo");
 
+                    b.HasOne("PlateArchive.Core.Models.DurezzaStandard", "DurezzaStandard")
+                        .WithMany("Piastre")
+                        .HasForeignKey("IdDurezza")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("PlateArchive.Core.Models.FormatoMacchina", "Formato")
                         .WithMany("Piastre")
                         .HasForeignKey("IdFormato");
@@ -568,6 +607,8 @@ namespace PlateArchive.Data.Migrations
                     b.Navigation("Categoria");
 
                     b.Navigation("ClienteEsclusivo");
+
+                    b.Navigation("DurezzaStandard");
 
                     b.Navigation("Formato");
                 });
@@ -599,6 +640,11 @@ namespace PlateArchive.Data.Migrations
 
                     b.Navigation("NoteTecniche");
 
+                    b.Navigation("Piastre");
+                });
+
+            modelBuilder.Entity("PlateArchive.Core.Models.DurezzaStandard", b =>
+                {
                     b.Navigation("Piastre");
                 });
 

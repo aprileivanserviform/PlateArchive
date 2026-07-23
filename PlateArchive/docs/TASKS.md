@@ -1236,7 +1236,8 @@ match esatto per `CodiceArticoloGestionale` (TASK-15/17) è stato sostituito int
 ## TASK-19 — Selettore articolo gestionale reale per piastre Speciale Cliente
 
 **Priorità:** Alta
-**Stato:** `[x]` — implementato 2026-07-22 (branch feat/articolo-gestionale-cliente), da verificare a video con VPN attiva
+**Stato:** `[!]` — **SUPERATO da TASK-20**. Implementato il 2026-07-22 e poi rimosso lo stesso
+giorno: il match ordini è cliente+formato, il codice articolo sulla piastra non serve.
 
 **Dipende da:** TASK-18
 
@@ -1285,6 +1286,93 @@ vuoto) e a salvare il codice come **riferimento** in `CodiceArticoloGestionale`.
   - Ordini vendita: la piastra è trovata per il suo cliente su tutti gli articoli di quel formato
   - senza VPN: avviso + inserimento manuale, form non bloccato
   - categoria Standard: TextBox libero invariato
+
+---
+
+## TASK-20 — Rimozione del "Codice articolo gestionale" dalla gestione piastre
+
+**Priorità:** Alta
+**Stato:** `[x]` — implementato 2026-07-22 (branch feat/articolo-gestionale-cliente)
+
+**Dipende da:** TASK-18 · **Supera:** TASK-19
+
+### Contesto
+
+Con il match ordini vendita basato **solo su cliente + formato** (TASK-18), il codice articolo
+gestionale memorizzato sulla piastra non è più usato: una stessa piastra/disegno serve più
+articoli (spessori/durezze diversi, stesso formato) → relazione 1:N via formato. Se il cliente
+ordina un articolo di un dato formato, vengono proposte tutte le sue piastre di quel formato,
+a prescindere dallo spessore. Quindi il codice articolo sulla piastra è ridondante e fuorviante.
+
+### Realizzato
+
+- **Rimosso il selettore articoli (TASK-19)**: eliminati `SelettoreArticoloGestionaleViewModel`,
+  `SelettoreArticoloGestionaleControl`, `ArticoliGestionaleService` + interfaccia + record, la
+  registrazione DI e la chiave `Db2:QueryArticoli`.
+- **Rimosso il campo `CodiceArticoloGestionale`** da modello `Piastra`, `DbContext` (indice
+  univoco filtrato), form di codifica (Piastre / NuovaPiastraDialog / ImportaDisegno), filtro e
+  ricerca in `PiastreViewModel`/`PiastraRepository`, dettaglio piastra e `DbSeeder`.
+- Il dettaglio piastra mostra ancora la **descrizione articolo dell'ordine** (DESCR_ESTESA) quando
+  aperto da una riga ordine, ri-etichettata "Articolo ordine".
+- **Drop colonna DB**: migrazione EF `20260722094803_RimuoviCodiceArticoloGestionalePiastra`
+  (drop indice + colonna); aggiornati `schema_completo.sql`, `RecreateDB_Full.sql`,
+  `svuota_dati_test.sql`; nuovo script prod manuale
+  [drop_codice_articolo_gestionale.sql](sql/drop_codice_articolo_gestionale.sql) per Ivan.
+
+### Acceptance criteria
+
+- [x] `dotnet build` senza errori/warning nuovi; nessun riferimento residuo a `CodiceArticoloGestionale`
+- [x] migrazione EF generata (drop indice + colonna)
+- [ ] **Prod**: applicare `docs/sql/drop_codice_articolo_gestionale.sql` sul DB condiviso
+- [ ] verifica a video: form senza campo codice articolo, griglia senza filtro, ricerca su
+  codice/descrizione, match ordini per cliente+formato invariato
+
+---
+
+## TASK-21 — Via spessore e durezza dalla piastra; formato macchina obbligatorio
+
+**Priorità:** Alta
+**Stato:** `[x]` — implementato 2026-07-22 (branch feat/articolo-gestionale-cliente)
+
+**Dipende da:** TASK-18, TASK-20
+
+### Contesto
+
+PlateArchive gestisce **i disegni delle piastre del cliente**, non i dati di prodotto: spessore e
+durezza appartengono al gestionale (lo stesso disegno serve più spessori/durezze dello stesso
+formato — cfr. TASK-18/20, il match ordini è cliente+formato).
+
+Il **formato macchina** diventa quindi il dato tecnico determinante: se è sempre valorizzato, ogni
+piastra associata a un cliente comparirà nella vista Ordini vendita per gli articoli di quel formato.
+
+### Realizzato
+
+- **Rimossi `SpessoreMm` e `IdDurezza`** dalla piastra, insieme a tutto l'apparato durezza:
+  modello `DurezzaStandard`, repository, ViewModel/View `DurezzePiastra`, voce di menu
+  Impostazioni → Durezze piastra, `DbSet` e FK nel DbContext.
+- I tre form di codifica (Piastre, NuovaPiastraDialog, ImportaDisegno) non hanno più i campi
+  Spessore/Durezza; nel riquadro "Misure (mm)" restano Larghezza e Altezza (Peso a parte).
+  Rimosse anche le colonne/filtri Spessore e Durezza dalla griglia e i blocchi nei dettagli.
+- **Formato macchina obbligatorio** (validazione applicativa, `IsFormatoNonValido`): label
+  "Formato macchina *", bordo rosso e "Campo obbligatorio", salvataggio bloccato. In
+  `ImportaDisegnoWindow` la conferma è disabilitata finché il formato non è scelto.
+  La colonna `IdFormato` resta **nullable** nel DB: i formati sono a cancellazione logica ed EF
+  azzera il riferimento sulle piastre quando un formato viene eliminato.
+- **Migrazione EF** `20260722143719_RimuoviSpessoreDurezzaPiastra` (drop FK, indice, colonne
+  `IdDurezza`/`SpessoreMm`, tabella `DurezzePiastre`); aggiornati `schema_completo.sql` e
+  `RecreateDB_Full.sql`.
+- Script prod manuali: [rimuovi_spessore_durezza.sql](sql/rimuovi_spessore_durezza.sql) e
+  [elimina_piastre_senza_formato.sql](sql/elimina_piastre_senza_formato.sql).
+
+### Acceptance criteria
+
+- [x] `dotnet build` senza errori/warning nuovi; nessun riferimento residuo a
+  `SpessoreMm`/`IdDurezza`/`DurezzaStandard` fuori dalle migrazioni storiche
+- [x] migrazione EF generata e revisionata
+- [ ] **Prod**, nell'ordine: eseguire `elimina_piastre_senza_formato.sql` (PARTE 1 di
+  ricognizione, poi PARTE 2 con COMMIT esplicito) e quindi `rimuovi_spessore_durezza.sql`
+- [ ] verifica a video: form senza Spessore/Durezza, salvataggio bloccato senza formato,
+  menu senza "Durezze piastra", match ordini invariato
 
 ---
 

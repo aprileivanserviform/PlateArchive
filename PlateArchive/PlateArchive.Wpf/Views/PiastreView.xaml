@@ -4,8 +4,7 @@
              xmlns:vm="clr-namespace:PlateArchive.Wpf.ViewModels"
              xmlns:conv="clr-namespace:PlateArchive.Wpf.Converters"
              xmlns:b="clr-namespace:PlateArchive.Wpf.Behaviors"
-             xmlns:ctrl="clr-namespace:PlateArchive.Wpf.Controls"
-             xmlns:views="clr-namespace:PlateArchive.Wpf.Views">
+             xmlns:ctrl="clr-namespace:PlateArchive.Wpf.Controls">
 
     <UserControl.Resources>
 
@@ -358,13 +357,6 @@
                                                 SortMemberPath="Descrizione"
                                                 HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
 
-                            <!-- Articolo gestionale -->
-                            <DataGridTextColumn x:Name="ColArtGestionale"
-                                                Binding="{Binding CodiceArticoloGestionale}"
-                                                Width="Auto"
-                                                SortMemberPath="CodiceArticoloGestionale"
-                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
-
                             <!-- Categoria -->
                             <DataGridTextColumn x:Name="ColCategoria"
                                                 Binding="{Binding Categoria.Descrizione}"
@@ -405,20 +397,6 @@
                                                 Binding="{Binding AltezzaMm, StringFormat='{}{0:F1}', TargetNullValue='—'}"
                                                 Width="Auto"
                                                 SortMemberPath="AltezzaMm"
-                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
-
-                            <!-- Spessore -->
-                            <DataGridTextColumn x:Name="ColSpessore"
-                                                Binding="{Binding SpessoreMm, StringFormat='{}{0:F2}', TargetNullValue='—'}"
-                                                Width="Auto"
-                                                SortMemberPath="SpessoreMm"
-                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
-
-                            <!-- Durezza -->
-                            <DataGridTextColumn x:Name="ColDurezza"
-                                                Binding="{Binding DurezzaStandard.Valore, TargetNullValue='—'}"
-                                                Width="Auto"
-                                                SortMemberPath="DurezzaStandard.Valore"
                                                 HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
 
                             <!-- Peso -->
@@ -519,26 +497,6 @@
                                    Foreground="{DynamicResource Brush.Error}"
                                    Margin="0,-8,0,10"
                                    Visibility="{Binding IsCodicePiastraNonValido, Converter={StaticResource BoolToVis}}"/>
-
-                        <TextBlock Text="Codice articolo gestionale" Style="{StaticResource FieldLabel}"/>
-                        <!-- Speciale Cliente: selettore articolo reale dal gestionale (TASK-19).
-                             Altre categorie: testo libero. -->
-                        <views:SelettoreArticoloGestionaleControl
-                                DataContext="{Binding SelettoreArticolo}"
-                                Visibility="{Binding IsSpecialeCliente, Converter={StaticResource BoolToVis},
-                                             RelativeSource={RelativeSource AncestorType=UserControl}}"/>
-                        <TextBox Text="{Binding FormCodiceArticolo, UpdateSourceTrigger=PropertyChanged}">
-                            <TextBox.Style>
-                                <Style TargetType="TextBox" BasedOn="{StaticResource FieldBox}">
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsSpecialeCliente}" Value="True">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBox.Style>
-                        </TextBox>
 
                         <TextBlock Text="Descrizione" Style="{StaticResource FieldLabel}"/>
                         <TextBox Text="{Binding FormDescrizione, UpdateSourceTrigger=PropertyChanged}"
@@ -648,10 +606,26 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0">
-                                <TextBlock Text="Formato macchina" Style="{StaticResource FieldLabel}"/>
+                                <TextBlock Text="Formato macchina *" Style="{StaticResource FieldLabel}"/>
                                 <ComboBox ItemsSource="{Binding FormatiMacchine}"
                                           SelectedItem="{Binding FormFormatoSelezionato}"
-                                          DisplayMemberPath="NomeFormato"/>
+                                          DisplayMemberPath="NomeFormato">
+                                    <ComboBox.Style>
+                                        <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsFormatoNonValido}" Value="True">
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Error}"/>
+                                                    <Setter Property="BorderThickness" Value="1"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ComboBox.Style>
+                                </ComboBox>
+                                <TextBlock Text="Campo obbligatorio."
+                                           FontSize="{StaticResource FontSize.Caption}"
+                                           Foreground="{DynamicResource Brush.Error}"
+                                           Margin="0,2,0,0"
+                                           Visibility="{Binding IsFormatoNonValido, Converter={StaticResource BoolToVis}}"/>
                             </StackPanel>
                             <StackPanel Grid.Column="2">
                                 <TextBlock Text="Peso (kg)" Style="{StaticResource FieldLabel}"/>
@@ -659,14 +633,10 @@
                             </StackPanel>
                         </Grid>
 
-                        <!-- Misure -->
+                        <!-- Misure (spessore e durezza sono dati del gestionale, vedi TASK-21) -->
                         <TextBlock Text="Misure (mm)" Style="{StaticResource FieldLabel}"/>
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="8"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="8"/>
                                 <ColumnDefinition Width="*"/>
@@ -678,18 +648,6 @@
                             <StackPanel Grid.Column="2">
                                 <TextBlock Text="Altezza" Style="{StaticResource FieldLabel}"/>
                                 <TextBox Text="{Binding FormAltezza, UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="4">
-                                <TextBlock Text="Spessore" Style="{StaticResource FieldLabel}"/>
-                                <ctrl:NumericBox Value="{Binding FormSpessore}"
-                                                 Step="0.1" DecimalPlaces="2" Minimum="0"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="6">
-                                <TextBlock Text="Durezza" Style="{StaticResource FieldLabel}"/>
-                                <ComboBox ItemsSource="{Binding DurezzePiastre}"
-                                          SelectedItem="{Binding FormDurezzaSelezionata, Mode=TwoWay}"
-                                          DisplayMemberPath="Valore"
-                                          IsEditable="False"/>
                             </StackPanel>
                         </Grid>
 
@@ -993,9 +951,7 @@
                                         <TextBlock Text="Formato" Style="{StaticResource TextBlock.Caption}"/>
                                         <TextBlock Text="{Binding PiastraSelezionata.Formato.NomeFormato, FallbackValue='—'}" Margin="0,0,0,8"/>
                                         <TextBlock Text="Categoria" Style="{StaticResource TextBlock.Caption}"/>
-                                        <TextBlock Text="{Binding PiastraSelezionata.Categoria.Descrizione, FallbackValue='—'}" Margin="0,0,0,8"/>
-                                        <TextBlock Text="Art. gestionale" Style="{StaticResource TextBlock.Caption}"/>
-                                        <TextBlock Text="{Binding PiastraSelezionata.CodiceArticoloGestionale, FallbackValue='—'}"/>
+                                        <TextBlock Text="{Binding PiastraSelezionata.Categoria.Descrizione, FallbackValue='—'}"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="1">
                                         <TextBlock Text="Peso (kg)" Style="{StaticResource TextBlock.Caption}"/>
@@ -1022,8 +978,6 @@
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
                                         <TextBlock Text="Larghezza" Style="{StaticResource TextBlock.Caption}"/>
@@ -1044,20 +998,6 @@
                                                          FallbackValue="—" TargetNullValue="—"/>
                                             </TextBlock.Text>
                                         </TextBlock>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="2">
-                                        <TextBlock Text="Spessore" Style="{StaticResource TextBlock.Caption}"/>
-                                        <TextBlock>
-                                            <TextBlock.Text>
-                                                <Binding Path="PiastraSelezionata.SpessoreMm"
-                                                         StringFormat="{}{0:F2} mm"
-                                                         FallbackValue="—" TargetNullValue="—"/>
-                                            </TextBlock.Text>
-                                        </TextBlock>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="3">
-                                        <TextBlock Text="Durezza" Style="{StaticResource TextBlock.Caption}"/>
-                                        <TextBlock Text="{Binding PiastraSelezionata.DurezzaStandard.Valore, FallbackValue='—', TargetNullValue='—'}"/>
                                     </StackPanel>
                                 </Grid>
                             </Border>

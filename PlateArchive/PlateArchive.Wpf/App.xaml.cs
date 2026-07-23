@@ -57,7 +57,6 @@ public partial class App : Application
         services.AddScoped<ICategoriaPiastraRepository, CategoriaPiastraRepository>();
         services.AddScoped<IFormatoMacchinaRepository, FormatoMacchinaRepository>();
         services.AddScoped<IProduttoreMacchinaRepository, ProduttoreMacchinaRepository>();
-        services.AddScoped<IDurezzaStandardRepository, DurezzaStandardRepository>();
         services.AddScoped<INotaTecnicaClienteRepository, NotaTecnicaClienteRepository>();
         services.AddScoped<IAllegatoClienteRepository, AllegatoClienteRepository>();
 
@@ -85,13 +84,6 @@ public partial class App : Application
         services.AddTransient<IRigheOrdineVenditaService>(_ =>
             new RigheOrdineVenditaService(db2ConnStr, db2QueryRighe));
 
-        // Anagrafica articoli piastre (selettore codice articolo, TASK-19).
-        // Singleton: la lista viene letta una volta e tenuta in cache per la sessione.
-        var db2QueryArticoli = config["Db2:QueryArticoli"]
-            ?? "SELECT a.ID_ARTICOLO, a.DESCR_ESTESA FROM THIP.ARTICOLI a WHERE a.ID_AZIENDA = '001' AND a.ID_ARTICOLO LIKE '30%-G' ORDER BY a.ID_ARTICOLO";
-        services.AddSingleton<IArticoliGestionaleService>(
-            new ArticoliGestionaleService(db2ConnStr, db2QueryArticoli));
-
         // SyncStatusService: aggiorna la barra di stato durante la sincronizzazione.
         services.AddSingleton<ISyncStatusService, SyncStatusService>();
 
@@ -112,7 +104,6 @@ public partial class App : Application
         services.AddTransient<FormatiMacchinaViewModel>();
         services.AddTransient<CategoriePiastreViewModel>();
         services.AddTransient<ProduttoriMacchinaViewModel>();
-        services.AddTransient<DurezzePiastraViewModel>();
         services.AddTransient<NuovaPiastraDialogViewModel>();
         services.AddTransient<OrdiniVenditaViewModel>();
 

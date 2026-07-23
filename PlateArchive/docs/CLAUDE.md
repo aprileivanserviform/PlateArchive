@@ -23,10 +23,14 @@ Pattern architetturale: **MVVM** (Views / ViewModels / Models / Services / Comma
 
 ## Principio fondamentale
 
-**La Piastra è l'elemento centrale del sistema.** Il codice piastra corrisponde (o è direttamente collegato) all'articolo gestionale usato per vendita e produzione.
+**La Piastra è l'elemento centrale del sistema.** Il collegamento con gli ordini di vendita del
+gestionale avviene per **cliente + formato**: dal codice articolo dell'ordine si estrae il formato
+(posizioni 7-10 della nuova codifica) e si propongono le piastre di quel cliente con lo stesso
+formato (TASK-18/20). Spessore e durezza non partecipano al match (lo stesso disegno serve più
+spessori/durezze dello stesso formato).
 
 ```
-Codice articolo gestionale → Piastra → Disegno tecnico
+Ordine vendita (cliente + formato) → Piastra (stesso formato del cliente) → Disegno tecnico
 ```
 
 ## Regole di dominio (rispettarle sempre)
@@ -38,6 +42,8 @@ Codice articolo gestionale → Piastra → Disegno tecnico
 5. I file disegno **non** si salvano nel database: solo metadati e percorso file (server condiviso o Autodesk Vault).
 6. I clienti provengono dal gestionale DB2; DB2 è la fonte primaria dell'anagrafica cliente.
 7. Il codice macchina deve essere standardizzato (`CodiceMacchina` univoco) per evitare duplicati.
+8. La piastra **non** porta dati di prodotto: spessore e durezza stanno solo nel gestionale, perché lo stesso disegno serve più spessori/durezze dello stesso formato (TASK-21).
+9. Il **formato macchina è obbligatorio** su ogni piastra: è il criterio con cui viene abbinata alle righe ordine. La colonna resta nullable nel DB (i formati sono a cancellazione logica), l'obbligatorietà è applicativa.
 
 ## Entità principali (PlateArchive.Core)
 
@@ -45,7 +51,7 @@ Codice articolo gestionale → Piastra → Disegno tecnico
 |--------|--------|------|
 | `Cliente` | `IdCliente` | Sync da DB2, `CodiceClienteGestionale` univoco |
 | `MacchinaStandard` | `IdMacchinaStandard` | `CodiceMacchina` univoco |
-| `Piastra` | `IdPiastra` | `CodicePiastra` univoco, `CodiceArticoloGestionale` univoco |
+| `Piastra` | `IdPiastra` | `CodicePiastra` univoco; abbinata agli ordini per cliente + formato (TASK-18/20) |
 | `Disegno` | `IdDisegno` | N:M con Piastra via `DisegniPiastre` |
 | `DisegnoPiastra` | `IdDisegnoPiastra` | Chiave composta `(IdDisegno, IdPiastra)` univoca |
 | `PiastraMacchinaCompatibile` | `IdCompatibilita` | Chiave composta `(IdPiastra, IdMacchinaStandard)` univoca |

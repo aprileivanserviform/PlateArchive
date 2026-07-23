@@ -21,7 +21,7 @@
 USE PlateArchiveDB;
 GO
 
--- Necessario per le tabelle con indice filtrato (es. Piastre.CodiceArticoloGestionale).
+-- Necessario per le tabelle con indice filtrato.
 SET QUOTED_IDENTIFIER ON;
 SET ANSI_NULLS ON;
 SET NOCOUNT ON;

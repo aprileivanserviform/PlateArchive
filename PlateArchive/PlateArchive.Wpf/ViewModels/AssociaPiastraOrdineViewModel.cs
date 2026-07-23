@@ -10,9 +10,8 @@ namespace PlateArchive.Wpf.ViewModels;
 
 /// <summary>
 /// ViewModel del dialog "Associa piastra" — associa una piastra esistente al cliente della
-/// riga ordine (crea la <c>ClientePiastra</c>, stato Attiva): con la nuova codifica articoli
-/// (TASK-18) il codice è generico per cliente, quindi il collegamento è commerciale
-/// (cliente ↔ piastra), non più via <c>CodiceArticoloGestionale</c> sulla piastra.
+/// riga ordine (crea la <c>ClientePiastra</c>, stato Attiva): il collegamento è commerciale
+/// (cliente ↔ piastra) e il match negli ordini avviene per cliente + formato (TASK-18/20).
 /// Aperto da <c>OrdiniVenditaView</c> per le righe con <c>PiastraNonTrovata</c>.
 /// La piastra scelta comparirà nel match automatico solo se il suo formato coincide con
 /// quello del codice articolo: in caso contrario il dialog mostra un avviso non bloccante.

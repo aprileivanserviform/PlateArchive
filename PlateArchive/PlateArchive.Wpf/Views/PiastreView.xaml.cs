@@ -21,15 +21,12 @@ public partial class PiastreView : UserControl
         if (DataContext is not PiastreViewModel vm) return;
         ColCodice.Header        = vm.FiltroCodice;
         ColDescrizione.Header   = vm.FiltroDescrizione;
-        ColArtGestionale.Header = vm.FiltroArtGestionale;
         ColCategoria.Header     = vm.FiltroCategoria;
         ColFormato.Header       = vm.FiltroFormato;
         ColTipo.Header          = vm.FiltroTipo;
         ColStato.Header         = vm.FiltroStato;
         ColLarghezza.Header     = vm.FiltroLarghezza;
         ColAltezza.Header       = vm.FiltroAltezza;
-        ColSpessore.Header      = vm.FiltroSpessore;
-        ColDurezza.Header       = vm.FiltroDurezza;
         ColPeso.Header          = vm.FiltroPeso;
         ColDataCreazione.Header = vm.FiltroDataCreazione;
         ColDataModifica.Header  = vm.FiltroDataModifica;

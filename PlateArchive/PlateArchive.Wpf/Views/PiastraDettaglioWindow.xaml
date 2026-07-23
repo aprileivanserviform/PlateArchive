@@ -57,17 +57,13 @@
                     </Grid>
                 </Border>
 
-                <!-- Codice articolo gestionale -->
-                <Border Style="{StaticResource Card.Subtle}" Padding="12,10" Margin="0,0,0,10">
+                <!-- Articolo dell'ordine (DESCR_ESTESA): presente solo se aperta da una riga ordine vendita. -->
+                <Border Style="{StaticResource Card.Subtle}" Padding="12,10" Margin="0,0,0,10"
+                        Visibility="{Binding IsDescrizioneArticoloVisible, Converter={StaticResource BoolToVis}}">
                     <StackPanel>
-                        <TextBlock Text="Codice articolo gestionale" Style="{StaticResource TextBlock.Caption}"/>
-                        <TextBlock Text="{Binding Piastra.CodiceArticoloGestionale, FallbackValue='—', TargetNullValue='—'}"/>
-                        <!-- Descrizione estesa (DESCR_ESTESA): presente solo se aperta da una riga ordine. -->
+                        <TextBlock Text="Articolo ordine" Style="{StaticResource TextBlock.Caption}"/>
                         <TextBlock Text="{Binding DescrizioneArticoloGestionale}"
-                                   Foreground="{DynamicResource Brush.TextSecondary}"
-                                   TextWrapping="Wrap"
-                                   Margin="0,4,0,0"
-                                   Visibility="{Binding IsDescrizioneArticoloVisible, Converter={StaticResource BoolToVis}}"/>
+                                   TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 
@@ -76,8 +72,6 @@
                 <Border Style="{StaticResource Card.Subtle}" Padding="12,10" Margin="0,0,0,10">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
@@ -101,24 +95,6 @@
                             </TextBlock>
                         </StackPanel>
                         <StackPanel Grid.Column="2">
-                            <TextBlock Text="Spessore" Style="{StaticResource TextBlock.Caption}"/>
-                            <TextBlock>
-                                <TextBlock.Text>
-                                    <Binding Path="Piastra.SpessoreMm" StringFormat="{}{0:F2}"
-                                             FallbackValue="—" TargetNullValue="—"/>
-                                </TextBlock.Text>
-                            </TextBlock>
-                        </StackPanel>
-                        <StackPanel Grid.Column="3">
-                            <TextBlock Text="Durezza" Style="{StaticResource TextBlock.Caption}"/>
-                            <TextBlock>
-                                <TextBlock.Text>
-                                    <Binding Path="Piastra.Durezza" StringFormat="{}{0:F1}"
-                                             FallbackValue="—" TargetNullValue="—"/>
-                                </TextBlock.Text>
-                            </TextBlock>
-                        </StackPanel>
-                        <StackPanel Grid.Column="4">
                             <TextBlock Text="Peso (kg)" Style="{StaticResource TextBlock.Caption}"/>
                             <TextBlock>
                                 <TextBlock.Text>

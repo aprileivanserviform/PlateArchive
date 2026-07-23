@@ -39,9 +39,6 @@
             <DataTemplate DataType="{x:Type vm:ProduttoriMacchinaViewModel}">
                 <views:ProduttoriMacchinaView/>
             </DataTemplate>
-            <DataTemplate DataType="{x:Type vm:DurezzePiastraViewModel}">
-                <views:DurezzePiastraView/>
-            </DataTemplate>
             <DataTemplate DataType="{x:Type vm:OrdiniVenditaViewModel}">
                 <views:OrdiniVenditaView/>
             </DataTemplate>

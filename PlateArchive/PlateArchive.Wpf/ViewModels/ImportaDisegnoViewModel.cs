@@ -3,7 +3,6 @@ using System.IO;
 using System.Windows.Input;
 using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
-using PlateArchive.Core.Servizi;
 using PlateArchive.Data.Repositories.Interfaces;
 using PlateArchive.Services;
 using PlateArchive.Wpf.Commands;
@@ -38,15 +37,12 @@ public class ImportaDisegnoViewModel : ViewModelBase
     private bool         _isCreaNuovaPiastraMode;
     private Piastra?     _piastraSelezionata;
     private string       _formCodicePiastra       = string.Empty;
-    private string       _formCodiceArticolo      = string.Empty;
     private string       _formDescrizione         = string.Empty;
     private StatoPiastra _formStato               = StatoPiastra.Attiva;
     private CategoriaPiastra?  _formCategoria;
     private FormatoMacchina?   _formFormato;
     private string       _formLarghezza           = string.Empty;
     private string       _formAltezza             = string.Empty;
-    private string       _formSpessore            = string.Empty;
-    private string       _formDurezza             = string.Empty;
     private string       _formPeso                = string.Empty;
     private string       _formNote                = string.Empty;
     private Cliente?     _formCliente;
@@ -61,8 +57,7 @@ public class ImportaDisegnoViewModel : ViewModelBase
         IFormatoMacchinaRepository  formatiRepo,
         IClienteRepository          clientiRepo,
         IClientePiastraRepository   clientiPiastreRepo,
-        IFileArchivioService        fileArchivio,
-        IArticoliGestionaleService  articoliService)
+        IFileArchivioService        fileArchivio)
     {
         _disegniRepo        = disegniRepo;
         _piastreRepo        = piastreRepo;
@@ -71,9 +66,6 @@ public class ImportaDisegnoViewModel : ViewModelBase
         _clientiRepo        = clientiRepo;
         _clientiPiastreRepo = clientiPiastreRepo;
         _fileArchivio       = fileArchivio;
-
-        SelettoreArticolo = new SelettoreArticoloGestionaleViewModel(articoliService);
-        SelettoreArticolo.ArticoloScelto += ProponiFormatoDaArticolo;
 
         ConfermaCommand         = new RelayCommand(async _ => await ConfermaAsync(), _ => PuoConfermare());
         AnnullaCommand          = new RelayCommand(_ => Annulla());
@@ -150,11 +142,11 @@ public class ImportaDisegnoViewModel : ViewModelBase
                 if (value) PiastraSelezionata = null;
                 else
                 {
-                    FormCodicePiastra = FormCodiceArticolo = FormDescrizione = string.Empty;
+                    FormCodicePiastra = FormDescrizione = string.Empty;
                     FormStato         = StatoPiastra.Attiva;
                     FormCategoria     = CategoriePiastre.FirstOrDefault(c => c.Codice == "STD");
                     FormFormato       = null;
-                    FormLarghezza = FormAltezza = FormSpessore = FormDurezza = FormPeso = FormNote = string.Empty;
+                    FormLarghezza = FormAltezza = FormPeso = FormNote = string.Empty;
                 }
             }
         }
@@ -178,12 +170,6 @@ public class ImportaDisegnoViewModel : ViewModelBase
     {
         get => _formCodicePiastra;
         set => SetField(ref _formCodicePiastra, value);
-    }
-
-    public string FormCodiceArticolo
-    {
-        get => _formCodiceArticolo;
-        set => SetField(ref _formCodiceArticolo, value);
     }
 
     public string FormDescrizione
@@ -216,26 +202,6 @@ public class ImportaDisegnoViewModel : ViewModelBase
     /// <summary>True quando la categoria selezionata è "Speciale Cliente" (SPE) — il cliente diventa obbligatorio.</summary>
     public bool IsClienteObbligatorio => FormCategoria?.Codice == "SPE";
 
-    /// <summary>Selettore articolo gestionale reale (TASK-19): mostrato al posto del TextBox
-    /// libero quando la categoria è Speciale Cliente.</summary>
-    public SelettoreArticoloGestionaleViewModel SelettoreArticolo { get; }
-
-    private void ProponiFormatoDaArticolo(ArticoloGestionale articolo)
-    {
-        SelettoreArticolo.Avviso = null;
-        if (FormFormato is not null) return;
-        if (!CodiceArticoloPanthera.TryEstraiFormato(articolo.Codice, out var formato) || formato == 0) return;
-
-        var corrispondente = FormatiMacchine
-            .FirstOrDefault(f => CodiceArticoloPanthera.FormatoCompatibile(formato, f.NomeFormato));
-        if (corrispondente is not null)
-            FormFormato = corrispondente;
-        else
-            SelettoreArticolo.Avviso =
-                $"Il formato {formato:0.#} del codice scelto non è tra i Formati macchina: " +
-                "crearlo in Impostazioni e impostarlo sulla piastra per il match negli ordini.";
-    }
-
     public FormatoMacchina? FormFormato
     {
         get => _formFormato;
@@ -244,8 +210,6 @@ public class ImportaDisegnoViewModel : ViewModelBase
 
     public string FormLarghezza { get => _formLarghezza; set => SetField(ref _formLarghezza, value); }
     public string FormAltezza   { get => _formAltezza;   set => SetField(ref _formAltezza,   value); }
-    public string FormSpessore  { get => _formSpessore;  set => SetField(ref _formSpessore,  value); }
-    public string FormDurezza   { get => _formDurezza;   set => SetField(ref _formDurezza,   value); }
     public string FormPeso      { get => _formPeso;      set => SetField(ref _formPeso,      value); }
     public string FormNote      { get => _formNote;      set => SetField(ref _formNote,      value); }
 
@@ -328,15 +292,14 @@ public class ImportaDisegnoViewModel : ViewModelBase
     // ─── Inizializzazione ─────────────────────────────────────────────────────
 
     /// <param name="percorsoFile">File disegno trascinato.</param>
-    /// <param name="codiceArticoloPrecompilato">
-    /// Codice articolo gestionale da pre-compilare (flusso "crea piastra da riga ordine"):
-    /// se valorizzato e il disegno è nuovo, parte già in modalità "crea nuova piastra".
+    /// <param name="descrizionePrecompilata">
+    /// Descrizione da pre-compilare (DESCR_ESTESA dell'articolo, flusso "crea piastra da riga
+    /// ordine"): se valorizzata (anche stringa vuota) e il disegno è nuovo, parte già in
+    /// modalità "crea nuova piastra".
     /// </param>
-    /// <param name="descrizionePrecompilata">Descrizione da pre-compilare (DESCR_ESTESA dell'articolo).</param>
     public async Task InitAsync(
         string  percorsoFile,
-        string? codiceArticoloPrecompilato = null,
-        string? descrizionePrecompilata    = null)
+        string? descrizionePrecompilata = null)
     {
         PercorsoFile      = percorsoFile;
         NomeFile          = Path.GetFileName(percorsoFile);
@@ -344,11 +307,10 @@ public class ImportaDisegnoViewModel : ViewModelBase
 
         DisegnoEsistente = await _disegniRepo.GetByNomeFileAsync(NomeFile);
 
-        if (DisegnoEsistente is null && !string.IsNullOrWhiteSpace(codiceArticoloPrecompilato))
+        if (DisegnoEsistente is null && descrizionePrecompilata is not null)
         {
             IsCreaNuovaPiastraMode = true;
-            FormCodiceArticolo     = codiceArticoloPrecompilato;
-            FormDescrizione        = descrizionePrecompilata ?? string.Empty;
+            FormDescrizione        = descrizionePrecompilata;
         }
 
         if (DisegnoEsistente is not null)
@@ -381,9 +343,6 @@ public class ImportaDisegnoViewModel : ViewModelBase
         var clienti = await _clientiRepo.GetAllAsync();
         _tuttiClienti.AddRange(clienti.OrderBy(c => c.RagioneSociale));
 
-        // Carica la lista articoli e ripristina l'eventuale codice pre-compilato come chip.
-        await SelettoreArticolo.InitAsync(codiceArticoloPrecompilato);
-
         OnPropertyChanged(nameof(TitoloStato));
     }
 
@@ -397,6 +356,10 @@ public class ImportaDisegnoViewModel : ViewModelBase
 
         // Categoria Speciale Cliente (SPE): il cliente è obbligatorio
         if (IsCreaNuovaPiastraMode && IsClienteObbligatorio && FormCliente is null)
+            return false;
+
+        // Il formato macchina è obbligatorio: è il criterio di abbinamento alle righe ordine.
+        if (IsCreaNuovaPiastraMode && FormFormato is null)
             return false;
 
         return IsAssociaEsistenteMode
@@ -420,14 +383,9 @@ public class ImportaDisegnoViewModel : ViewModelBase
         else if (IsCreaNuovaPiastraMode)
         {
             var isSpeciale = IsClienteObbligatorio;
-            // Speciale Cliente: codice dal selettore articoli reali (TASK-19); altrimenti testo libero.
-            var codiceArticolo = isSpeciale
-                ? SelettoreArticolo.CodiceCorrente
-                : (string.IsNullOrWhiteSpace(FormCodiceArticolo) ? null : FormCodiceArticolo.Trim());
             var nuova = new Piastra
             {
                 CodicePiastra              = FormCodicePiastra.Trim(),
-                CodiceArticoloGestionale   = codiceArticolo,
                 Descrizione                = string.IsNullOrWhiteSpace(FormDescrizione)    ? null : FormDescrizione.Trim(),
                 Stato                      = FormStato,
                 TipoPiastra                = isSpeciale ? TipoPiastra.SpecialeCliente : TipoPiastra.Standard,
@@ -439,8 +397,6 @@ public class ImportaDisegnoViewModel : ViewModelBase
                 Formato                    = FormFormato,
                 LarghezzaMm                = decimal.TryParse(FormLarghezza, out var l) ? l : null,
                 AltezzaMm                  = decimal.TryParse(FormAltezza,   out var a) ? a : null,
-                SpessoreMm                 = decimal.TryParse(FormSpessore,  out var s) ? s : null,
-                IdDurezza                  = null,
                 Peso                       = decimal.TryParse(FormPeso,      out var p) ? p : null,
                 Note                       = string.IsNullOrWhiteSpace(FormNote) ? null : FormNote.Trim(),
             };

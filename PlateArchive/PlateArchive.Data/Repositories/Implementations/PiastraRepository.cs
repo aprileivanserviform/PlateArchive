@@ -19,7 +19,6 @@ public class PiastraRepository(PlateArchiveDbContext db) : IPiastraRepository
         await db.Piastre
             .Include(p => p.Categoria)
             .Include(p => p.Formato)
-            .Include(p => p.DurezzaStandard)
             .Include(p => p.Disegno)
             .FirstOrDefaultAsync(p => p.IdPiastra == id);
 
@@ -27,7 +26,6 @@ public class PiastraRepository(PlateArchiveDbContext db) : IPiastraRepository
         await db.Piastre
             .Include(p => p.Categoria)
             .Include(p => p.Formato)
-            .Include(p => p.DurezzaStandard)
             .Include(p => p.Disegno)
             .OrderBy(p => p.CodicePiastra)
             .ToListAsync();
@@ -36,7 +34,6 @@ public class PiastraRepository(PlateArchiveDbContext db) : IPiastraRepository
         await db.Piastre
             .Include(p => p.Categoria)
             .Include(p => p.Formato)
-            .Include(p => p.DurezzaStandard)
             .Include(p => p.Disegno)
             .FirstOrDefaultAsync(p => p.CodicePiastra == codice);
 
@@ -44,7 +41,6 @@ public class PiastraRepository(PlateArchiveDbContext db) : IPiastraRepository
         await db.Piastre
             .Include(p => p.Categoria)
             .Include(p => p.Formato)
-            .Include(p => p.DurezzaStandard)
             .Include(p => p.Disegno)
             .Where(p => p.IdClienteEsclusivo == idCliente)
             .OrderBy(p => p.CodicePiastra)
@@ -56,10 +52,8 @@ public class PiastraRepository(PlateArchiveDbContext db) : IPiastraRepository
         return await db.Piastre
             .Include(p => p.Categoria)
             .Include(p => p.Formato)
-            .Include(p => p.DurezzaStandard)
             .Include(p => p.Disegno)
             .Where(p => p.CodicePiastra.ToLower().Contains(q)
-                     || (p.CodiceArticoloGestionale != null && p.CodiceArticoloGestionale.ToLower().Contains(q))
                      || (p.Descrizione != null && p.Descrizione.ToLower().Contains(q)))
             .OrderBy(p => p.CodicePiastra)
             .ToListAsync();

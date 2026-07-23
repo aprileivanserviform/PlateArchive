@@ -15,7 +15,7 @@ public interface IPiastraRepository : IRepository<Piastra>
     /// cliente+formato delle righe ordine di vendita (possono non avere una riga ClientePiastra).</summary>
     Task<IEnumerable<Piastra>> GetByClienteEsclusivoAsync(int idCliente);
 
-    /// <summary>Ricerca full-text su codice, descrizione e codice articolo gestionale.</summary>
+    /// <summary>Ricerca full-text su codice piastra e descrizione.</summary>
     Task<IEnumerable<Piastra>> SearchAsync(string query);
 
     /// <summary>Restituisce le ultime <paramref name="count"/> piastre inserite — usato dalla Dashboard.</summary>

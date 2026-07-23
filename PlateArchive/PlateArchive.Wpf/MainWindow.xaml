@@ -157,10 +157,6 @@
                                 Command="{Binding NavigateToProduttoriMacchinaCommand}"
                                 Style="{StaticResource NavButtonStyle}"
                                 Padding="16,10"/>
-                        <Button Content="Durezze piastra"
-                                Command="{Binding NavigateToDurezzePiastraCommand}"
-                                Style="{StaticResource NavButtonStyle}"
-                                Padding="16,10"/>
                     </StackPanel>
                 </StackPanel>
             </DockPanel>
