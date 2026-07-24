@@ -607,7 +607,12 @@
 
             <!-- Tab 5: Note e Allegati -->
             <TabItem Header="Note e Allegati" Style="{StaticResource TabItem.Base}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <!-- HorizontalScrollBarVisibility="Disabled" è necessario: lo stile implicito di
+                     ScrollViewer (ScrollBarStyles.xaml) lo imposta ad Auto, e in quel caso il
+                     contenuto viene misurato con larghezza infinita — le colonne a larghezza
+                     stellare della griglia Allegati collasserebbero, rendendo la lista vuota. -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="0,16,0,16">
 
                         <!-- ══ SEZIONE NOTE TECNICHE ══════════════════════════════════════════ -->

@@ -181,9 +181,13 @@ public class ClienteDettaglioViewModel : ViewModelBase
             async _ => await AggiungAllegatoAsync(),
             _ => !IsCaricamentoAllegato);
 
+        // CanExecute NON accede al file system: il percorso è su condivisione di rete e
+        // CommandManager rivaluta di continuo sul thread UI (stutter, e pulsante disabilitato
+        // se la share è momentaneamente irraggiungibile). L'esistenza è verificata in
+        // ApriAllegato, che mostra un errore esplicito se il file non c'è.
         ApriAllegatoCommand = new RelayCommand(
             p => ApriAllegato((AllegatoCliente)p!),
-            p => p is AllegatoCliente a && File.Exists(a.PercorsoFile));
+            p => p is AllegatoCliente);
 
         EliminaAllegatoCommand = new RelayCommand(async p => await EliminaAllegatoAsync((AllegatoCliente)p!));
     }
