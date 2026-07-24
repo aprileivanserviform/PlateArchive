@@ -12,9 +12,6 @@ public class ClienteMacchina
     public int    IdCliente          { get; set; }
     public int    IdMacchinaStandard { get; set; }
 
-    /// <summary>Numero di serie / matricola dell'unità fisica del cliente (facoltativo).</summary>
-    public string? Matricola              { get; set; }
-
     /// <summary>Eventuale codice interno usato dal cliente per identificare la propria macchina.</summary>
     public string? CodiceInternoCliente   { get; set; }
     public DateTime DataAssociazione      { get; set; }

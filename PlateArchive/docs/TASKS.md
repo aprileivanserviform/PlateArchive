@@ -1179,6 +1179,276 @@ L'operatore deve poter cercare tra le righe ordine inevase e aprire direttamente
 
 ---
 
+## TASK-18 — Match piastre ↔ righe ordine per cliente + formato (nuova codifica articoli)
+
+**Priorità:** Alta
+**Stato:** `[x]` — implementato 2026-07-22 (branch feat/articolo-gestionale-cliente), da verificare a video con VPN attiva
+
+**Dipende da:** TASK-16, TASK-17
+
+### Contesto
+
+Gli articoli del gestionale vengono ricodificati (file `Codici Piastre.xlsx`): il nuovo codice è
+**16 cifre + suffisso** (es. `3010351020000000-G`) e codifica famiglia (pos 1-2 = `30`),
+spessore (pos 3-4, es. `10` = 1,0 mm), durezza (pos 5-6, es. `35` = 35 HRC) e **formato in
+pos 7-10 espresso in decimi** (`1020` → formato 102, `0760` → 76; `000` = lastra grezza).
+
+Il codice nuovo è quindi **generico** (identifica spessore+durezza+formato, non una singola
+piastra) e i codici vecchi (con lettere, es. `30C1K2K310SP160M-G`) **verranno sospesi**: il
+match esatto per `CodiceArticoloGestionale` (TASK-15/17) è stato sostituito integralmente.
+
+### Realizzato
+
+- `PlateArchive.Core/Servizi/CodiceArticoloPanthera.cs` — parsing nuova codifica
+  (`IsNuovaCodifica`, `TryEstraiFormato`, `IsGrezza`, `FormatoCompatibile`)
+- **Nuovo match per riga ordine**: cliente (`R_CLIENTE` → `Cliente.CodiceClienteGestionale`) +
+  formato del codice articolo, confrontato con `Piastra.Formato.NomeFormato` delle piastre del
+  cliente (`ClientePiastra` in **qualsiasi stato, Obsolete incluse ma marcate** + piastre
+  `SpecialeCliente` con `IdClienteEsclusivo`); lookup batch in memoria (niente query per riga)
+- **Righe di lastre grezze (formato `000`) nascoste** dalla vista: il disegno non serve
+- Righe con codice vecchio residuo: visibili come "non trovata", nessun match tentato, solo
+  indicatore (nessuna azione Associa)
+- Stati riga: 1 compatibile → comportamento precedente (apri disegno / doppio clic dettaglio);
+  N compatibili → pulsante con conteggio o doppio clic aprono `SceltaPiastraOrdineWindow`
+  (nuova: lista compatibili con badge **Obsoleta**, apri disegno / dettaglio);
+  0 compatibili → riga evidenziata + "Associa piastra"
+- `AssociaPiastraOrdineWindow` — ora **crea l'associazione `ClientePiastra`** (stato Attiva) col
+  cliente della riga invece di scrivere il codice articolo sulla piastra; avviso non bloccante
+  se il formato della piastra non coincide con quello del codice; a filtro vuoto suggerisce le
+  piastre del formato richiesto
+- `IPiastraRepository`: rimosso `GetByCodiceArticoloGestionaleAsync` (non più chiamato),
+  aggiunto `GetByClienteEsclusivoAsync`; `ClientePiastraRepository` include ora
+  `Piastra.Formato`
+- Rimossa l'auto-associazione `ClientePiastra` al caricamento (TASK-17): con il match per
+  formato le piastre trovate sono già associate al cliente per definizione
+
+### Acceptance criteria
+
+- [ ] **Da verificare a video con VPN attiva**:
+  - riga con codice nuovo e 1 piastra del formato del cliente → trovata automaticamente
+  - riga con più piastre stesso formato → dialog di scelta, badge Obsoleta visibile
+  - righe di lastre grezze non visibili in griglia
+  - "Associa piastra" crea la `ClientePiastra` e la riga si aggiorna; avviso su formato diverso
+  - righe con codice vecchio → segnalate senza azioni, nessun errore
+
+---
+
+## TASK-19 — Selettore articolo gestionale reale per piastre Speciale Cliente
+
+**Priorità:** Alta
+**Stato:** `[!]` — **SUPERATO da TASK-20**. Implementato il 2026-07-22 e poi rimosso lo stesso
+giorno: il match ordini è cliente+formato, il codice articolo sulla piastra non serve.
+
+**Dipende da:** TASK-18
+
+### Contesto
+
+Codificando una piastra **Speciale Cliente**, il campo "Codice articolo gestionale" (prima
+testo libero) permette ora di **scegliere un articolo reale del gestionale** (`THIP.ARTICOLI`).
+Così la piastra nasce collegata a cliente + codifica e la view Ordini vendita (TASK-18) la trova.
+
+Semantica **1:N via formato**: la stessa piastra (disegno) serve più articoli con spessori/durezze
+diversi ma stesso formato (es. formato 106 a gestionale è codificato sia spessore 05 che 1). Il
+match Ordini vendita resta quindi **solo cliente+formato** — spessore/durezza non partecipano.
+La scelta dell'articolo serve a **derivare il formato** (pos 7-10, proposto solo se il campo è
+vuoto) e a salvare il codice come **riferimento** in `CodiceArticoloGestionale`.
+
+### Realizzato
+
+- `PlateArchive.Services`: `ArticoloGestionale` (record), `IArticoliGestionaleService` /
+  `ArticoliGestionaleService` — lettura ODBC di `THIP.ARTICOLI` (query configurabile
+  `Db2:QueryArticoli`, 1ª col codice / 2ª descrizione) con **cache di sessione**; registrato
+  **singleton** in [App.xaml.cs](../PlateArchive.Wpf/App.xaml.cs). Sono mostrati **solo gli
+  articoli della nuova codifica** (primi 16 caratteri numerici, filtro `CodiceArticoloPanthera.IsNuovaCodifica`
+  lato servizio + `LIKE '30%-G'` nella query): il solo `LIKE '30%'` pescava anche software,
+  moduli e licenze
+- `SelettoreArticoloGestionaleViewModel` + `SelettoreArticoloGestionaleControl` (UserControl
+  riusabile): autocomplete chip+suggerimenti, ricarica cache, **fallback a testo libero** se la
+  VPN è giù; `InitAsync(codiceEsistente)` ripristina il codice salvato come chip
+- Selettore attivo **solo con categoria SPE** nei tre form di codifica:
+  [PiastreView](../PlateArchive.Wpf/Views/PiastreView.xaml),
+  [NuovaPiastraDialog](../PlateArchive.Wpf/Views/NuovaPiastraDialog.xaml),
+  [ImportaDisegnoWindow](../PlateArchive.Wpf/Views/ImportaDisegnoWindow.xaml); per le Standard
+  resta il TextBox libero
+- Alla scelta dell'articolo, **solo se il formato è vuoto**, viene proposto il formato derivato
+  dal codice (`CodiceArticoloPanthera.TryEstraiFormato` + `FormatoCompatibile`); se il formato non
+  è tra i Formati macchina locali, avviso non bloccante. Spessore/durezza mai toccati.
+- Nuova cifra estratta non serve al match (resta cliente+formato): il codice salvato è solo un
+  riferimento sulla singola piastra
+
+### Acceptance criteria
+
+- [ ] **Da verificare a video con VPN attiva**:
+  - form piastra categoria Speciale Cliente → selettore con articoli dal gestionale, ricerca per
+    codice/descrizione, scelta salva codice + propone formato (se vuoto)
+  - stessa prova su NuovaPiastraDialog e ImportaDisegnoWindow
+  - modifica piastra SPE esistente → codice come chip
+  - Ordini vendita: la piastra è trovata per il suo cliente su tutti gli articoli di quel formato
+  - senza VPN: avviso + inserimento manuale, form non bloccato
+  - categoria Standard: TextBox libero invariato
+
+---
+
+## TASK-20 — Rimozione del "Codice articolo gestionale" dalla gestione piastre
+
+**Priorità:** Alta
+**Stato:** `[x]` — implementato 2026-07-22 (branch feat/articolo-gestionale-cliente)
+
+**Dipende da:** TASK-18 · **Supera:** TASK-19
+
+### Contesto
+
+Con il match ordini vendita basato **solo su cliente + formato** (TASK-18), il codice articolo
+gestionale memorizzato sulla piastra non è più usato: una stessa piastra/disegno serve più
+articoli (spessori/durezze diversi, stesso formato) → relazione 1:N via formato. Se il cliente
+ordina un articolo di un dato formato, vengono proposte tutte le sue piastre di quel formato,
+a prescindere dallo spessore. Quindi il codice articolo sulla piastra è ridondante e fuorviante.
+
+### Realizzato
+
+- **Rimosso il selettore articoli (TASK-19)**: eliminati `SelettoreArticoloGestionaleViewModel`,
+  `SelettoreArticoloGestionaleControl`, `ArticoliGestionaleService` + interfaccia + record, la
+  registrazione DI e la chiave `Db2:QueryArticoli`.
+- **Rimosso il campo `CodiceArticoloGestionale`** da modello `Piastra`, `DbContext` (indice
+  univoco filtrato), form di codifica (Piastre / NuovaPiastraDialog / ImportaDisegno), filtro e
+  ricerca in `PiastreViewModel`/`PiastraRepository`, dettaglio piastra e `DbSeeder`.
+- Il dettaglio piastra mostra ancora la **descrizione articolo dell'ordine** (DESCR_ESTESA) quando
+  aperto da una riga ordine, ri-etichettata "Articolo ordine".
+- **Drop colonna DB**: migrazione EF `20260722094803_RimuoviCodiceArticoloGestionalePiastra`
+  (drop indice + colonna); aggiornati `schema_completo.sql`, `RecreateDB_Full.sql`,
+  `svuota_dati_test.sql`; nuovo script prod manuale
+  [drop_codice_articolo_gestionale.sql](sql/drop_codice_articolo_gestionale.sql) per Ivan.
+
+### Acceptance criteria
+
+- [x] `dotnet build` senza errori/warning nuovi; nessun riferimento residuo a `CodiceArticoloGestionale`
+- [x] migrazione EF generata (drop indice + colonna)
+- [ ] **Prod**: applicare `docs/sql/drop_codice_articolo_gestionale.sql` sul DB condiviso
+- [ ] verifica a video: form senza campo codice articolo, griglia senza filtro, ricerca su
+  codice/descrizione, match ordini per cliente+formato invariato
+
+---
+
+## TASK-21 — Via spessore e durezza dalla piastra; formato macchina obbligatorio
+
+**Priorità:** Alta
+**Stato:** `[x]` — implementato 2026-07-22 (branch feat/articolo-gestionale-cliente)
+
+**Dipende da:** TASK-18, TASK-20
+
+### Contesto
+
+PlateArchive gestisce **i disegni delle piastre del cliente**, non i dati di prodotto: spessore e
+durezza appartengono al gestionale (lo stesso disegno serve più spessori/durezze dello stesso
+formato — cfr. TASK-18/20, il match ordini è cliente+formato).
+
+Il **formato macchina** diventa quindi il dato tecnico determinante: se è sempre valorizzato, ogni
+piastra associata a un cliente comparirà nella vista Ordini vendita per gli articoli di quel formato.
+
+### Realizzato
+
+- **Rimossi `SpessoreMm` e `IdDurezza`** dalla piastra, insieme a tutto l'apparato durezza:
+  modello `DurezzaStandard`, repository, ViewModel/View `DurezzePiastra`, voce di menu
+  Impostazioni → Durezze piastra, `DbSet` e FK nel DbContext.
+- I tre form di codifica (Piastre, NuovaPiastraDialog, ImportaDisegno) non hanno più i campi
+  Spessore/Durezza; nel riquadro "Misure (mm)" restano Larghezza e Altezza (Peso a parte).
+  Rimosse anche le colonne/filtri Spessore e Durezza dalla griglia e i blocchi nei dettagli.
+- **Formato macchina obbligatorio** (validazione applicativa, `IsFormatoNonValido`): label
+  "Formato macchina *", bordo rosso e "Campo obbligatorio", salvataggio bloccato. In
+  `ImportaDisegnoWindow` la conferma è disabilitata finché il formato non è scelto.
+  La colonna `IdFormato` resta **nullable** nel DB: i formati sono a cancellazione logica ed EF
+  azzera il riferimento sulle piastre quando un formato viene eliminato.
+- **Migrazione EF** `20260722143719_RimuoviSpessoreDurezzaPiastra` (drop FK, indice, colonne
+  `IdDurezza`/`SpessoreMm`, tabella `DurezzePiastre`); aggiornati `schema_completo.sql` e
+  `RecreateDB_Full.sql`.
+- Script prod manuali: [rimuovi_spessore_durezza.sql](sql/rimuovi_spessore_durezza.sql) e
+  [elimina_piastre_senza_formato.sql](sql/elimina_piastre_senza_formato.sql).
+
+### Acceptance criteria
+
+- [x] `dotnet build` senza errori/warning nuovi; nessun riferimento residuo a
+  `SpessoreMm`/`IdDurezza`/`DurezzaStandard` fuori dalle migrazioni storiche
+- [x] migrazione EF generata e revisionata
+- [ ] **Prod**, nell'ordine: eseguire `elimina_piastre_senza_formato.sql` (PARTE 1 di
+  ricognizione, poi PARTE 2 con COMMIT esplicito) e quindi `rimuovi_spessore_durezza.sql`
+- [ ] verifica a video: form senza Spessore/Durezza, salvataggio bloccato senza formato,
+  menu senza "Durezze piastra", match ordini invariato
+
+---
+
+## TASK-22 — Via il peso dalla piastra
+
+**Priorità:** Media
+**Stato:** `[x]` — implementato 2026-07-23 (branch feat/articolo-gestionale-cliente)
+
+**Dipende da:** TASK-21
+
+### Contesto
+
+Come spessore e durezza (TASK-21), anche il **peso** è un dato di prodotto del gestionale, non
+un attributo del disegno. Viene quindi rimosso dalla gestione piastre.
+
+### Realizzato
+
+- Rimossa la proprietà `Peso` da `Piastra`; tolto il campo dai tre form (Piastre,
+  NuovaPiastraDialog, ImportaDisegno), la colonna/filtro dalla griglia e i blocchi nei dettagli
+  (PiastreView e PiastraDettaglioWindow). Nel form, "Formato macchina" ora occupa l'intera riga.
+- **Migrazione EF** `20260723061212_RimuoviPesoPiastra` (drop colonna `Peso`); aggiornati
+  `schema_completo.sql` e `RecreateDB_Full.sql`.
+- Script prod manuale: [rimuovi_peso.sql](sql/rimuovi_peso.sql).
+
+### Acceptance criteria
+
+- [x] `dotnet build` senza errori/warning nuovi; nessun riferimento residuo a `Peso`/`FormPeso`
+  fuori dalle migrazioni storiche
+- [x] migrazione EF generata e applicata al DB di sviluppo
+- [ ] **Prod**: eseguire `rimuovi_peso.sql`
+- [ ] verifica a video: form e griglia senza il campo Peso
+
+---
+
+## TASK-23 — Fix allegati cliente e rimozione campo Descrizione
+
+**Priorità:** Media
+**Stato:** `[x]` — implementato 2026-07-24 (branch feat/articolo-gestionale-cliente)
+
+### Contesto
+
+Nel tab "Note e Allegati" del dettaglio cliente la griglia degli allegati appariva **vuota**
+(intestazioni e celle senza testo, pulsanti azione irraggiungibili) anche con un allegato
+correttamente archiviato sulla condivisione e registrato a DB.
+
+### Causa
+
+Lo stile **implicito** di `ScrollViewer` ([ScrollBarStyles.xaml](../PlateArchive.Ui/Themes/Styles/ScrollBarStyles.xaml))
+imposta `HorizontalScrollBarVisibility="Auto"` su tutti gli ScrollViewer. Il tab "Note e Allegati"
+è l'unico che avvolge il contenuto in uno ScrollViewer: il contenuto veniva quindi misurato con
+**larghezza infinita** e le colonne a larghezza stellare (`*`, `2*`) collassavano alla larghezza
+minima. Le griglie di Macchine/Piastre/Compatibilità non sono dentro uno ScrollViewer, per questo
+non erano affette.
+
+### Realizzato
+
+- `ClienteDettaglioView`: `HorizontalScrollBarVisibility="Disabled"` sullo ScrollViewer del tab,
+  con commento sul perché è necessario (rimuoverlo fa tornare il bug).
+- `ClienteDettaglioViewModel`: il `CanExecute` di `ApriAllegatoCommand` non accede più al file
+  system. Faceva `File.Exists` su percorso di rete, rivalutato di continuo dal `CommandManager`
+  sul thread UI: causa stutter e disabilita il pulsante se la condivisione è momentaneamente
+  irraggiungibile. L'esistenza è già verificata in `ApriAllegato`, che mostra un errore esplicito.
+- **Rimosso il campo `Descrizione`** da `AllegatoCliente`: non veniva mai valorizzato (il
+  caricamento allegato non lo chiede), quindi la colonna in griglia era sempre vuota.
+  Migrazione EF `20260724081513_RimuoviDescrizioneAllegato` e script prod
+  [rimuovi_descrizione_allegato.sql](sql/rimuovi_descrizione_allegato.sql).
+
+### Acceptance criteria
+
+- [x] `dotnet build` pulito; colonna rimossa da modello, griglia e DB di sviluppo
+- [ ] **Prod**: eseguire `rimuovi_descrizione_allegato.sql`
+- [ ] verifica a video: allegato visibile in lista, apribile con il pulsante, nessuna colonna
+  "Descrizione"
+
+---
+
 ## Evolutivi futuri (fuori scope MVP)
 
 | Funzione | Riferimento |

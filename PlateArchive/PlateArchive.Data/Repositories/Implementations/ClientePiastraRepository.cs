@@ -15,6 +15,7 @@ public class ClientePiastraRepository(PlateArchiveDbContext db) : IClientePiastr
     public async Task<ClientePiastra?> GetByIdAsync(int id) =>
         await db.ClientiPiastre
             .Include(cp => cp.Piastra).ThenInclude(p => p.Disegno)
+            .Include(cp => cp.Piastra).ThenInclude(p => p.Formato)
             .Include(cp => cp.ClienteMacchina).ThenInclude(cm => cm!.MacchinaStandard)
             .FirstOrDefaultAsync(cp => cp.IdClientePiastra == id);
 
@@ -27,6 +28,7 @@ public class ClientePiastraRepository(PlateArchiveDbContext db) : IClientePiastr
     public async Task<IEnumerable<ClientePiastra>> GetByClienteAsync(int idCliente) =>
         await db.ClientiPiastre
             .Include(cp => cp.Piastra).ThenInclude(p => p.Disegno)
+            .Include(cp => cp.Piastra).ThenInclude(p => p.Formato)
             .Include(cp => cp.ClienteMacchina).ThenInclude(cm => cm!.MacchinaStandard)
             .Where(cp => cp.IdCliente == idCliente)
             .OrderBy(cp => cp.Piastra.CodicePiastra)

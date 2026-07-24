@@ -4,6 +4,7 @@ using System.IO;
 using System.Windows.Input;
 using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
+using PlateArchive.Core.Servizi;
 using PlateArchive.Data.Repositories.Interfaces;
 using PlateArchive.Services;
 using PlateArchive.Wpf.Commands;
@@ -11,24 +12,52 @@ using PlateArchive.Wpf.Commands;
 namespace PlateArchive.Wpf.ViewModels;
 
 /// <summary>
-/// Riga ordine di vendita (letta dal gestionale) abbinata alla piastra corrispondente
-/// (ricerca locale per <see cref="Piastra.CodiceArticoloGestionale"/>), se trovata.
+/// Piastra candidata per una riga ordine, trovata dal match cliente+formato.
+/// <see cref="StatoAssociazione"/> è null per le piastre SpecialeCliente del cliente
+/// che non hanno (ancora) una riga ClientePiastra.
 /// </summary>
-public class RigaOrdineVenditaRow(RigaOrdineVendita riga, Piastra? piastra)
+public record PiastraCompatibile(Piastra Piastra, StatoClientePiastra? StatoAssociazione)
 {
-    public RigaOrdineVendita Riga     { get; } = riga;
-    public Piastra?          Piastra  { get; } = piastra;
+    public bool IsObsoleta => StatoAssociazione == StatoClientePiastra.Obsoleta;
+    public bool HaDisegno  => Piastra.Disegno is not null;
+}
 
-    public bool PiastraTrovata    => Piastra is not null;
-    public bool PiastraNonTrovata => Piastra is null;
-    public bool HaDisegno         => Piastra?.Disegno is not null;
+/// <summary>
+/// Riga ordine di vendita (letta dal gestionale) con le piastre compatibili trovate dal
+/// match cliente+formato (vedi <see cref="OrdiniVenditaViewModel"/>): nessuna (riga da
+/// associare), una (comportamento diretto disegno/dettaglio) o più di una (dialog di scelta).
+/// </summary>
+public class RigaOrdineVenditaRow(RigaOrdineVendita riga, IReadOnlyList<PiastraCompatibile> piastreCompatibili)
+{
+    public RigaOrdineVendita                 Riga               { get; } = riga;
+    public IReadOnlyList<PiastraCompatibile> PiastreCompatibili { get; } = piastreCompatibili;
+
+    public bool PiastraTrovata      => PiastreCompatibili.Count > 0;
+    public bool PiastraNonTrovata   => PiastreCompatibili.Count == 0;
+    public bool PiastraSingola      => PiastreCompatibili.Count == 1;
+    public bool MultipleCompatibili => PiastreCompatibili.Count > 1;
+    public int  NumeroCompatibili   => PiastreCompatibili.Count;
+
+    /// <summary>Piastra univoca della riga — solo quando il match è singolo.</summary>
+    public Piastra? Piastra   => PiastraSingola ? PiastreCompatibili[0].Piastra : null;
+    public bool     HaDisegno => PiastraSingola && PiastreCompatibili[0].HaDisegno;
+
+    /// <summary>Codice articolo della vecchia codifica (contiene lettere): nessun match
+    /// possibile, in attesa che il gestionale lo sospenda.</summary>
+    public bool CodiceNonConforme => !CodiceArticoloPanthera.IsNuovaCodifica(Riga.CodiceArticolo);
+
+    /// <summary>"Associa piastra" ha senso solo per i codici nuovi senza compatibili.</summary>
+    public bool AssociaVisibile => PiastraNonTrovata && !CodiceNonConforme;
 }
 
 /// <summary>
 /// ViewModel della schermata "Ordini vendita": elenca le righe ordine non evase lette dal
 /// gestionale (DB2/Panthera, interrogazione live — nessuna cache locale, vedi TASK-16/17 in
-/// docs/TASKS.md) e permette di aprire direttamente il disegno tecnico della piastra
-/// corrispondente all'articolo di riga, senza doverla cercare manualmente in Piastre.
+/// docs/TASKS.md) e collega ogni riga alle piastre del cliente tramite la nuova codifica
+/// articoli (TASK-18): cliente della riga (R_CLIENTE) + formato estratto dalle posizioni
+/// 7-10 del codice articolo, confrontato con il FormatoMacchina delle piastre associate al
+/// cliente (ClientePiastra, qualsiasi stato, + piastre SpecialeCliente). Le righe di lastre
+/// grezze (formato 000) non vengono mostrate: non hanno disegno.
 /// </summary>
 public class OrdiniVenditaViewModel : ViewModelBase
 {
@@ -114,13 +143,28 @@ public class OrdiniVenditaViewModel : ViewModelBase
             var result = await _righeOrdineService.LeggiRigheInevaseAsync();
             Colonne    = result.Colonne;
 
+            // Lookup caricati una volta sola: il match per riga avviene tutto in memoria
+            // (le query per riga renderebbero il caricamento proporzionale agli ordini).
+            var clienti = (await _clientiRepo.GetAllAsync())
+                .GroupBy(c => c.CodiceClienteGestionale, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+            var piastre    = (await _piastreRepo.GetAllAsync()).ToList();
+            var piastreById       = piastre.ToDictionary(p => p.IdPiastra);
+            var specialiByCliente = piastre
+                .Where(p => p.IdClienteEsclusivo is not null)
+                .ToLookup(p => p.IdClienteEsclusivo!.Value);
+            var associazioniByCliente = (await _clientiPiastreRepo.GetAllAsync())
+                .ToLookup(cp => cp.IdCliente);
+
             _tutte.Clear();
             foreach (var r in result.Righe)
             {
-                var piastra = await _piastreRepo.GetByCodiceArticoloGestionaleAsync(r.CodiceArticolo);
-                var riga    = new RigaOrdineVenditaRow(r, piastra);
-                await AssociaClientePiastraSeMancanteAsync(riga);
-                _tutte.Add(riga);
+                // Lastre grezze (formato 000): nessun disegno da gestire, riga non mostrata.
+                if (CodiceArticoloPanthera.IsGrezza(r.CodiceArticolo)) continue;
+
+                var compatibili = TrovaPiastreCompatibili(
+                    r, clienti, associazioniByCliente, piastreById, specialiByCliente);
+                _tutte.Add(new RigaOrdineVenditaRow(r, compatibili));
             }
 
             AggiornaFiltro();
@@ -134,6 +178,44 @@ public class OrdiniVenditaViewModel : ViewModelBase
             IsCaricamento = false;
         }
     }
+
+    private static IReadOnlyList<PiastraCompatibile> TrovaPiastreCompatibili(
+        RigaOrdineVendita                riga,
+        Dictionary<string, Cliente>      clientiByCodice,
+        ILookup<int, ClientePiastra>     associazioniByCliente,
+        Dictionary<int, Piastra>         piastreById,
+        ILookup<int, Piastra>            specialiByCliente)
+    {
+        if (!CodiceArticoloPanthera.TryEstraiFormato(riga.CodiceArticolo, out var formato) || formato == 0)
+            return [];
+        if (!clientiByCodice.TryGetValue(riga.CodiceClienteGestionale, out var cliente))
+            return [];
+
+        var compatibili = new List<PiastraCompatibile>();
+
+        foreach (var cp in associazioniByCliente[cliente.IdCliente])
+        {
+            // Le piastre soft-deleted non sono nel dizionario (HasQueryFilter): saltate.
+            if (!piastreById.TryGetValue(cp.IdPiastra, out var piastra)) continue;
+            if (CodiceArticoloPanthera.FormatoCompatibile(formato, piastra.Formato?.NomeFormato))
+                compatibili.Add(new PiastraCompatibile(piastra, cp.Stato));
+        }
+
+        foreach (var piastra in specialiByCliente[cliente.IdCliente])
+        {
+            if (compatibili.Any(c => c.Piastra.IdPiastra == piastra.IdPiastra)) continue;
+            if (CodiceArticoloPanthera.FormatoCompatibile(formato, piastra.Formato?.NomeFormato))
+                compatibili.Add(new PiastraCompatibile(piastra, null));
+        }
+
+        return Ordina(compatibili);
+    }
+
+    // Prima le associazioni correnti, in fondo le Obsolete (comunque visibili).
+    private static IReadOnlyList<PiastraCompatibile> Ordina(List<PiastraCompatibile> compatibili) =>
+        [.. compatibili
+            .OrderBy(c => c.IsObsoleta)
+            .ThenBy(c => c.Piastra.CodicePiastra, StringComparer.OrdinalIgnoreCase)];
 
     private void AggiornaFiltro()
     {
@@ -149,13 +231,13 @@ public class OrdiniVenditaViewModel : ViewModelBase
         }
     }
 
-    /// <summary>Ri-risolve la piastra per la riga indicata (senza ripetere la query DB2) — usata
-    /// dopo che l'utente ha associato una piastra all'articolo tramite <c>AssociaPiastraOrdineWindow</c>.</summary>
+    /// <summary>Ri-esegue il match cliente+formato per la riga indicata (senza ripetere la
+    /// query DB2) — usata dopo che l'utente ha associato una piastra al cliente tramite
+    /// <c>AssociaPiastraOrdineWindow</c>.</summary>
     public async Task RicaricaRigaAsync(RigaOrdineVenditaRow vecchia)
     {
-        var piastra = await _piastreRepo.GetByCodiceArticoloGestionaleAsync(vecchia.Riga.CodiceArticolo);
-        var nuova   = new RigaOrdineVenditaRow(vecchia.Riga, piastra);
-        await AssociaClientePiastraSeMancanteAsync(nuova);
+        var nuova = new RigaOrdineVenditaRow(
+            vecchia.Riga, await TrovaPiastreCompatibiliAsync(vecchia.Riga));
 
         var idxTutte = _tutte.IndexOf(vecchia);
         if (idxTutte >= 0) _tutte[idxTutte] = nuova;
@@ -164,31 +246,33 @@ public class OrdiniVenditaViewModel : ViewModelBase
         if (idxFiltrate >= 0) RigheFiltrate[idxFiltrate] = nuova;
     }
 
-    /// <summary>
-    /// Se il cliente della riga ha ordinato un articolo per cui esiste già una piastra con
-    /// disegno associato, crea automaticamente l'associazione commerciale ClientePiastra
-    /// (se non esiste già): il cliente ha di fatto ordinato quella piastra.
-    /// </summary>
-    private async Task AssociaClientePiastraSeMancanteAsync(RigaOrdineVenditaRow row)
+    // Variante a query mirate del match batch: usata solo per il refresh di una singola riga.
+    private async Task<IReadOnlyList<PiastraCompatibile>> TrovaPiastreCompatibiliAsync(RigaOrdineVendita riga)
     {
-        if (row.Piastra is null || row.Piastra.Disegno is null) return;
-        if (string.IsNullOrWhiteSpace(row.Riga.CodiceClienteGestionale)) return;
+        if (!CodiceArticoloPanthera.TryEstraiFormato(riga.CodiceArticolo, out var formato) || formato == 0)
+            return [];
 
-        var cliente = await _clientiRepo.GetByCodiceGestionaleAsync(row.Riga.CodiceClienteGestionale);
-        if (cliente is null) return;
+        var cliente = await _clientiRepo.GetByCodiceGestionaleAsync(riga.CodiceClienteGestionale);
+        if (cliente is null) return [];
 
-        var esiste = await _clientiPiastreRepo.ExistsAsync(cliente.IdCliente, row.Piastra.IdPiastra);
-        if (esiste) return;
+        var compatibili = new List<PiastraCompatibile>();
 
-        await _clientiPiastreRepo.AddAsync(new ClientePiastra
+        foreach (var cp in await _clientiPiastreRepo.GetByClienteAsync(cliente.IdCliente))
         {
-            IdCliente        = cliente.IdCliente,
-            IdPiastra        = row.Piastra.IdPiastra,
-            DataAssociazione = DateTime.UtcNow,
-            Stato            = StatoClientePiastra.Attiva,
-            Cliente          = cliente,
-            Piastra          = row.Piastra
-        });
+            // Piastra null se soft-deleted (HasQueryFilter la esclude dall'Include).
+            if (cp.Piastra is null) continue;
+            if (CodiceArticoloPanthera.FormatoCompatibile(formato, cp.Piastra.Formato?.NomeFormato))
+                compatibili.Add(new PiastraCompatibile(cp.Piastra, cp.Stato));
+        }
+
+        foreach (var piastra in await _piastreRepo.GetByClienteEsclusivoAsync(cliente.IdCliente))
+        {
+            if (compatibili.Any(c => c.Piastra.IdPiastra == piastra.IdPiastra)) continue;
+            if (CodiceArticoloPanthera.FormatoCompatibile(formato, piastra.Formato?.NomeFormato))
+                compatibili.Add(new PiastraCompatibile(piastra, null));
+        }
+
+        return Ordina(compatibili);
     }
 
     private void AprirDisegno(RigaOrdineVenditaRow row)

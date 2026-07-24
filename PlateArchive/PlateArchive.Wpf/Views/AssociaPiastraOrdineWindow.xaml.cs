@@ -40,10 +40,10 @@ public partial class AssociaPiastraOrdineWindow : Window
 
         var file = ((string[])e.Data.GetData(DataFormats.FileDrop))[0];
 
-        // Riusa il flusso di importazione disegno: form con le specifiche piastra,
-        // codice articolo gestionale e descrizione già compilati dalla riga ordine.
+        // Riusa il flusso di importazione disegno: form con le specifiche piastra e la
+        // descrizione già compilata dalla riga ordine (parte in modalità "crea nuova piastra").
         var importaVm = App.ServiceProvider.GetRequiredService<ImportaDisegnoViewModel>();
-        await importaVm.InitAsync(file, vm.CodiceArticolo, vm.DescrizioneArticolo);
+        await importaVm.InitAsync(file, vm.DescrizioneArticolo);
         new ImportaDisegnoWindow(importaVm) { Owner = this }.ShowDialog();
 
         if (importaVm.Confermato)

@@ -142,42 +142,28 @@
                                   DisplayMemberPath="NomeProduttore"
                                   Margin="0,0,0,8"/>
 
-                        <!-- Formato foglio lavorabile (min / max) -->
-                        <TextBlock Text="Formato foglio (mm)" Style="{StaticResource FieldLabel}"/>
-                        <Grid Margin="0,0,0,8">
+                        <!-- Misure piastra (sola lettura): derivate dalla piastra Standard associata -->
+                        <TextBlock Text="Misure piastra (mm)" Style="{StaticResource FieldLabel}"/>
+                        <Grid Margin="0,0,0,8" Visibility="{Binding IsMisuraPiastraVisible, Converter={StaticResource BoolToVis}}">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="8"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0">
-                                <TextBlock Text="Larghezza minima" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Text="{Binding FormLarghezzaMinima, UpdateSourceTrigger=PropertyChanged}"
-                                         Style="{StaticResource FieldBox}"/>
+                                <TextBlock Text="Larghezza" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding MisuraPiastraLarghezza, Mode=OneWay, TargetNullValue='—'}"
+                                         IsReadOnly="True" Style="{StaticResource FieldBox}"/>
                             </StackPanel>
                             <StackPanel Grid.Column="2">
-                                <TextBlock Text="Altezza minima" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Text="{Binding FormAltezzaMinima, UpdateSourceTrigger=PropertyChanged}"
-                                         Style="{StaticResource FieldBox}"/>
+                                <TextBlock Text="Altezza" Style="{StaticResource FieldLabel}"/>
+                                <TextBox Text="{Binding MisuraPiastraAltezza, Mode=OneWay, TargetNullValue='—'}"
+                                         IsReadOnly="True" Style="{StaticResource FieldBox}"/>
                             </StackPanel>
                         </Grid>
-                        <Grid Margin="0,0,0,8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="Larghezza massima" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Text="{Binding FormLarghezzaMassima, UpdateSourceTrigger=PropertyChanged}"
-                                         Style="{StaticResource FieldBox}"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="Altezza massima" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Text="{Binding FormAltezzaMassima, UpdateSourceTrigger=PropertyChanged}"
-                                         Style="{StaticResource FieldBox}"/>
-                            </StackPanel>
-                        </Grid>
+                        <TextBlock Text="Nessuna piastra Standard associata: le misure derivano dalla piastra Standard."
+                                   TextWrapping="Wrap" Opacity="0.6" Margin="0,0,0,8"
+                                   Visibility="{Binding IsMisuraPiastraAssente, Converter={StaticResource BoolToVis}}"/>
 
                         <TextBlock Text="Versione" Style="{StaticResource FieldLabel}"/>
                         <TextBox Text="{Binding FormVersione, UpdateSourceTrigger=PropertyChanged}"
@@ -244,12 +230,12 @@
                                         <TextBlock Text="Formato" Style="{StaticResource TextBlock.Caption}"/>
                                         <TextBlock Text="{Binding MacchinaSelezionata.Formato.NomeFormato, FallbackValue='—'}"
                                                    Margin="0,0,0,8"/>
-                                        <TextBlock Text="Foglio min (L × A mm)" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock Text="Misure piastra (L × A mm)" Style="{StaticResource TextBlock.Caption}"/>
                                         <TextBlock Margin="0,0,0,8">
                                             <TextBlock.Text>
                                                 <MultiBinding StringFormat="{}{0:F0} × {1:F0}">
-                                                    <Binding Path="MacchinaSelezionata.LarghezzaMinimaFoglioMm" TargetNullValue="—" FallbackValue="—"/>
-                                                    <Binding Path="MacchinaSelezionata.AltezzaMinimaFoglioMm"   TargetNullValue="—" FallbackValue="—"/>
+                                                    <Binding Path="MisuraPiastraLarghezza" TargetNullValue="—" FallbackValue="—"/>
+                                                    <Binding Path="MisuraPiastraAltezza"   TargetNullValue="—" FallbackValue="—"/>
                                                 </MultiBinding>
                                             </TextBlock.Text>
                                         </TextBlock>
@@ -258,15 +244,9 @@
                                         <TextBlock Text="Produttore" Style="{StaticResource TextBlock.Caption}"/>
                                         <TextBlock Text="{Binding MacchinaSelezionata.Produttore.NomeProduttore, FallbackValue='—'}"
                                                    Margin="0,0,0,8"/>
-                                        <TextBlock Text="Foglio max (L × A mm)" Style="{StaticResource TextBlock.Caption}"/>
-                                        <TextBlock Margin="0,0,0,8">
-                                            <TextBlock.Text>
-                                                <MultiBinding StringFormat="{}{0:F0} × {1:F0}">
-                                                    <Binding Path="MacchinaSelezionata.LarghezzaMassimaFoglioMm" TargetNullValue="—" FallbackValue="—"/>
-                                                    <Binding Path="MacchinaSelezionata.AltezzaMassimaFoglioMm"   TargetNullValue="—" FallbackValue="—"/>
-                                                </MultiBinding>
-                                            </TextBlock.Text>
-                                        </TextBlock>
+                                        <TextBlock Text="Piastra Standard" Style="{StaticResource TextBlock.Caption}"/>
+                                        <TextBlock Text="{Binding CodicePiastraStandard, TargetNullValue='—', FallbackValue='—'}"
+                                                   Margin="0,0,0,8"/>
                                     </StackPanel>
                                 </Grid>
                             </Border>
@@ -461,12 +441,6 @@
                                         </Border>
                                     </Grid>
 
-                                    <TextBlock Text="Matricola (opzionale):"
-                                               FontSize="{StaticResource FontSize.Caption}"
-                                               Foreground="{DynamicResource Brush.Primary}"
-                                               Margin="0,0,0,4"/>
-                                    <TextBox Text="{Binding FormMatricola, UpdateSourceTrigger=PropertyChanged}"
-                                             Margin="0,0,0,8"/>
                                     <StackPanel Orientation="Horizontal">
                                         <Button Content="Conferma"
                                                 Command="{Binding ConfermaAggiungiClienteCommand}"
@@ -504,9 +478,6 @@
                                         </DataGridTemplateColumn>
                                         <DataGridTextColumn Header="Ragione Sociale"
                                                            Binding="{Binding Cliente.RagioneSociale}"
-                                                           Width="Auto"/>
-                                        <DataGridTextColumn Header="Matricola"
-                                                           Binding="{Binding Matricola}"
                                                            Width="Auto"/>
                                     </DataGrid.Columns>
                                 </DataGrid>

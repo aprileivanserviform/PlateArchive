@@ -1,0 +1,247 @@
+<Window x:Class="PlateArchive.Wpf.Views.NuovaPiastraDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctrl="clr-namespace:PlateArchive.Wpf.Controls"
+        Title="Nuova piastra"
+        Width="720" Height="860"
+        MinWidth="640" MinHeight="560"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResizeWithGrip"
+        Background="{DynamicResource Brush.Background}">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ── Header ──────────────────────────────────────────────────── -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource Brush.Surface}"
+                Padding="28,16"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,0,0,1">
+            <StackPanel>
+                <TextBlock Text="Nuova piastra"
+                           Style="{StaticResource TextBlock.Subtitle}"/>
+                <Border Background="{DynamicResource Brush.PrimarySubtle}"
+                        BorderBrush="{DynamicResource Brush.Primary}"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource Radius.S}"
+                        Padding="10,6" Margin="0,10,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Cliente:"
+                                   FontSize="{StaticResource FontSize.Caption}"
+                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding ClientePreimpostato.RagioneSociale}"
+                                   FontWeight="{StaticResource FontWeight.SemiBold}"
+                                   Margin="6,0,10,0"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding ClientePreimpostato.CodiceClienteGestionale}"
+                                   FontSize="{StaticResource FontSize.Caption}"
+                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <!-- ── Form ────────────────────────────────────────────────────── -->
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto">
+            <!-- Border interno: garantisce padding orizzontale uniforme -->
+            <Border Padding="28,20,28,20">
+                <StackPanel>
+
+                    <!-- Errore codice duplicato -->
+                    <Border Background="{DynamicResource Brush.ErrorSurface}"
+                            BorderBrush="{DynamicResource Brush.Error}"
+                            BorderThickness="1"
+                            CornerRadius="{StaticResource Radius.S}"
+                            Padding="10,8"
+                            Margin="0,0,0,14"
+                            Visibility="{Binding IsErroreVisible, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="{Binding ErroreCodiceDuplicato}"
+                                   TextWrapping="Wrap"
+                                   FontSize="{StaticResource FontSize.Caption}"
+                                   Foreground="{DynamicResource Brush.Error}"/>
+                    </Border>
+
+                    <!-- Codice piastra -->
+                    <StackPanel Margin="0,0,0,14">
+                        <TextBlock Text="Codice piastra" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FormCodicePiastra}"
+                                 IsReadOnly="True"
+                                 Background="{DynamicResource Brush.SurfaceAlt}"
+                                 Foreground="{DynamicResource Brush.TextSecondary}"
+                                 Cursor="Arrow"
+                                 Style="{StaticResource FieldBox}"/>
+                    </StackPanel>
+
+                    <!-- Descrizione -->
+                    <TextBlock Text="Descrizione" Style="{StaticResource FieldLabel}"/>
+                    <TextBox Text="{Binding FormDescrizione, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource FieldBox}"
+                             Margin="0,0,0,14"/>
+
+                    <!-- Stato + Categoria -->
+                    <Grid Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Stato piastra" Style="{StaticResource FieldLabel}"/>
+                            <ComboBox ItemsSource="{Binding StatiPiastra}"
+                                      SelectedItem="{Binding FormStato}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Categoria" Style="{StaticResource FieldLabel}"/>
+                            <ComboBox ItemsSource="{Binding CategoriePiastre}"
+                                      SelectedItem="{Binding FormCategoriaSelezionata}"
+                                      DisplayMemberPath="Descrizione"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Formato macchina (obbligatorio) -->
+                    <StackPanel Margin="0,0,0,14">
+                        <TextBlock Text="Formato macchina *" Style="{StaticResource FieldLabel}"/>
+                        <ComboBox ItemsSource="{Binding FormatiMacchine}"
+                                  SelectedItem="{Binding FormFormatoSelezionato}"
+                                  DisplayMemberPath="NomeFormato">
+                            <ComboBox.Style>
+                                <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsFormatoNonValido}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Error}"/>
+                                            <Setter Property="BorderThickness" Value="1"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ComboBox.Style>
+                        </ComboBox>
+                        <TextBlock Text="Campo obbligatorio."
+                                   FontSize="{StaticResource FontSize.Caption}"
+                                   Foreground="{DynamicResource Brush.Error}"
+                                   Margin="0,2,0,0"
+                                   Visibility="{Binding IsFormatoNonValido, Converter={StaticResource BoolToVis}}"/>
+                    </StackPanel>
+
+                    <!-- Misure (spessore e durezza sono dati del gestionale, vedi TASK-21) -->
+                    <TextBlock Text="Misure (mm)" Style="{StaticResource FieldLabel}"/>
+                    <Grid Margin="0,0,0,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Larghezza" Style="{StaticResource FieldLabel}"/>
+                            <TextBox Text="{Binding FormLarghezza, UpdateSourceTrigger=PropertyChanged}"
+                                     Style="{StaticResource FieldBox}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Altezza" Style="{StaticResource FieldLabel}"/>
+                            <TextBox Text="{Binding FormAltezza, UpdateSourceTrigger=PropertyChanged}"
+                                     Style="{StaticResource FieldBox}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Note -->
+                    <TextBlock Text="Note" Style="{StaticResource FieldLabel}"/>
+                    <TextBox Text="{Binding FormNote, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource FieldBox}"
+                             AcceptsReturn="True"
+                             Height="70"
+                             TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"
+                             Margin="0,0,0,14"/>
+
+                    <!-- Disegno -->
+                    <TextBlock Text="Disegno" Style="{StaticResource FieldLabel}" Margin="0,0,0,4"/>
+                    <Grid x:Name="DisegnoDropZone"
+                          AllowDrop="True"
+                          DragOver="DisegnoDropZone_DragOver"
+                          DragLeave="DisegnoDropZone_DragLeave"
+                          Drop="DisegnoDropZone_Drop"
+                          Margin="0,0,0,6" MinHeight="56">
+                        <Border Background="{DynamicResource Brush.SurfaceAlt}"
+                                BorderBrush="{DynamicResource Brush.Border}"
+                                BorderThickness="1.5"
+                                CornerRadius="{StaticResource Radius.S}"/>
+                        <Rectangle Stroke="{DynamicResource Brush.Border}"
+                                   StrokeDashArray="5,3"
+                                   StrokeThickness="1.5"
+                                   Fill="{DynamicResource Brush.SurfaceAlt}"
+                                   RadiusX="4" RadiusY="4"/>
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8">
+                            <TextBlock Text="Trascina qui DWG / DXF / PDF"
+                                       FontSize="{StaticResource FontSize.Caption}"
+                                       Foreground="{DynamicResource Brush.TextDisabled}"
+                                       HorizontalAlignment="Center"
+                                       Visibility="{Binding IsDisegnoPendenteAssente, Converter={StaticResource BoolToVis}}"/>
+                            <TextBlock Text="{Binding NomeFilePendente}"
+                                       FontSize="{StaticResource FontSize.Body}"
+                                       FontWeight="{StaticResource FontWeight.SemiBold}"
+                                       Foreground="{DynamicResource Brush.Primary}"
+                                       HorizontalAlignment="Center"
+                                       Visibility="{Binding IsDisegnoPendenteVisible, Converter={StaticResource BoolToVis}}"/>
+                            <TextBlock Text="(verrà archiviato al salvataggio)"
+                                       FontSize="{StaticResource FontSize.Caption}"
+                                       Foreground="{DynamicResource Brush.TextDisabled}"
+                                       HorizontalAlignment="Center"
+                                       Visibility="{Binding IsDisegnoPendenteVisible, Converter={StaticResource BoolToVis}}"/>
+                        </StackPanel>
+                        <Border x:Name="DisegnoDropOverlay"
+                                Visibility="Collapsed" IsHitTestVisible="False"
+                                Background="{DynamicResource Brush.Overlay}"
+                                BorderBrush="{DynamicResource Brush.Primary}"
+                                BorderThickness="2"
+                                CornerRadius="{StaticResource Radius.S}">
+                            <TextBlock Text="Rilascia per allegare il disegno"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource Brush.OnPrimary}"
+                                       FontSize="{StaticResource FontSize.Body}"
+                                       FontWeight="{StaticResource FontWeight.SemiBold}"/>
+                        </Border>
+                    </Grid>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Left"
+                                Content="Sfoglia file..."
+                                Command="{Binding SfogliaFileCommand}"
+                                Style="{StaticResource Button.Secondary}"/>
+                        <TextBlock Text="oppure trascina sopra"
+                                   FontSize="{StaticResource FontSize.Caption}"
+                                   Foreground="{DynamicResource Brush.TextDisabled}"
+                                   VerticalAlignment="Center"
+                                   Margin="10,0,0,0"/>
+                    </DockPanel>
+
+                </StackPanel>
+            </Border>
+        </ScrollViewer>
+
+        <!-- ── Footer ──────────────────────────────────────────────────── -->
+        <Border Grid.Row="2"
+                Background="{DynamicResource Brush.Surface}"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="0,1,0,0"
+                Padding="28,14">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Annulla"
+                        Command="{Binding AnnullaCommand}"
+                        Style="{StaticResource Button.Secondary}"
+                        Margin="0,0,12,0"/>
+                <Button Content="Crea piastra"
+                        Command="{Binding SalvaCommand}"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

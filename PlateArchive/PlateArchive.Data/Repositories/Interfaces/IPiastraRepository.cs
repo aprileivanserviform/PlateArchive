@@ -11,11 +11,11 @@ public interface IPiastraRepository : IRepository<Piastra>
     /// <summary>Ricerca per codice piastra esatto (case-insensitive).</summary>
     Task<Piastra?> GetByCodicePiastraAsync(string codice);
 
-    /// <summary>Ricerca per codice articolo gestionale esatto — usato per collegare le righe
-    /// ordine di vendita (gestionale) alla piastra corrispondente.</summary>
-    Task<Piastra?> GetByCodiceArticoloGestionaleAsync(string codiceArticolo);
+    /// <summary>Piastre SpecialeCliente esclusive del cliente indicato — usate nel match
+    /// cliente+formato delle righe ordine di vendita (possono non avere una riga ClientePiastra).</summary>
+    Task<IEnumerable<Piastra>> GetByClienteEsclusivoAsync(int idCliente);
 
-    /// <summary>Ricerca full-text su codice, descrizione e codice articolo gestionale.</summary>
+    /// <summary>Ricerca full-text su codice piastra e descrizione.</summary>
     Task<IEnumerable<Piastra>> SearchAsync(string query);
 
     /// <summary>Restituisce le ultime <paramref name="count"/> piastre inserite — usato dalla Dashboard.</summary>
@@ -26,4 +26,10 @@ public interface IPiastraRepository : IRepository<Piastra>
 
     /// <summary>Imposta <c>IsEliminata = true</c> senza eliminare il record fisicamente.</summary>
     Task EliminaLogicamenteAsync(int idPiastra);
+
+    /// <summary>
+    /// Restituisce il prossimo codice PLT-XXXXXX disponibile, calcolato come
+    /// MAX(numero estratto da tutti i codici PLT-) + 1.
+    /// </summary>
+    Task<string> GetNextCodiceSuggerito();
 }

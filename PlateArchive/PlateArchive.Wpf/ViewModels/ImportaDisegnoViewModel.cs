@@ -37,16 +37,12 @@ public class ImportaDisegnoViewModel : ViewModelBase
     private bool         _isCreaNuovaPiastraMode;
     private Piastra?     _piastraSelezionata;
     private string       _formCodicePiastra       = string.Empty;
-    private string       _formCodiceArticolo      = string.Empty;
     private string       _formDescrizione         = string.Empty;
     private StatoPiastra _formStato               = StatoPiastra.Attiva;
     private CategoriaPiastra?  _formCategoria;
     private FormatoMacchina?   _formFormato;
     private string       _formLarghezza           = string.Empty;
     private string       _formAltezza             = string.Empty;
-    private string       _formSpessore            = string.Empty;
-    private string       _formDurezza             = string.Empty;
-    private string       _formPeso                = string.Empty;
     private string       _formNote                = string.Empty;
     private Cliente?     _formCliente;
     private string       _filtroCliente           = string.Empty;
@@ -145,11 +141,11 @@ public class ImportaDisegnoViewModel : ViewModelBase
                 if (value) PiastraSelezionata = null;
                 else
                 {
-                    FormCodicePiastra = FormCodiceArticolo = FormDescrizione = string.Empty;
+                    FormCodicePiastra = FormDescrizione = string.Empty;
                     FormStato         = StatoPiastra.Attiva;
                     FormCategoria     = CategoriePiastre.FirstOrDefault(c => c.Codice == "STD");
                     FormFormato       = null;
-                    FormLarghezza = FormAltezza = FormSpessore = FormDurezza = FormPeso = FormNote = string.Empty;
+                    FormLarghezza = FormAltezza = FormNote = string.Empty;
                 }
             }
         }
@@ -173,12 +169,6 @@ public class ImportaDisegnoViewModel : ViewModelBase
     {
         get => _formCodicePiastra;
         set => SetField(ref _formCodicePiastra, value);
-    }
-
-    public string FormCodiceArticolo
-    {
-        get => _formCodiceArticolo;
-        set => SetField(ref _formCodiceArticolo, value);
     }
 
     public string FormDescrizione
@@ -219,9 +209,6 @@ public class ImportaDisegnoViewModel : ViewModelBase
 
     public string FormLarghezza { get => _formLarghezza; set => SetField(ref _formLarghezza, value); }
     public string FormAltezza   { get => _formAltezza;   set => SetField(ref _formAltezza,   value); }
-    public string FormSpessore  { get => _formSpessore;  set => SetField(ref _formSpessore,  value); }
-    public string FormDurezza   { get => _formDurezza;   set => SetField(ref _formDurezza,   value); }
-    public string FormPeso      { get => _formPeso;      set => SetField(ref _formPeso,      value); }
     public string FormNote      { get => _formNote;      set => SetField(ref _formNote,      value); }
 
     // ─── Ricerca cliente ──────────────────────────────────────────────────────
@@ -303,15 +290,14 @@ public class ImportaDisegnoViewModel : ViewModelBase
     // ─── Inizializzazione ─────────────────────────────────────────────────────
 
     /// <param name="percorsoFile">File disegno trascinato.</param>
-    /// <param name="codiceArticoloPrecompilato">
-    /// Codice articolo gestionale da pre-compilare (flusso "crea piastra da riga ordine"):
-    /// se valorizzato e il disegno è nuovo, parte già in modalità "crea nuova piastra".
+    /// <param name="descrizionePrecompilata">
+    /// Descrizione da pre-compilare (DESCR_ESTESA dell'articolo, flusso "crea piastra da riga
+    /// ordine"): se valorizzata (anche stringa vuota) e il disegno è nuovo, parte già in
+    /// modalità "crea nuova piastra".
     /// </param>
-    /// <param name="descrizionePrecompilata">Descrizione da pre-compilare (DESCR_ESTESA dell'articolo).</param>
     public async Task InitAsync(
         string  percorsoFile,
-        string? codiceArticoloPrecompilato = null,
-        string? descrizionePrecompilata    = null)
+        string? descrizionePrecompilata = null)
     {
         PercorsoFile      = percorsoFile;
         NomeFile          = Path.GetFileName(percorsoFile);
@@ -319,11 +305,10 @@ public class ImportaDisegnoViewModel : ViewModelBase
 
         DisegnoEsistente = await _disegniRepo.GetByNomeFileAsync(NomeFile);
 
-        if (DisegnoEsistente is null && !string.IsNullOrWhiteSpace(codiceArticoloPrecompilato))
+        if (DisegnoEsistente is null && descrizionePrecompilata is not null)
         {
             IsCreaNuovaPiastraMode = true;
-            FormCodiceArticolo     = codiceArticoloPrecompilato;
-            FormDescrizione        = descrizionePrecompilata ?? string.Empty;
+            FormDescrizione        = descrizionePrecompilata;
         }
 
         if (DisegnoEsistente is not null)
@@ -371,6 +356,10 @@ public class ImportaDisegnoViewModel : ViewModelBase
         if (IsCreaNuovaPiastraMode && IsClienteObbligatorio && FormCliente is null)
             return false;
 
+        // Il formato macchina è obbligatorio: è il criterio di abbinamento alle righe ordine.
+        if (IsCreaNuovaPiastraMode && FormFormato is null)
+            return false;
+
         return IsAssociaEsistenteMode
             ? PiastraSelezionata is not null
             : !string.IsNullOrWhiteSpace(FormCodicePiastra);
@@ -395,7 +384,6 @@ public class ImportaDisegnoViewModel : ViewModelBase
             var nuova = new Piastra
             {
                 CodicePiastra              = FormCodicePiastra.Trim(),
-                CodiceArticoloGestionale   = string.IsNullOrWhiteSpace(FormCodiceArticolo) ? null : FormCodiceArticolo.Trim(),
                 Descrizione                = string.IsNullOrWhiteSpace(FormDescrizione)    ? null : FormDescrizione.Trim(),
                 Stato                      = FormStato,
                 TipoPiastra                = isSpeciale ? TipoPiastra.SpecialeCliente : TipoPiastra.Standard,
@@ -407,9 +395,6 @@ public class ImportaDisegnoViewModel : ViewModelBase
                 Formato                    = FormFormato,
                 LarghezzaMm                = decimal.TryParse(FormLarghezza, out var l) ? l : null,
                 AltezzaMm                  = decimal.TryParse(FormAltezza,   out var a) ? a : null,
-                SpessoreMm                 = decimal.TryParse(FormSpessore,  out var s) ? s : null,
-                Durezza                    = decimal.TryParse(FormDurezza,   out var d) ? d : null,
-                Peso                       = decimal.TryParse(FormPeso,      out var p) ? p : null,
                 Note                       = string.IsNullOrWhiteSpace(FormNote) ? null : FormNote.Trim(),
             };
             try   { await _piastreRepo.AddAsync(nuova); }
@@ -417,7 +402,9 @@ public class ImportaDisegnoViewModel : ViewModelBase
             piastra = nuova;
 
             var percorsoEffettivo = await _fileArchivio.ArchiviaDisegnoAsync(
-                PercorsoFile, piastra.CodicePiastra, piastra.TipoPiastra)
+                PercorsoFile, piastra.CodicePiastra, piastra.TipoPiastra,
+                isSpeciale ? FormCliente?.CodiceClienteGestionale : null,
+                isSpeciale ? FormCliente?.RagioneSociale           : null)
                 ?? PercorsoFile;
 
             var nuovoDisegno = new Disegno
@@ -440,7 +427,9 @@ public class ImportaDisegnoViewModel : ViewModelBase
             piastra = PiastraSelezionata;
 
             var percorsoEffettivo = await _fileArchivio.ArchiviaDisegnoAsync(
-                PercorsoFile, piastra.CodicePiastra, piastra.TipoPiastra)
+                PercorsoFile, piastra.CodicePiastra, piastra.TipoPiastra,
+                piastra.ClienteEsclusivo?.CodiceClienteGestionale,
+                piastra.ClienteEsclusivo?.RagioneSociale)
                 ?? PercorsoFile;
 
             var nuovoDisegno = new Disegno

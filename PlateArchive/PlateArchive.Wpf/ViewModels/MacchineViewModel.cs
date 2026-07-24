@@ -45,10 +45,6 @@ public class MacchineViewModel : ViewModelBase
     private string              _formNomeMacchina        = string.Empty;
     private FormatoMacchina?    _formFormatoSelezionato;
     private ProduttoreMacchina? _formProduttoreSelezionato;
-    private string              _formLarghezzaMinima     = string.Empty;
-    private string              _formAltezzaMinima       = string.Empty;
-    private string              _formLarghezzaMassima    = string.Empty;
-    private string              _formAltezzaMassima      = string.Empty;
     private string              _formVersione            = string.Empty;
     private string              _formNote                = string.Empty;
     private string?             _avvisoDuplicato;
@@ -61,7 +57,6 @@ public class MacchineViewModel : ViewModelBase
     // Aggiunta cliente associato (pannello inline nel dettaglio)
     private bool          _isAggiungiClienteVisible;
     private Cliente?      _clienteSelezionato;
-    private string        _formMatricola           = string.Empty;
     private List<Cliente> _tuttiClientiDisponibili = [];
     private string        _filtroCliente           = string.Empty;
 
@@ -238,11 +233,28 @@ public class MacchineViewModel : ViewModelBase
     public bool IsClienteSearchVisible       => ClienteSelezionato is null;
     public bool IsClienteSuggerimentiVisible => ClientiSuggeriti.Count > 0;
 
-    /// <summary>Matricola (numero di serie) della macchina del cliente — facoltativa.</summary>
-    public string FormMatricola
+    // ─── Misure derivate dalla piastra Standard associata (sola lettura) ──────
+    // La macchina non ha più misure proprie: se le è associata una piastra Standard,
+    // ne mostriamo Larghezza/Altezza nel gruppo "Misure piastra" del dettaglio.
+
+    private Piastra? PiastraStandardAssociata =>
+        PiastreCompatibili.FirstOrDefault(c => c.Piastra?.TipoPiastra == Core.Enums.TipoPiastra.Standard)?.Piastra;
+
+    public string? CodicePiastraStandard   => PiastraStandardAssociata?.CodicePiastra;
+    public decimal? MisuraPiastraLarghezza => PiastraStandardAssociata?.LarghezzaMm;
+    public decimal? MisuraPiastraAltezza   => PiastraStandardAssociata?.AltezzaMm;
+
+    /// <summary>True quando esiste una piastra Standard associata da cui derivare le misure.</summary>
+    public bool IsMisuraPiastraVisible     => PiastraStandardAssociata is not null;
+    public bool IsMisuraPiastraAssente     => PiastraStandardAssociata is null;
+
+    private void NotificaMisuraPiastra()
     {
-        get => _formMatricola;
-        set => SetField(ref _formMatricola, value);
+        OnPropertyChanged(nameof(CodicePiastraStandard));
+        OnPropertyChanged(nameof(MisuraPiastraLarghezza));
+        OnPropertyChanged(nameof(MisuraPiastraAltezza));
+        OnPropertyChanged(nameof(IsMisuraPiastraVisible));
+        OnPropertyChanged(nameof(IsMisuraPiastraAssente));
     }
 
     // ─── Stato pannello destra ────────────────────────────────────────────────
@@ -288,30 +300,6 @@ public class MacchineViewModel : ViewModelBase
     {
         get => _formProduttoreSelezionato;
         set => SetField(ref _formProduttoreSelezionato, value);
-    }
-
-    public string FormLarghezzaMinima
-    {
-        get => _formLarghezzaMinima;
-        set => SetField(ref _formLarghezzaMinima, value);
-    }
-
-    public string FormAltezzaMinima
-    {
-        get => _formAltezzaMinima;
-        set => SetField(ref _formAltezzaMinima, value);
-    }
-
-    public string FormLarghezzaMassima
-    {
-        get => _formLarghezzaMassima;
-        set => SetField(ref _formLarghezzaMassima, value);
-    }
-
-    public string FormAltezzaMassima
-    {
-        get => _formAltezzaMassima;
-        set => SetField(ref _formAltezzaMassima, value);
     }
 
     public string FormVersione
@@ -387,6 +375,9 @@ public class MacchineViewModel : ViewModelBase
 
         foreach (var p in piastre) PiastreCompatibili.Add(p);
         foreach (var c in clienti) ClientiAssociati.Add(c);
+
+        // Le misure mostrate derivano dalla piastra Standard eventualmente associata.
+        NotificaMisuraPiastra();
     }
 
     // ─── Filtro lista ─────────────────────────────────────────────────────────
@@ -455,10 +446,6 @@ public class MacchineViewModel : ViewModelBase
         FormNomeMacchina          = MacchinaSelezionata.NomeMacchina;
         FormFormatoSelezionato    = FormatiMacchine.FirstOrDefault(f => f.IdFormato    == MacchinaSelezionata.IdFormato);
         FormProduttoreSelezionato = ProduttoriMacchine.FirstOrDefault(p => p.IdProduttore == MacchinaSelezionata.IdProduttore);
-        FormLarghezzaMinima       = MacchinaSelezionata.LarghezzaMinimaFoglioMm?.ToString("F2")  ?? string.Empty;
-        FormAltezzaMinima         = MacchinaSelezionata.AltezzaMinimaFoglioMm?.ToString("F2")    ?? string.Empty;
-        FormLarghezzaMassima      = MacchinaSelezionata.LarghezzaMassimaFoglioMm?.ToString("F2") ?? string.Empty;
-        FormAltezzaMassima        = MacchinaSelezionata.AltezzaMassimaFoglioMm?.ToString("F2")   ?? string.Empty;
         FormVersione              = MacchinaSelezionata.Versione ?? string.Empty;
         FormNote                  = MacchinaSelezionata.Note    ?? string.Empty;
         AvvisoDuplicato           = null;
@@ -474,9 +461,7 @@ public class MacchineViewModel : ViewModelBase
 
     private void ResetForm()
     {
-        FormCodiceMacchina     = FormNomeMacchina      = FormVersione       = FormNote =
-        FormLarghezzaMinima    = FormAltezzaMinima     =
-        FormLarghezzaMassima   = FormAltezzaMassima    = string.Empty;
+        FormCodiceMacchina = FormNomeMacchina = FormVersione = FormNote = string.Empty;
         FormFormatoSelezionato    = null;
         FormProduttoreSelezionato = null;
         AvvisoDuplicato           = null;
@@ -496,10 +481,6 @@ public class MacchineViewModel : ViewModelBase
             m.NomeMacchina   = FormNomeMacchina.Trim();
             m.IdFormato      = FormFormatoSelezionato?.IdFormato;
             m.IdProduttore   = FormProduttoreSelezionato?.IdProduttore;
-            m.LarghezzaMinimaFoglioMm  = ParseDecimal(FormLarghezzaMinima);
-            m.AltezzaMinimaFoglioMm    = ParseDecimal(FormAltezzaMinima);
-            m.LarghezzaMassimaFoglioMm = ParseDecimal(FormLarghezzaMassima);
-            m.AltezzaMassimaFoglioMm   = ParseDecimal(FormAltezzaMassima);
             m.Versione       = N(FormVersione);
             m.Note           = N(FormNote);
             // Aggiorna anche le navigazioni in memoria per il binding nella lista.
@@ -516,10 +497,6 @@ public class MacchineViewModel : ViewModelBase
                 NomeMacchina   = FormNomeMacchina.Trim(),
                 IdFormato      = FormFormatoSelezionato?.IdFormato,
                 IdProduttore   = FormProduttoreSelezionato?.IdProduttore,
-                LarghezzaMinimaFoglioMm  = ParseDecimal(FormLarghezzaMinima),
-                AltezzaMinimaFoglioMm    = ParseDecimal(FormAltezzaMinima),
-                LarghezzaMassimaFoglioMm = ParseDecimal(FormLarghezzaMassima),
-                AltezzaMassimaFoglioMm   = ParseDecimal(FormAltezzaMassima),
                 Versione       = N(FormVersione),
                 Note           = N(FormNote),
                 Attiva         = true
@@ -555,11 +532,14 @@ public class MacchineViewModel : ViewModelBase
         var idGiaCompat = PiastreCompatibili.Select(c => c.IdPiastra).ToHashSet();
         // Se la macchina ha un formato, mostra solo le piastre dello stesso formato.
         var idFormato   = MacchinaSelezionata?.IdFormato;
+        // Una macchina può avere una sola piastra Standard: se già presente, nascondi le altre Standard.
+        var haGiaStandard = PiastraStandardAssociata is not null;
 
         PiastreDisponibili.Clear();
         foreach (var p in tutte.Where(p =>
             !idGiaCompat.Contains(p.IdPiastra)
-            && (idFormato is null || p.IdFormato == idFormato)))
+            && (idFormato is null || p.IdFormato == idFormato)
+            && !(haGiaStandard && p.TipoPiastra == Core.Enums.TipoPiastra.Standard)))
         {
             PiastreDisponibili.Add(p);
         }
@@ -570,6 +550,20 @@ public class MacchineViewModel : ViewModelBase
     private async Task ConfermaAggiungiPiastraAsync()
     {
         if (MacchinaSelezionata is null || PiastraCompatibileDaAggiungere is null) return;
+
+        // Vincolo: una macchina può avere al più una piastra Standard associata.
+        if (PiastraCompatibileDaAggiungere.TipoPiastra == Core.Enums.TipoPiastra.Standard
+            && await _compatRepo.HasPiastraStandardAsync(MacchinaSelezionata.IdMacchinaStandard))
+        {
+            MessageBox.Show(
+                "Questa macchina ha già una piastra Standard associata.\n" +
+                "Puoi associare solo piastre Speciali per cliente.",
+                "Piastra Standard già presente",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
         var nuova = new PiastraMacchinaCompatibile
         {
             IdPiastra          = PiastraCompatibileDaAggiungere.IdPiastra,
@@ -612,7 +606,6 @@ public class MacchineViewModel : ViewModelBase
         OnPropertyChanged(nameof(FiltroCliente));
         ClientiSuggeriti.Clear();
         OnPropertyChanged(nameof(IsClienteSuggerimentiVisible));
-        FormMatricola            = string.Empty;
         IsAggiungiClienteVisible = true;
     }
 
@@ -624,7 +617,6 @@ public class MacchineViewModel : ViewModelBase
         {
             IdCliente          = ClienteSelezionato.IdCliente,
             IdMacchinaStandard = MacchinaSelezionata.IdMacchinaStandard,
-            Matricola          = string.IsNullOrWhiteSpace(FormMatricola) ? null : FormMatricola.Trim(),
             DataAssociazione   = DateTime.UtcNow,
             Attiva             = true,
             Cliente            = ClienteSelezionato,
@@ -643,7 +635,6 @@ public class MacchineViewModel : ViewModelBase
         OnPropertyChanged(nameof(FiltroCliente));
         ClientiSuggeriti.Clear();
         OnPropertyChanged(nameof(IsClienteSuggerimentiVisible));
-        FormMatricola            = string.Empty;
         _tuttiClientiDisponibili = [];
     }
 
@@ -682,10 +673,6 @@ public class MacchineViewModel : ViewModelBase
     }
 
     // ─── Utility ─────────────────────────────────────────────────────────────
-
-    private static decimal? ParseDecimal(string s) =>
-        decimal.TryParse(s.Replace(',', '.'), System.Globalization.NumberStyles.Any,
-            System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : null;
 
     private static string? N(string s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 }

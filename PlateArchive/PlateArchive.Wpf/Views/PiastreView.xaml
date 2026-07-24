@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:PlateArchive.Wpf.ViewModels"
              xmlns:conv="clr-namespace:PlateArchive.Wpf.Converters"
-             xmlns:b="clr-namespace:PlateArchive.Wpf.Behaviors">
+             xmlns:b="clr-namespace:PlateArchive.Wpf.Behaviors"
+             xmlns:ctrl="clr-namespace:PlateArchive.Wpf.Controls">
 
     <UserControl.Resources>
 
@@ -356,13 +357,6 @@
                                                 SortMemberPath="Descrizione"
                                                 HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
 
-                            <!-- Articolo gestionale -->
-                            <DataGridTextColumn x:Name="ColArtGestionale"
-                                                Binding="{Binding CodiceArticoloGestionale}"
-                                                Width="Auto"
-                                                SortMemberPath="CodiceArticoloGestionale"
-                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
-
                             <!-- Categoria -->
                             <DataGridTextColumn x:Name="ColCategoria"
                                                 Binding="{Binding Categoria.Descrizione}"
@@ -403,27 +397,6 @@
                                                 Binding="{Binding AltezzaMm, StringFormat='{}{0:F1}', TargetNullValue='—'}"
                                                 Width="Auto"
                                                 SortMemberPath="AltezzaMm"
-                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
-
-                            <!-- Spessore -->
-                            <DataGridTextColumn x:Name="ColSpessore"
-                                                Binding="{Binding SpessoreMm, StringFormat='{}{0:F2}', TargetNullValue='—'}"
-                                                Width="Auto"
-                                                SortMemberPath="SpessoreMm"
-                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
-
-                            <!-- Durezza -->
-                            <DataGridTextColumn x:Name="ColDurezza"
-                                                Binding="{Binding Durezza, StringFormat='{}{0:F1}', TargetNullValue='—'}"
-                                                Width="Auto"
-                                                SortMemberPath="Durezza"
-                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
-
-                            <!-- Peso -->
-                            <DataGridTextColumn x:Name="ColPeso"
-                                                Binding="{Binding Peso, StringFormat='{}{0:F3}', TargetNullValue='—'}"
-                                                Width="Auto"
-                                                SortMemberPath="Peso"
                                                 HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
 
                             <!-- Data creazione -->
@@ -493,11 +466,17 @@
                                        Foreground="{DynamicResource Brush.Error}"/>
                         </Border>
 
-                        <TextBlock Text="Codice piastra *" Style="{StaticResource FieldLabel}"/>
-                        <TextBox Text="{Binding FormCodicePiastra, UpdateSourceTrigger=PropertyChanged}">
+                        <TextBlock Text="Codice piastra" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Text="{Binding FormCodicePiastra, UpdateSourceTrigger=PropertyChanged}"
+                                 IsReadOnly="{Binding IsCodicePiastraReadOnly}">
                             <TextBox.Style>
                                 <Style TargetType="TextBox" BasedOn="{StaticResource FieldBox}">
                                     <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCodicePiastraReadOnly}" Value="True">
+                                            <Setter Property="Background" Value="{DynamicResource Brush.SurfaceAlt}"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource Brush.TextSecondary}"/>
+                                            <Setter Property="Cursor" Value="Arrow"/>
+                                        </DataTrigger>
                                         <DataTrigger Binding="{Binding IsCodicePiastraNonValido}" Value="True">
                                             <Setter Property="BorderBrush" Value="{DynamicResource Brush.Error}"/>
                                             <Setter Property="BorderThickness" Value="2"/>
@@ -511,10 +490,6 @@
                                    Foreground="{DynamicResource Brush.Error}"
                                    Margin="0,-8,0,10"
                                    Visibility="{Binding IsCodicePiastraNonValido, Converter={StaticResource BoolToVis}}"/>
-
-                        <TextBlock Text="Codice articolo gestionale" Style="{StaticResource FieldLabel}"/>
-                        <TextBox Text="{Binding FormCodiceArticolo, UpdateSourceTrigger=PropertyChanged}"
-                                 Style="{StaticResource FieldBox}"/>
 
                         <TextBlock Text="Descrizione" Style="{StaticResource FieldLabel}"/>
                         <TextBox Text="{Binding FormDescrizione, UpdateSourceTrigger=PropertyChanged}"
@@ -616,33 +591,34 @@
                                        Visibility="{Binding IsClienteEsclusivoNonValido, Converter={StaticResource BoolToVis}}"/>
                         </StackPanel>
 
-                        <!-- Formato macchina e Peso -->
-                        <Grid Margin="0,0,0,10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="Formato macchina" Style="{StaticResource FieldLabel}"/>
-                                <ComboBox ItemsSource="{Binding FormatiMacchine}"
-                                          SelectedItem="{Binding FormFormatoSelezionato}"
-                                          DisplayMemberPath="NomeFormato"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="Peso (kg)" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Text="{Binding FormPeso, UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>
-                        </Grid>
+                        <!-- Formato macchina (obbligatorio) -->
+                        <StackPanel Margin="0,0,0,10">
+                            <TextBlock Text="Formato macchina *" Style="{StaticResource FieldLabel}"/>
+                            <ComboBox ItemsSource="{Binding FormatiMacchine}"
+                                      SelectedItem="{Binding FormFormatoSelezionato}"
+                                      DisplayMemberPath="NomeFormato">
+                                <ComboBox.Style>
+                                    <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsFormatoNonValido}" Value="True">
+                                                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Error}"/>
+                                                <Setter Property="BorderThickness" Value="1"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ComboBox.Style>
+                            </ComboBox>
+                            <TextBlock Text="Campo obbligatorio."
+                                       FontSize="{StaticResource FontSize.Caption}"
+                                       Foreground="{DynamicResource Brush.Error}"
+                                       Margin="0,2,0,0"
+                                       Visibility="{Binding IsFormatoNonValido, Converter={StaticResource BoolToVis}}"/>
+                        </StackPanel>
 
-                        <!-- Misure -->
+                        <!-- Misure (spessore e durezza sono dati del gestionale, vedi TASK-21) -->
                         <TextBlock Text="Misure (mm)" Style="{StaticResource FieldLabel}"/>
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="8"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="8"/>
                                 <ColumnDefinition Width="*"/>
@@ -654,14 +630,6 @@
                             <StackPanel Grid.Column="2">
                                 <TextBlock Text="Altezza" Style="{StaticResource FieldLabel}"/>
                                 <TextBox Text="{Binding FormAltezza, UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="4">
-                                <TextBlock Text="Spessore" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Text="{Binding FormSpessore, UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="6">
-                                <TextBlock Text="Durezza" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Text="{Binding FormDurezza, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                         </Grid>
 
@@ -965,13 +933,9 @@
                                         <TextBlock Text="Formato" Style="{StaticResource TextBlock.Caption}"/>
                                         <TextBlock Text="{Binding PiastraSelezionata.Formato.NomeFormato, FallbackValue='—'}" Margin="0,0,0,8"/>
                                         <TextBlock Text="Categoria" Style="{StaticResource TextBlock.Caption}"/>
-                                        <TextBlock Text="{Binding PiastraSelezionata.Categoria.Descrizione, FallbackValue='—'}" Margin="0,0,0,8"/>
-                                        <TextBlock Text="Art. gestionale" Style="{StaticResource TextBlock.Caption}"/>
-                                        <TextBlock Text="{Binding PiastraSelezionata.CodiceArticoloGestionale, FallbackValue='—'}"/>
+                                        <TextBlock Text="{Binding PiastraSelezionata.Categoria.Descrizione, FallbackValue='—'}"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="1">
-                                        <TextBlock Text="Peso (kg)" Style="{StaticResource TextBlock.Caption}"/>
-                                        <TextBlock Text="{Binding PiastraSelezionata.Peso, StringFormat='{}{0:F3}', FallbackValue='—', TargetNullValue='—'}" Margin="0,0,0,8"/>
                                         <TextBlock Text="Creato il" Style="{StaticResource TextBlock.Caption}"/>
                                         <TextBlock Margin="0,0,0,8">
                                             <TextBlock.Text>
@@ -994,8 +958,6 @@
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0">
                                         <TextBlock Text="Larghezza" Style="{StaticResource TextBlock.Caption}"/>
@@ -1013,26 +975,6 @@
                                             <TextBlock.Text>
                                                 <Binding Path="PiastraSelezionata.AltezzaMm"
                                                          StringFormat="{}{0:F1} mm"
-                                                         FallbackValue="—" TargetNullValue="—"/>
-                                            </TextBlock.Text>
-                                        </TextBlock>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="2">
-                                        <TextBlock Text="Spessore" Style="{StaticResource TextBlock.Caption}"/>
-                                        <TextBlock>
-                                            <TextBlock.Text>
-                                                <Binding Path="PiastraSelezionata.SpessoreMm"
-                                                         StringFormat="{}{0:F2} mm"
-                                                         FallbackValue="—" TargetNullValue="—"/>
-                                            </TextBlock.Text>
-                                        </TextBlock>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="3">
-                                        <TextBlock Text="Durezza" Style="{StaticResource TextBlock.Caption}"/>
-                                        <TextBlock>
-                                            <TextBlock.Text>
-                                                <Binding Path="PiastraSelezionata.Durezza"
-                                                         StringFormat="{}{0:F1}"
                                                          FallbackValue="—" TargetNullValue="—"/>
                                             </TextBlock.Text>
                                         </TextBlock>
