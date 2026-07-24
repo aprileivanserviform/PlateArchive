@@ -6,3 +6,6 @@ obj/
 packages/
 *.dll
 *.pdb
+*.db
+*.db-shm
+*.db-wal
