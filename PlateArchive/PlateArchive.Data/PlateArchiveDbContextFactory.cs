@@ -8,7 +8,7 @@ public class PlateArchiveDbContextFactory : IDesignTimeDbContextFactory<PlateArc
     public PlateArchiveDbContext CreateDbContext(string[] args)
     {
         var options = new DbContextOptionsBuilder<PlateArchiveDbContext>()
-            .UseSqlServer("Server=localhost;Database=PlateArchiveDB;Trusted_Connection=True;TrustServerCertificate=True;")
+            .UseSqlite("Data Source=plate_archive_dev.db")
             .Options;
         return new PlateArchiveDbContext(options);
     }
