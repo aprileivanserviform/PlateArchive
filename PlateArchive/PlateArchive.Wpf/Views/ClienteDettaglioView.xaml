@@ -811,9 +811,6 @@
                                         <DataGridTextColumn Header="Nome file"
                                                            Binding="{Binding NomeFile}"
                                                            Width="*"/>
-                                        <DataGridTextColumn Header="Descrizione"
-                                                           Binding="{Binding Descrizione}"
-                                                           Width="2*"/>
                                         <DataGridTextColumn Header="Dimensione"
                                                            Binding="{Binding DimensioneBytes,
                                                                      Converter={StaticResource BytesToSize}}"

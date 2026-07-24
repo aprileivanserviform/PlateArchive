@@ -1,7 +1,7 @@
 -- =============================================================================
 -- SCHEMA COMPLETO  PlateArchiveDB  (SQL Server)
 -- Generato: 2026-07-16
--- Stato:    riflette tutte le migrazioni EF Core fino a 20260723061212_RimuoviPesoPiastra
+-- Stato:    riflette tutte le migrazioni EF Core fino a 20260724081513_RimuoviDescrizioneAllegato
 --
 -- IDEMPOTENTE: ogni istruzione è protetta da IF NOT EXISTS / IF EXISTS.
 -- Sicuro da rieseguire su un DB già parzialmente configurato.
@@ -336,7 +336,6 @@ BEGIN
         [IdCliente]        int           NOT NULL,
         [NomeFile]         nvarchar(max) NOT NULL,
         [PercorsoFile]     nvarchar(max) NOT NULL,
-        [Descrizione]      nvarchar(max) NULL,
         [DimensioneBytes]  bigint        NOT NULL DEFAULT 0,
         [DataCaricamento]  datetime2     NOT NULL DEFAULT SYSUTCDATETIME(),
         CONSTRAINT [PK_AllegatiClienti] PRIMARY KEY ([IdAllegato]),
@@ -417,6 +416,9 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[__EFMigrationsHistory] WHERE [MigrationId] =
 
 IF NOT EXISTS (SELECT 1 FROM [dbo].[__EFMigrationsHistory] WHERE [MigrationId] = N'20260723061212_RimuoviPesoPiastra')
     INSERT INTO [dbo].[__EFMigrationsHistory] VALUES (N'20260723061212_RimuoviPesoPiastra', N'9.0.0');
+
+IF NOT EXISTS (SELECT 1 FROM [dbo].[__EFMigrationsHistory] WHERE [MigrationId] = N'20260724081513_RimuoviDescrizioneAllegato')
+    INSERT INTO [dbo].[__EFMigrationsHistory] VALUES (N'20260724081513_RimuoviDescrizioneAllegato', N'9.0.0');
 
 GO
 PRINT 'Schema PlateArchiveDB aggiornato.';

@@ -1407,6 +1407,48 @@ un attributo del disegno. Viene quindi rimosso dalla gestione piastre.
 
 ---
 
+## TASK-23 — Fix allegati cliente e rimozione campo Descrizione
+
+**Priorità:** Media
+**Stato:** `[x]` — implementato 2026-07-24 (branch feat/articolo-gestionale-cliente)
+
+### Contesto
+
+Nel tab "Note e Allegati" del dettaglio cliente la griglia degli allegati appariva **vuota**
+(intestazioni e celle senza testo, pulsanti azione irraggiungibili) anche con un allegato
+correttamente archiviato sulla condivisione e registrato a DB.
+
+### Causa
+
+Lo stile **implicito** di `ScrollViewer` ([ScrollBarStyles.xaml](../PlateArchive.Ui/Themes/Styles/ScrollBarStyles.xaml))
+imposta `HorizontalScrollBarVisibility="Auto"` su tutti gli ScrollViewer. Il tab "Note e Allegati"
+è l'unico che avvolge il contenuto in uno ScrollViewer: il contenuto veniva quindi misurato con
+**larghezza infinita** e le colonne a larghezza stellare (`*`, `2*`) collassavano alla larghezza
+minima. Le griglie di Macchine/Piastre/Compatibilità non sono dentro uno ScrollViewer, per questo
+non erano affette.
+
+### Realizzato
+
+- `ClienteDettaglioView`: `HorizontalScrollBarVisibility="Disabled"` sullo ScrollViewer del tab,
+  con commento sul perché è necessario (rimuoverlo fa tornare il bug).
+- `ClienteDettaglioViewModel`: il `CanExecute` di `ApriAllegatoCommand` non accede più al file
+  system. Faceva `File.Exists` su percorso di rete, rivalutato di continuo dal `CommandManager`
+  sul thread UI: causa stutter e disabilita il pulsante se la condivisione è momentaneamente
+  irraggiungibile. L'esistenza è già verificata in `ApriAllegato`, che mostra un errore esplicito.
+- **Rimosso il campo `Descrizione`** da `AllegatoCliente`: non veniva mai valorizzato (il
+  caricamento allegato non lo chiede), quindi la colonna in griglia era sempre vuota.
+  Migrazione EF `20260724081513_RimuoviDescrizioneAllegato` e script prod
+  [rimuovi_descrizione_allegato.sql](sql/rimuovi_descrizione_allegato.sql).
+
+### Acceptance criteria
+
+- [x] `dotnet build` pulito; colonna rimossa da modello, griglia e DB di sviluppo
+- [ ] **Prod**: eseguire `rimuovi_descrizione_allegato.sql`
+- [ ] verifica a video: allegato visibile in lista, apribile con il pulsante, nessuna colonna
+  "Descrizione"
+
+---
+
 ## Evolutivi futuri (fuori scope MVP)
 
 | Funzione | Riferimento |
