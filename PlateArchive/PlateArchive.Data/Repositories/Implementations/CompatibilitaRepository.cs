@@ -38,6 +38,20 @@ public class CompatibilitaRepository(PlateArchiveDbContext db) : ICompatibilitaR
         await db.PiastreMacchineCompatibili
             .AnyAsync(x => x.IdPiastra == idPiastra && x.IdMacchinaStandard == idMacchinaStandard);
 
+    // Una macchina può avere al più una piastra Standard associata (le SpecialeCliente sono illimitate).
+    public async Task<bool> HasPiastraStandardAsync(int idMacchinaStandard) =>
+        await db.PiastreMacchineCompatibili
+            .AnyAsync(x => x.IdMacchinaStandard == idMacchinaStandard
+                        && x.Attiva
+                        && x.Piastra.TipoPiastra == Core.Enums.TipoPiastra.Standard);
+
+    public async Task<IReadOnlyCollection<int>> GetIdMacchineConPiastraStandardAsync() =>
+        await db.PiastreMacchineCompatibili
+            .Where(x => x.Attiva && x.Piastra.TipoPiastra == Core.Enums.TipoPiastra.Standard)
+            .Select(x => x.IdMacchinaStandard)
+            .Distinct()
+            .ToListAsync();
+
     public async Task SetAttivaAsync(int idCompatibilita, bool attiva)
     {
         var entity = await GetByIdAsync(idCompatibilita);

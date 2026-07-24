@@ -57,6 +57,8 @@ public partial class App : Application
         services.AddScoped<ICategoriaPiastraRepository, CategoriaPiastraRepository>();
         services.AddScoped<IFormatoMacchinaRepository, FormatoMacchinaRepository>();
         services.AddScoped<IProduttoreMacchinaRepository, ProduttoreMacchinaRepository>();
+        services.AddScoped<INotaTecnicaClienteRepository, NotaTecnicaClienteRepository>();
+        services.AddScoped<IAllegatoClienteRepository, AllegatoClienteRepository>();
 
         // ─── Servizi infrastrutturali ─────────────────────────────────────────
 
@@ -102,6 +104,7 @@ public partial class App : Application
         services.AddTransient<FormatiMacchinaViewModel>();
         services.AddTransient<CategoriePiastreViewModel>();
         services.AddTransient<ProduttoriMacchinaViewModel>();
+        services.AddTransient<NuovaPiastraDialogViewModel>();
         services.AddTransient<OrdiniVenditaViewModel>();
 
         // MainWindow e MainWindowViewModel sono Singleton (vivono per tutta la sessione dell'app).

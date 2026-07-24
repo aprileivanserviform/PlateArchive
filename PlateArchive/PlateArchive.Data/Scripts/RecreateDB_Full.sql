@@ -128,10 +128,6 @@ CREATE TABLE dbo.MacchineStandard (
     Note               nvarchar(max) NULL,
     IdFormato          int           NULL,
     IdProduttore       int           NULL,
-    LarghezzaMinimaFoglioMm  decimal(18,2) NULL,
-    AltezzaMinimaFoglioMm    decimal(18,2) NULL,
-    LarghezzaMassimaFoglioMm decimal(18,2) NULL,
-    AltezzaMassimaFoglioMm   decimal(18,2) NULL,
     CONSTRAINT PK_MacchineStandard PRIMARY KEY (IdMacchinaStandard),
     CONSTRAINT FK_MacchineStandard_FormatiMacchine_IdFormato
         FOREIGN KEY (IdFormato)
@@ -160,7 +156,6 @@ GO
 CREATE TABLE dbo.Piastre (
     IdPiastra                int           IDENTITY(1,1) NOT NULL,
     CodicePiastra            nvarchar(450) NOT NULL,
-    CodiceArticoloGestionale nvarchar(450) NULL,
     Descrizione              nvarchar(max) NULL,
     Stato                    int           NOT NULL,            -- StatoPiastra enum
     IdCategoriaPiastra       int           NULL,
@@ -168,9 +163,6 @@ CREATE TABLE dbo.Piastre (
     IsEliminata              bit           NOT NULL CONSTRAINT DF_Piastre_IsEliminata DEFAULT 0,
     LarghezzaMm              decimal(18,2) NULL,
     AltezzaMm                decimal(18,2) NULL,
-    SpessoreMm               decimal(18,2) NULL,
-    Durezza                  decimal(18,2) NULL,
-    Peso                     decimal(18,2) NULL,
     Note                     nvarchar(max) NULL,
     DataCreazione            datetime2     NOT NULL CONSTRAINT DF_Piastre_DataCreazione DEFAULT GETUTCDATE(),
     DataUltimaModifica       datetime2     NOT NULL CONSTRAINT DF_Piastre_DataUltimaModifica DEFAULT GETUTCDATE(),
@@ -192,10 +184,6 @@ CREATE TABLE dbo.Piastre (
 );
 CREATE UNIQUE INDEX IX_Piastre_CodicePiastra
     ON dbo.Piastre (CodicePiastra);
--- Indice filtrato: CodiceArticoloGestionale univoco solo quando valorizzato
-CREATE UNIQUE INDEX IX_Piastre_CodiceArticoloGestionale
-    ON dbo.Piastre (CodiceArticoloGestionale)
-    WHERE [CodiceArticoloGestionale] IS NOT NULL;
 CREATE INDEX IX_Piastre_IdCategoriaPiastra
     ON dbo.Piastre (IdCategoriaPiastra);
 CREATE INDEX IX_Piastre_IdFormato
@@ -270,7 +258,6 @@ CREATE TABLE dbo.ClientiMacchine (
     IdClienteMacchina    int           IDENTITY(1,1) NOT NULL,
     IdCliente            int           NOT NULL,
     IdMacchinaStandard   int           NOT NULL,
-    Matricola            nvarchar(max) NULL,
     CodiceInternoCliente nvarchar(max) NULL,
     DataAssociazione     datetime2     NOT NULL,
     Attiva               bit           NOT NULL CONSTRAINT DF_ClientiMacchine_Attiva DEFAULT 0,
@@ -382,25 +369,24 @@ DECLARE @fmt145 int = (SELECT IdFormato FROM dbo.FormatiMacchine WHERE NomeForma
 DECLARE @fmt88  int = (SELECT IdFormato FROM dbo.FormatiMacchine WHERE NomeFormato = '88');
 
 INSERT INTO dbo.MacchineStandard
-    (CodiceMacchina, NomeMacchina, IdFormato,
-     LarghezzaMinimaFoglioMm, AltezzaMinimaFoglioMm, LarghezzaMassimaFoglioMm, AltezzaMassimaFoglioMm, Attiva) VALUES
-    ('NOVACUT_106',       'NOVACUT 106',         @fmt106, 400, 350, 760, 1060, 1),
-    ('NOVACUT_145',       'NOVACUT 145',         @fmt145, 400, 400, 760, 1450, 1),
-    ('EXPERTCUT_106',     'EXPERTCUT 106',       @fmt106, 400, 350, 760, 1060, 1),
-    ('EXPERTCUT_145',     'EXPERTCUT 145',       @fmt145, 400, 400, 760, 1450, 1),
-    ('SPRINTERA_106PER',  'SPRINTERA 106 PER',   @fmt106, 400, 350, 760, 1060, 1),
-    ('MASTERCUT_VECCHIO', 'MASTERCUT (vecchio)', @fmt88,  350, 300, 600,  880, 0);
+    (CodiceMacchina, NomeMacchina, IdFormato, Attiva) VALUES
+    ('NOVACUT_106',       'NOVACUT 106',         @fmt106, 1),
+    ('NOVACUT_145',       'NOVACUT 145',         @fmt145, 1),
+    ('EXPERTCUT_106',     'EXPERTCUT 106',       @fmt106, 1),
+    ('EXPERTCUT_145',     'EXPERTCUT 145',       @fmt145, 1),
+    ('SPRINTERA_106PER',  'SPRINTERA 106 PER',   @fmt106, 1),
+    ('MASTERCUT_VECCHIO', 'MASTERCUT (vecchio)', @fmt88,  0);
 
 -- Piastre (Stato: Attiva=0, Obsoleta=1, DaVerificare=2 | TipoPiastra: Standard=0)
 DECLARE @now datetime2 = GETUTCDATE();
 
-INSERT INTO dbo.Piastre (CodicePiastra, CodiceArticoloGestionale, Descrizione, IdFormato,
+INSERT INTO dbo.Piastre (CodicePiastra, Descrizione, IdFormato,
                           Stato, TipoPiastra, DataCreazione, DataUltimaModifica) VALUES
-    ('PLT-000245', 'PLT-000245', 'Piastra frontale 106',          @fmt106, 0, 0, DATEADD(day,-120,@now), DATEADD(day,-30, @now)),
-    ('PLT-000312', 'PLT-000312', 'Piastra laterale 106 destra',   @fmt106, 0, 0, DATEADD(day,-90, @now), DATEADD(day,-10, @now)),
-    ('PLT-000418', 'PLT-000418', 'Piastra coperchio 145',         @fmt145, 0, 0, DATEADD(day,-60, @now), DATEADD(day,-5,  @now)),
-    ('PLT-000501', 'PLT-000501', 'Piastra base EXPERTCUT 106',    @fmt106, 2, 0, DATEADD(day,-20, @now), DATEADD(day,-2,  @now)),
-    ('PLT-000088', 'PLT-000088', 'Piastra obsoleta MASTERCUT 88', @fmt88,  1, 0, DATEADD(day,-500,@now), DATEADD(day,-200,@now));
+    ('PLT-000245', 'Piastra frontale 106',          @fmt106, 0, 0, DATEADD(day,-120,@now), DATEADD(day,-30, @now)),
+    ('PLT-000312', 'Piastra laterale 106 destra',   @fmt106, 0, 0, DATEADD(day,-90, @now), DATEADD(day,-10, @now)),
+    ('PLT-000418', 'Piastra coperchio 145',         @fmt145, 0, 0, DATEADD(day,-60, @now), DATEADD(day,-5,  @now)),
+    ('PLT-000501', 'Piastra base EXPERTCUT 106',    @fmt106, 2, 0, DATEADD(day,-20, @now), DATEADD(day,-2,  @now)),
+    ('PLT-000088', 'Piastra obsoleta MASTERCUT 88', @fmt88,  1, 0, DATEADD(day,-500,@now), DATEADD(day,-200,@now));
 
 -- Disegni 1:1 (Stato: Attivo=0, Obsoleto=1, DaVerificare=2)
 -- PLT-000088 non ha disegno → icona warning nell'interfaccia
@@ -448,13 +434,13 @@ DECLARE @mx6 int = (SELECT IdMacchinaStandard FROM dbo.MacchineStandard WHERE Co
 
 DECLARE @now2 datetime2 = GETUTCDATE();
 
-INSERT INTO dbo.ClientiMacchine (IdCliente, IdMacchinaStandard, Matricola, DataAssociazione, Attiva) VALUES
-    (@cCli1, @mx1, 'NC106-2019-001', DATEADD(year,-4, @now2), 1),
-    (@cCli1, @mx3, 'EC106-2021-007', DATEADD(year,-2, @now2), 1),
-    (@cCli2, @mx1, 'NC106-2020-003', DATEADD(year,-3, @now2), 1),
-    (@cCli2, @mx2, 'NC145-2022-002', DATEADD(year,-1, @now2), 1),
-    (@cCli3, @mx5, 'SP106-2023-001', DATEADD(month,-8,@now2), 1),
-    (@cCli4, @mx6, 'MC88-2015-001',  DATEADD(year,-8, @now2), 1);
+INSERT INTO dbo.ClientiMacchine (IdCliente, IdMacchinaStandard, DataAssociazione, Attiva) VALUES
+    (@cCli1, @mx1, DATEADD(year,-4, @now2), 1),
+    (@cCli1, @mx3, DATEADD(year,-2, @now2), 1),
+    (@cCli2, @mx1, DATEADD(year,-3, @now2), 1),
+    (@cCli2, @mx2, DATEADD(year,-1, @now2), 1),
+    (@cCli3, @mx5, DATEADD(month,-8,@now2), 1),
+    (@cCli4, @mx6, DATEADD(year,-8, @now2), 1);
 
 -- ClientiPiastre (Stato: Attiva=0)
 DECLARE @cm1 int = (SELECT IdClienteMacchina FROM dbo.ClientiMacchine WHERE IdCliente = @cCli1 AND IdMacchinaStandard = @mx1);

@@ -5,12 +5,16 @@
     <!--
     OrdiniVenditaView — righe ordine di vendita non evase, lette dal gestionale (DB2/Panthera).
     Interrogazione live (nessuna cache locale, vedi TASK-16/17 in docs/TASKS.md): il pulsante
-    "Aggiorna" rilancia la query ogni volta. Per ogni riga si cerca in locale la Piastra con lo
-    stesso CodiceArticoloGestionale; se trovata e con disegno associato, "Apri disegno" lo apre
-    direttamente con l'applicazione predefinita del sistema operativo. Se la piastra non è stata
-    trovata, "Associa piastra" (o il doppio clic sulla riga) apre AssociaPiastraOrdineWindow per
-    collegarla a una piastra esistente; se è già stata trovata, il doppio clic apre invece
-    PiastraDettaglioWindow con le sue caratteristiche.
+    "Aggiorna" rilancia la query ogni volta.
+
+    Match piastre (TASK-18, nuova codifica articoli): cliente della riga (R_CLIENTE) + formato
+    estratto dalle posizioni 7-10 del codice articolo, confrontato con il formato delle piastre
+    associate al cliente. Le righe di lastre grezze (formato 000) non compaiono. Stati della riga:
+    - 1 compatibile  → "Apri disegno" diretto; doppio clic = dettaglio piastra.
+    - N compatibili  → pulsante con conteggio (o doppio clic) = SceltaPiastraOrdineWindow.
+    - 0 compatibili  → riga evidenziata; "Associa piastra" (o doppio clic) apre
+      AssociaPiastraOrdineWindow, che associa la piastra scelta al cliente (ClientePiastra).
+    - Codice vecchia codifica → solo indicatore: nessun match possibile (codici in sospensione).
 
     Le colonne dati NON sono definite qui: le genera il code-behind dalla query configurata in
     appsettings.json (Db2:QueryRigheOrdineVendita) — è la SELECT a comandare la tabella.
@@ -96,15 +100,38 @@
                                             <TextBlock Text="&#xE78B;" FontFamily="Segoe MDL2 Assets"
                                                        FontWeight="Normal"/>
                                         </Button>
+                                        <!-- Più piastre compatibili: conteggio + dialog di scelta -->
                                         <Button Style="{StaticResource Button.Icon}"
-                                                ToolTip="Associa piastra"
+                                                ToolTip="Più piastre compatibili — scegli quale aprire"
+                                                Click="SceltaPiastra_Click"
+                                                Visibility="{Binding MultipleCompatibili, Converter={StaticResource BoolToVis}}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <!-- &#xE8FD; = BulletedList -->
+                                                <TextBlock Text="&#xE8FD;" FontFamily="Segoe MDL2 Assets"
+                                                           FontWeight="Normal"/>
+                                                <TextBlock Text="{Binding NumeroCompatibili}"
+                                                           FontSize="{StaticResource FontSize.Caption}"
+                                                           FontWeight="{StaticResource FontWeight.SemiBold}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="3,0,0,0"/>
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Style="{StaticResource Button.Icon}"
+                                                ToolTip="Associa piastra al cliente"
                                                 Click="AssociaPiastra_Click"
-                                                Visibility="{Binding PiastraNonTrovata, Converter={StaticResource BoolToVis}}">
+                                                Visibility="{Binding AssociaVisibile, Converter={StaticResource BoolToVis}}">
                                             <!-- &#xE71B; = Link -->
                                             <TextBlock Text="&#xE71B;" FontFamily="Segoe MDL2 Assets"
                                                        Foreground="{DynamicResource Brush.Warning}"
                                                        FontWeight="Normal"/>
                                         </Button>
+                                        <!-- Codice della vecchia codifica: nessun match possibile,
+                                             solo indicatore (i codici vecchi sono in sospensione). -->
+                                        <TextBlock Text="&#xE783;" FontFamily="Segoe MDL2 Assets"
+                                                   ToolTip="Codice articolo non conforme alla nuova codifica: nessun match piastra"
+                                                   Foreground="{DynamicResource Brush.TextDisabled}"
+                                                   VerticalAlignment="Center" Margin="0"
+                                                   Visibility="{Binding CodiceNonConforme, Converter={StaticResource BoolToVis}}"/>
                                         <!-- Piastra trovata ma senza disegno: solo icona con tooltip,
                                              per tenere la colonna alla larghezza minima. -->
                                         <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets"

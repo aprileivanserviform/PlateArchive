@@ -20,6 +20,13 @@
                 <Run Text="Articolo gestionale:"/>
                 <Run Text="{Binding CodiceArticolo, Mode=OneWay}" FontWeight="{StaticResource FontWeight.SemiBold}"/>
             </TextBlock>
+            <TextBlock FontSize="{StaticResource FontSize.Caption}"
+                       Foreground="{DynamicResource Brush.TextSecondary}"
+                       TextWrapping="Wrap"
+                       Margin="0,4,0,0">
+                <Run Text="Cliente:"/>
+                <Run Text="{Binding RagioneSocialeCliente, Mode=OneWay}" FontWeight="{StaticResource FontWeight.SemiBold}"/>
+            </TextBlock>
             <TextBlock Text="{Binding DescrizioneArticolo, Mode=OneWay}"
                        FontSize="{StaticResource FontSize.Caption}"
                        Foreground="{DynamicResource Brush.TextSecondary}"
@@ -108,6 +115,9 @@
                                         <TextBlock Text="{Binding CodicePiastra}"
                                                    FontWeight="{StaticResource FontWeight.SemiBold}"
                                                    MinWidth="90" Margin="0,0,10,0"/>
+                                        <TextBlock Text="{Binding Formato.NomeFormato, StringFormat='F. {0}', TargetNullValue=''}"
+                                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                                   Margin="0,0,10,0"/>
                                         <TextBlock Text="{Binding Descrizione}"
                                                    Foreground="{DynamicResource Brush.TextSecondary}"/>
                                     </StackPanel>
@@ -117,6 +127,20 @@
                     </ItemsControl>
                 </Border>
             </Grid>
+
+            <!-- Avviso formato non compatibile (non bloccante) -->
+            <Border Background="{DynamicResource Brush.WarningSurface}"
+                    BorderBrush="{DynamicResource Brush.Warning}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource Radius.S}"
+                    Padding="10,8"
+                    Margin="0,0,0,8"
+                    Visibility="{Binding IsAvvisoVisible, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="{Binding Avviso}"
+                           TextWrapping="Wrap"
+                           FontSize="{StaticResource FontSize.Caption}"
+                           Foreground="{DynamicResource Brush.Warning}"/>
+            </Border>
 
             <!-- Errore -->
             <Border Background="{DynamicResource Brush.ErrorSurface}"

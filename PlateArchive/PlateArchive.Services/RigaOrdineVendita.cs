@@ -14,8 +14,8 @@ namespace PlateArchive.Services;
 /// <see cref="CodiceArticolo"/>, <see cref="CodiceClienteGestionale"/> e
 /// <see cref="DescrizioneArticolo"/> sono estratti per NOME dalle colonne <c>R_ARTICOLO</c>,
 /// <c>R_CLIENTE</c> e <c>DESCR_ESTESA</c> (che quindi devono restare nella SELECT senza alias)
-/// e alimentano la logica applicativa: ricerca piastra per codice articolo, auto-associazione
-/// cliente↔piastra, descrizione articolo nei dialog Associa piastra / Caratteristiche piastra.
+/// e alimentano la logica applicativa: match piastre per cliente+formato (nuova codifica
+/// articoli, TASK-18), descrizione articolo nei dialog Associa piastra / Caratteristiche piastra.
 /// </summary>
 public record RigaOrdineVendita(
     string CodiceArticolo,

@@ -2,10 +2,14 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Windows;
 using System.Windows.Input;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Win32;
 using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
 using PlateArchive.Data.Repositories.Interfaces;
+using PlateArchive.Services;
 using PlateArchive.Wpf.Commands;
 using PlateArchive.Wpf.Services;
 
@@ -35,13 +39,16 @@ public record PiastraOpzione(Piastra Piastra, bool IsCompatibile);
 /// </summary>
 public class ClienteDettaglioViewModel : ViewModelBase
 {
-    private readonly IClienteRepository          _clienteRepo;
-    private readonly IClienteMacchinaRepository  _macchineRepo;
-    private readonly IClientePiastraRepository   _piastreRepo;
-    private readonly ICompatibilitaRepository    _compatRepo;
-    private readonly IMacchinaStandardRepository _macchineStdRepo;
-    private readonly IPiastraRepository          _piastraRepo;
-    private readonly NavigationService           _navigation;
+    private readonly IClienteRepository               _clienteRepo;
+    private readonly IClienteMacchinaRepository       _macchineRepo;
+    private readonly IClientePiastraRepository        _piastreRepo;
+    private readonly ICompatibilitaRepository         _compatRepo;
+    private readonly IMacchinaStandardRepository      _macchineStdRepo;
+    private readonly IPiastraRepository               _piastraRepo;
+    private readonly INotaTecnicaClienteRepository    _noteRepo;
+    private readonly IAllegatoClienteRepository       _allegatiRepo;
+    private readonly IFileArchivioService             _fileArchivio;
+    private readonly NavigationService                _navigation;
 
     private int     _idCliente;
     private Cliente? _cliente;
@@ -49,10 +56,9 @@ public class ClienteDettaglioViewModel : ViewModelBase
     // Form aggiungi macchina
     private bool              _isAggiungiMacchinaVisible;
     private MacchinaStandard? _macchinaSelezionata;
-    private string            _matricolaNuova     = string.Empty;
     private string            _noteNuovaMacchina  = string.Empty;
 
-    // Form aggiungi piastra
+    // Form aggiungi piastra (associa esistente)
     private bool           _isAggiungiPiastraVisible;
     private PiastraOpzione? _piastraSelezionata;
     private ClienteMacchina? _macchinaPerPiastra;
@@ -63,14 +69,28 @@ public class ClienteDettaglioViewModel : ViewModelBase
     private readonly ObservableCollection<ClientePiastra> _tuttePiastre = [];
     private bool _mostraStoriche;
 
+    // Form nota tecnica
+    private bool              _isNotaFormVisible;
+    private NotaTecnicaCliente? _notaInModifica;
+    private string            _formNotaTitolo = string.Empty;
+    private string            _formNotaTesto  = string.Empty;
+    private string?           _erroreNota;
+
+    // Allegati
+    private bool              _isCaricamentoAllegato;
+    private string?           _erroreAllegato;
+
     public ClienteDettaglioViewModel(
-        IClienteRepository          clienteRepo,
-        IClienteMacchinaRepository  macchineRepo,
-        IClientePiastraRepository   piastreRepo,
-        ICompatibilitaRepository    compatRepo,
-        IMacchinaStandardRepository macchineStdRepo,
-        IPiastraRepository          piastraRepo,
-        NavigationService           navigation)
+        IClienteRepository               clienteRepo,
+        IClienteMacchinaRepository       macchineRepo,
+        IClientePiastraRepository        piastreRepo,
+        ICompatibilitaRepository         compatRepo,
+        IMacchinaStandardRepository      macchineStdRepo,
+        IPiastraRepository               piastraRepo,
+        INotaTecnicaClienteRepository    noteRepo,
+        IAllegatoClienteRepository       allegatiRepo,
+        IFileArchivioService             fileArchivio,
+        NavigationService                navigation)
     {
         _clienteRepo     = clienteRepo;
         _macchineRepo    = macchineRepo;
@@ -78,6 +98,9 @@ public class ClienteDettaglioViewModel : ViewModelBase
         _compatRepo      = compatRepo;
         _macchineStdRepo = macchineStdRepo;
         _piastraRepo     = piastraRepo;
+        _noteRepo        = noteRepo;
+        _allegatiRepo    = allegatiRepo;
+        _fileArchivio    = fileArchivio;
         _navigation      = navigation;
 
         // Torna alla lista clienti
@@ -94,7 +117,6 @@ public class ClienteDettaglioViewModel : ViewModelBase
         {
             IsAggiungiMacchinaVisible = false;
             MacchinaSelezionata = null;
-            MatricolaNuova = string.Empty;
             NoteNuovaMacchina = string.Empty;
         });
 
@@ -112,6 +134,25 @@ public class ClienteDettaglioViewModel : ViewModelBase
 
         AnnullaAggiungiPiastraCommand = new RelayCommand(_ => ChiudiFormPiastra());
 
+        // Mostra dialog "Nuova piastra" con cliente pre-impostato; al salvataggio ricarica le piastre.
+        NuovaPiastraCommand = new RelayCommand(async _ =>
+        {
+            if (Cliente is null) return;
+            using var scope = App.ServiceProvider.CreateScope();
+            var vm = scope.ServiceProvider.GetRequiredService<NuovaPiastraDialogViewModel>();
+            vm.PreimpostaCliente(Cliente);
+            var dialog = new Views.NuovaPiastraDialog
+            {
+                Owner = System.Windows.Application.Current.MainWindow
+            };
+            dialog.DataContext = vm;
+            vm.ChiudiDialog = result => { dialog.DialogResult = result; dialog.Close(); };
+            await vm.LoadAsync();
+            dialog.ShowDialog();
+            if (vm.PiastraCreata is not null)
+                await CaricaPiastreAsync();
+        });
+
         AprirDisegnoCommand = new RelayCommand(
             p => AprirDisegno((ClientePiastra)p!),
             p => p is ClientePiastra cp && !string.IsNullOrWhiteSpace(cp.Piastra?.Disegno?.PercorsoFile));
@@ -121,6 +162,34 @@ public class ClienteDettaglioViewModel : ViewModelBase
 
         ToggleAttivaCommand = new RelayCommand(
             async p => await ToggleAttivaAsync((ClienteMacchina)p!));
+
+        // Note tecniche
+        AggiungiNotaCommand = new RelayCommand(_ => ApriFormNuovaNota());
+
+        ConfermaNotaCommand = new RelayCommand(
+            async _ => await ConfermaNotaAsync(),
+            _ => !string.IsNullOrWhiteSpace(FormNotaTitolo));
+
+        AnnullaNotaCommand = new RelayCommand(_ => ChiudiFormNota());
+
+        ModificaNotaCommand = new RelayCommand(p => ApriFormModificaNota((NotaTecnicaCliente)p!));
+
+        EliminaNotaCommand = new RelayCommand(async p => await EliminaNotaAsync((NotaTecnicaCliente)p!));
+
+        // Allegati
+        AggiungAllegatoCommand = new RelayCommand(
+            async _ => await AggiungAllegatoAsync(),
+            _ => !IsCaricamentoAllegato);
+
+        // CanExecute NON accede al file system: il percorso è su condivisione di rete e
+        // CommandManager rivaluta di continuo sul thread UI (stutter, e pulsante disabilitato
+        // se la share è momentaneamente irraggiungibile). L'esistenza è verificata in
+        // ApriAllegato, che mostra un errore esplicito se il file non c'è.
+        ApriAllegatoCommand = new RelayCommand(
+            p => ApriAllegato((AllegatoCliente)p!),
+            p => p is AllegatoCliente);
+
+        EliminaAllegatoCommand = new RelayCommand(async p => await EliminaAllegatoAsync((AllegatoCliente)p!));
     }
 
     // ─── Dati cliente ─────────────────────────────────────────────────────────
@@ -159,13 +228,6 @@ public class ClienteDettaglioViewModel : ViewModelBase
         set => SetField(ref _macchinaSelezionata, value);
     }
 
-    /// <summary>Matricola fisica dell'unità macchina (es. numero di serie dell'esemplare).</summary>
-    public string MatricolaNuova
-    {
-        get => _matricolaNuova;
-        set => SetField(ref _matricolaNuova, value);
-    }
-
     public string NoteNuovaMacchina
     {
         get => _noteNuovaMacchina;
@@ -182,6 +244,12 @@ public class ClienteDettaglioViewModel : ViewModelBase
 
     /// <summary>Incrociato macchine × piastre compatibili (riepilogo sola lettura).</summary>
     public ObservableCollection<CompatibilitaRow>  Compatibilita       { get; } = [];
+
+    /// <summary>Note tecniche del cliente, ordinate per data modifica decrescente.</summary>
+    public ObservableCollection<NotaTecnicaCliente> NoteTecniche        { get; } = [];
+
+    /// <summary>Allegati del cliente, ordinati per data caricamento decrescente.</summary>
+    public ObservableCollection<AllegatoCliente>    Allegati            { get; } = [];
 
     /// <summary>Tutti i modelli macchina attivi — ComboBox "Seleziona modello" nel form.</summary>
     public ObservableCollection<MacchinaStandard>  MacchineDisponibili { get; } = [];
@@ -232,6 +300,53 @@ public class ClienteDettaglioViewModel : ViewModelBase
 
     public bool IsErroreDisegnoVisible => !string.IsNullOrEmpty(_erroreDisegno);
 
+    // ─── Proprietà form nota ──────────────────────────────────────────────────
+
+    public bool IsNotaFormVisible
+    {
+        get => _isNotaFormVisible;
+        set => SetField(ref _isNotaFormVisible, value);
+    }
+
+    public string FormNotaTitolo
+    {
+        get => _formNotaTitolo;
+        set { if (SetField(ref _formNotaTitolo, value)) CommandManager.InvalidateRequerySuggested(); }
+    }
+
+    public string FormNotaTesto
+    {
+        get => _formNotaTesto;
+        set => SetField(ref _formNotaTesto, value);
+    }
+
+    public string? ErroreNota
+    {
+        get => _erroreNota;
+        set { if (SetField(ref _erroreNota, value)) OnPropertyChanged(nameof(IsErroreNotaVisible)); }
+    }
+
+    public bool IsErroreNotaVisible => !string.IsNullOrEmpty(_erroreNota);
+
+    /// <summary>True durante la modifica di una nota esistente (false = nuova nota).</summary>
+    public bool IsModificaNota => _notaInModifica is not null;
+
+    // ─── Proprietà allegati ───────────────────────────────────────────────────
+
+    public bool IsCaricamentoAllegato
+    {
+        get => _isCaricamentoAllegato;
+        set { if (SetField(ref _isCaricamentoAllegato, value)) CommandManager.InvalidateRequerySuggested(); }
+    }
+
+    public string? ErroreAllegato
+    {
+        get => _erroreAllegato;
+        set { if (SetField(ref _erroreAllegato, value)) OnPropertyChanged(nameof(IsErroreAllegatoVisible)); }
+    }
+
+    public bool IsErroreAllegatoVisible => !string.IsNullOrEmpty(_erroreAllegato);
+
     // ─── Comandi ─────────────────────────────────────────────────────────────
 
     public ICommand TornaIndietroCommand            { get; }
@@ -246,6 +361,21 @@ public class ClienteDettaglioViewModel : ViewModelBase
     public ICommand RimuoviPiastraCommand           { get; }
     public ICommand AprirDisegnoCommand             { get; }
     public ICommand ToggleStatoPiastraCommand       { get; }
+
+    // Crea nuova piastra (naviga a PiastreView con cliente pre-impostato)
+    public ICommand NuovaPiastraCommand { get; }
+
+    // Note tecniche
+    public ICommand AggiungiNotaCommand  { get; }
+    public ICommand ConfermaNotaCommand  { get; }
+    public ICommand AnnullaNotaCommand   { get; }
+    public ICommand ModificaNotaCommand  { get; }
+    public ICommand EliminaNotaCommand   { get; }
+
+    // Allegati
+    public ICommand AggiungAllegatoCommand  { get; }
+    public ICommand ApriAllegatoCommand     { get; }
+    public ICommand EliminaAllegatoCommand  { get; }
 
     /// <summary>Se true, mostra anche le piastre con stato Obsoleta nella lista.</summary>
     public bool MostraStoriche
@@ -267,6 +397,8 @@ public class ClienteDettaglioViewModel : ViewModelBase
         await CaricaMacchineDisponibiliAsync();
         // Compatibilità dipende da Macchine → eseguita dopo.
         await CaricaCompatibilitaAsync();
+        await CaricaNoteAsync();
+        await CaricaAllegatiAsync();
     }
 
     private async Task CaricaMacchineAsync()
@@ -328,7 +460,6 @@ public class ClienteDettaglioViewModel : ViewModelBase
         // della view siano visibili, e risolve la race condition con LoadAsync() fire-and-forget.
         await CaricaMacchineDisponibiliAsync();
         MacchinaSelezionata = null;
-        MatricolaNuova = string.Empty;
         NoteNuovaMacchina = string.Empty;
         IsAggiungiMacchinaVisible = true;
     }
@@ -341,7 +472,6 @@ public class ClienteDettaglioViewModel : ViewModelBase
         {
             IdCliente          = Cliente.IdCliente,
             IdMacchinaStandard = MacchinaSelezionata.IdMacchinaStandard,
-            Matricola          = string.IsNullOrWhiteSpace(MatricolaNuova) ? null : MatricolaNuova,
             Note               = string.IsNullOrWhiteSpace(NoteNuovaMacchina) ? null : NoteNuovaMacchina,
             Attiva             = true
         });
@@ -352,7 +482,6 @@ public class ClienteDettaglioViewModel : ViewModelBase
 
         IsAggiungiMacchinaVisible = false;
         MacchinaSelezionata = null;
-        MatricolaNuova = string.Empty;
         NoteNuovaMacchina = string.Empty;
     }
 
@@ -486,5 +615,177 @@ public class ClienteDettaglioViewModel : ViewModelBase
         {
             ErroreDisegno = $"Impossibile aprire il file: {ex.Message}";
         }
+    }
+
+    // ─── Note tecniche ────────────────────────────────────────────────────────
+
+    private async Task CaricaNoteAsync()
+    {
+        NoteTecniche.Clear();
+        foreach (var n in await _noteRepo.GetByClienteAsync(_idCliente))
+            NoteTecniche.Add(n);
+    }
+
+    private void ApriFormNuovaNota()
+    {
+        _notaInModifica  = null;
+        FormNotaTitolo   = string.Empty;
+        FormNotaTesto    = string.Empty;
+        ErroreNota       = null;
+        IsNotaFormVisible = true;
+        OnPropertyChanged(nameof(IsModificaNota));
+    }
+
+    private void ApriFormModificaNota(NotaTecnicaCliente nota)
+    {
+        _notaInModifica  = nota;
+        FormNotaTitolo   = nota.Titolo;
+        FormNotaTesto    = nota.Testo ?? string.Empty;
+        ErroreNota       = null;
+        IsNotaFormVisible = true;
+        OnPropertyChanged(nameof(IsModificaNota));
+    }
+
+    private async Task ConfermaNotaAsync()
+    {
+        if (string.IsNullOrWhiteSpace(FormNotaTitolo) || Cliente is null) return;
+
+        if (_notaInModifica is not null)
+        {
+            _notaInModifica.Titolo = FormNotaTitolo.Trim();
+            _notaInModifica.Testo  = string.IsNullOrWhiteSpace(FormNotaTesto) ? null : FormNotaTesto.Trim();
+            await _noteRepo.UpdateAsync(_notaInModifica);
+        }
+        else
+        {
+            await _noteRepo.AddAsync(new NotaTecnicaCliente
+            {
+                IdCliente = Cliente.IdCliente,
+                Titolo    = FormNotaTitolo.Trim(),
+                Testo     = string.IsNullOrWhiteSpace(FormNotaTesto) ? null : FormNotaTesto.Trim()
+            });
+        }
+
+        await CaricaNoteAsync();
+        ChiudiFormNota();
+    }
+
+    private void ChiudiFormNota()
+    {
+        IsNotaFormVisible = false;
+        _notaInModifica   = null;
+        FormNotaTitolo    = string.Empty;
+        FormNotaTesto     = string.Empty;
+        ErroreNota        = null;
+        OnPropertyChanged(nameof(IsModificaNota));
+    }
+
+    private async Task EliminaNotaAsync(NotaTecnicaCliente nota)
+    {
+        var conferma = MessageBox.Show(
+            $"Eliminare la nota «{nota.Titolo}»?",
+            "Conferma eliminazione",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question,
+            MessageBoxResult.No);
+
+        if (conferma != MessageBoxResult.Yes) return;
+
+        await _noteRepo.DeleteAsync(nota.IdNota);
+        NoteTecniche.Remove(nota);
+    }
+
+    // ─── Allegati ─────────────────────────────────────────────────────────────
+
+    private async Task CaricaAllegatiAsync()
+    {
+        Allegati.Clear();
+        foreach (var a in await _allegatiRepo.GetByClienteAsync(_idCliente))
+            Allegati.Add(a);
+    }
+
+    private async Task AggiungAllegatoAsync()
+    {
+        if (Cliente is null) return;
+
+        var dialog = new OpenFileDialog
+        {
+            Title            = "Seleziona allegato",
+            Filter           = "Tutti i file (*.*)|*.*|PDF (*.pdf)|*.pdf|Immagini (*.jpg;*.png)|*.jpg;*.png|Word (*.docx)|*.docx",
+            FilterIndex      = 1,
+            Multiselect      = false
+        };
+
+        if (dialog.ShowDialog() != true) return;
+
+        IsCaricamentoAllegato = true;
+        ErroreAllegato        = null;
+
+        try
+        {
+            var percorsoOrigine = dialog.FileName;
+            var nomeFile        = Path.GetFileName(percorsoOrigine);
+            var dimensione      = new FileInfo(percorsoOrigine).Length;
+
+            var percorsoArchiviato = await _fileArchivio.ArchiviaAllegatoClienteAsync(
+                percorsoOrigine,
+                nomeFile,
+                Cliente.CodiceClienteGestionale,
+                Cliente.RagioneSociale);
+
+            var allegato = new AllegatoCliente
+            {
+                IdCliente       = Cliente.IdCliente,
+                NomeFile        = nomeFile,
+                PercorsoFile    = percorsoArchiviato ?? percorsoOrigine,
+                DimensioneBytes = dimensione
+            };
+
+            await _allegatiRepo.AddAsync(allegato);
+            Allegati.Insert(0, allegato);
+        }
+        catch (Exception ex)
+        {
+            ErroreAllegato = $"Impossibile caricare il file: {ex.Message}";
+        }
+        finally
+        {
+            IsCaricamentoAllegato = false;
+        }
+    }
+
+    private void ApriAllegato(AllegatoCliente allegato)
+    {
+        ErroreAllegato = null;
+
+        if (!File.Exists(allegato.PercorsoFile))
+        {
+            ErroreAllegato = $"File non trovato: {allegato.PercorsoFile}";
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(allegato.PercorsoFile) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            ErroreAllegato = $"Impossibile aprire il file: {ex.Message}";
+        }
+    }
+
+    private async Task EliminaAllegatoAsync(AllegatoCliente allegato)
+    {
+        var conferma = MessageBox.Show(
+            $"Eliminare l'allegato «{allegato.NomeFile}»?\n\nIl file fisico non verrà eliminato.",
+            "Conferma eliminazione",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question,
+            MessageBoxResult.No);
+
+        if (conferma != MessageBoxResult.Yes) return;
+
+        await _allegatiRepo.DeleteAsync(allegato.IdAllegato);
+        Allegati.Remove(allegato);
     }
 }

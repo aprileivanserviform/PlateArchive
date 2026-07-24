@@ -37,12 +37,14 @@ public class PiastraRepository(PlateArchiveDbContext db) : IPiastraRepository
             .Include(p => p.Disegno)
             .FirstOrDefaultAsync(p => p.CodicePiastra == codice);
 
-    public async Task<Piastra?> GetByCodiceArticoloGestionaleAsync(string codiceArticolo) =>
+    public async Task<IEnumerable<Piastra>> GetByClienteEsclusivoAsync(int idCliente) =>
         await db.Piastre
             .Include(p => p.Categoria)
             .Include(p => p.Formato)
             .Include(p => p.Disegno)
-            .FirstOrDefaultAsync(p => p.CodiceArticoloGestionale == codiceArticolo);
+            .Where(p => p.IdClienteEsclusivo == idCliente)
+            .OrderBy(p => p.CodicePiastra)
+            .ToListAsync();
 
     public async Task<IEnumerable<Piastra>> SearchAsync(string query)
     {
@@ -52,7 +54,6 @@ public class PiastraRepository(PlateArchiveDbContext db) : IPiastraRepository
             .Include(p => p.Formato)
             .Include(p => p.Disegno)
             .Where(p => p.CodicePiastra.ToLower().Contains(q)
-                     || (p.CodiceArticoloGestionale != null && p.CodiceArticoloGestionale.ToLower().Contains(q))
                      || (p.Descrizione != null && p.Descrizione.ToLower().Contains(q)))
             .OrderBy(p => p.CodicePiastra)
             .ToListAsync();
@@ -91,6 +92,22 @@ public class PiastraRepository(PlateArchiveDbContext db) : IPiastraRepository
         entity.DataUltimaModifica = DateTime.UtcNow;
         db.Piastre.Update(entity);
         await db.SaveChangesAsync();
+    }
+
+    public async Task<string> GetNextCodiceSuggerito()
+    {
+        var codici = await db.Piastre
+            .IgnoreQueryFilters()
+            .Select(p => p.CodicePiastra)
+            .ToListAsync();
+
+        var maxNum = codici
+            .Where(c => c.StartsWith("PLT-", StringComparison.OrdinalIgnoreCase))
+            .Select(c => int.TryParse(c[4..], out var n) ? n : 0)
+            .DefaultIfEmpty(0)
+            .Max();
+
+        return $"PLT-{maxNum + 1:D6}";
     }
 
     public async Task DeleteAsync(int id)

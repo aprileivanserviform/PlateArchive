@@ -135,10 +135,6 @@
                         <TextBox Text="{Binding FormCodicePiastra, UpdateSourceTrigger=PropertyChanged}"
                                  Style="{StaticResource FieldBox}"/>
 
-                        <TextBlock Text="Codice articolo gestionale" Style="{StaticResource FieldLabel}"/>
-                        <TextBox Text="{Binding FormCodiceArticolo, UpdateSourceTrigger=PropertyChanged}"
-                                 Style="{StaticResource FieldBox}"/>
-
                         <TextBlock Text="Descrizione" Style="{StaticResource FieldLabel}"/>
                         <TextBox Text="{Binding FormDescrizione, UpdateSourceTrigger=PropertyChanged}"
                                  Style="{StaticResource FieldBox}"/>
@@ -148,37 +144,23 @@
                                   SelectedItem="{Binding FormStato}"
                                   Margin="0,0,0,10"/>
 
-                        <TextBlock Text="Formato macchina" Style="{StaticResource FieldLabel}"/>
+                        <TextBlock Text="Formato macchina *" Style="{StaticResource FieldLabel}"/>
                         <ComboBox ItemsSource="{Binding FormatiMacchine}"
                                   SelectedItem="{Binding FormFormato}"
                                   DisplayMemberPath="NomeFormato"
                                   Margin="0,0,0,10"/>
 
-                        <Grid Margin="0,0,0,10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="Categoria" Style="{StaticResource FieldLabel}"/>
-                                <ComboBox ItemsSource="{Binding CategoriePiastre}"
-                                          SelectedItem="{Binding FormCategoria}"
-                                          DisplayMemberPath="Descrizione"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="Peso (kg)" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Text="{Binding FormPeso, UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>
-                        </Grid>
+                        <StackPanel Margin="0,0,0,10">
+                            <TextBlock Text="Categoria" Style="{StaticResource FieldLabel}"/>
+                            <ComboBox ItemsSource="{Binding CategoriePiastre}"
+                                      SelectedItem="{Binding FormCategoria}"
+                                      DisplayMemberPath="Descrizione"/>
+                        </StackPanel>
 
+                        <!-- Spessore e durezza sono dati del gestionale, vedi TASK-21 -->
                         <TextBlock Text="Misure (mm)" Style="{StaticResource FieldLabel}"/>
                         <Grid Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="8"/>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="8"/>
                                 <ColumnDefinition Width="*"/>
@@ -190,14 +172,6 @@
                             <StackPanel Grid.Column="2">
                                 <TextBlock Text="Altezza" Style="{StaticResource FieldLabel}"/>
                                 <TextBox Text="{Binding FormAltezza, UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="4">
-                                <TextBlock Text="Spessore" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Text="{Binding FormSpessore, UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="6">
-                                <TextBlock Text="Durezza" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Text="{Binding FormDurezza, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                         </Grid>
 

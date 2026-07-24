@@ -1,0 +1,120 @@
+<Window x:Class="PlateArchive.Wpf.Views.SceltaPiastraOrdineWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Scegli piastra"
+        Width="540" SizeToContent="Height"
+        MaxHeight="640"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Style="{StaticResource Window.Base}">
+
+    <!--
+    SceltaPiastraOrdineWindow — aperto da OrdiniVenditaView quando la riga ordine ha più
+    piastre compatibili (stesso cliente + stesso formato, TASK-18). Per ogni piastra:
+    apertura disegno (se presente) o dettaglio. Le associazioni Obsolete sono marcate.
+    -->
+
+    <DockPanel Margin="24">
+
+        <!-- ── Header ─────────────────────────────────────────── -->
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,16">
+            <TextBlock Text="Scegli piastra"
+                       Style="{StaticResource TextBlock.Title}"
+                       Margin="0,0,0,6"/>
+            <TextBlock FontSize="{StaticResource FontSize.Caption}"
+                       Foreground="{DynamicResource Brush.TextSecondary}"
+                       TextWrapping="Wrap">
+                <Run Text="Più piastre compatibili con l'articolo:"/>
+                <Run Text="{Binding CodiceArticolo, Mode=OneWay}" FontWeight="{StaticResource FontWeight.SemiBold}"/>
+            </TextBlock>
+            <TextBlock Text="{Binding DescrizioneArticolo, Mode=OneWay}"
+                       FontSize="{StaticResource FontSize.Caption}"
+                       Foreground="{DynamicResource Brush.TextSecondary}"
+                       TextWrapping="Wrap"
+                       Margin="0,4,0,0"
+                       Visibility="{Binding IsDescrizioneArticoloVisible, Converter={StaticResource BoolToVis}}"/>
+        </StackPanel>
+
+        <!-- ── Pulsanti fondo ─────────────────────────────────── -->
+        <StackPanel DockPanel.Dock="Bottom"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,16,0,0">
+            <Button Content="Chiudi"
+                    Click="Chiudi_Click"
+                    Style="{StaticResource Button.Secondary}"/>
+        </StackPanel>
+
+        <!-- ── Lista piastre compatibili ──────────────────────── -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Piastre}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{DynamicResource Brush.Surface}"
+                                BorderBrush="{DynamicResource Brush.Border}"
+                                BorderThickness="1"
+                                CornerRadius="{StaticResource Radius.S}"
+                                Padding="12,8"
+                                Margin="0,0,0,6">
+                            <DockPanel>
+
+                                <!-- Azioni -->
+                                <StackPanel DockPanel.Dock="Right"
+                                            Orientation="Horizontal"
+                                            VerticalAlignment="Center"
+                                            Margin="10,0,0,0">
+                                    <Button Style="{StaticResource Button.Icon}"
+                                            ToolTip="Apri disegno"
+                                            Click="ApriDisegno_Click"
+                                            Visibility="{Binding HaDisegno, Converter={StaticResource BoolToVis}}">
+                                        <!-- &#xE78B; = NewWindow -->
+                                        <TextBlock Text="&#xE78B;" FontFamily="Segoe MDL2 Assets"
+                                                   FontWeight="Normal"/>
+                                    </Button>
+                                    <Button Style="{StaticResource Button.Icon}"
+                                            ToolTip="Caratteristiche piastra"
+                                            Click="ApriDettaglio_Click">
+                                        <!-- &#xE946; = Info -->
+                                        <TextBlock Text="&#xE946;" FontFamily="Segoe MDL2 Assets"
+                                                   FontWeight="Normal"/>
+                                    </Button>
+                                </StackPanel>
+
+                                <!-- Dati piastra -->
+                                <StackPanel VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Piastra.CodicePiastra}"
+                                                   FontWeight="{StaticResource FontWeight.SemiBold}"
+                                                   Margin="0,0,10,0"/>
+                                        <TextBlock Text="{Binding Piastra.Formato.NomeFormato, StringFormat='Formato {0}', TargetNullValue=''}"
+                                                   FontSize="{StaticResource FontSize.Caption}"
+                                                   Foreground="{DynamicResource Brush.TextSecondary}"
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,0,10,0"/>
+                                        <!-- Badge associazione obsoleta: visibile ma marcata -->
+                                        <Border Background="{DynamicResource Brush.WarningSurface}"
+                                                BorderBrush="{DynamicResource Brush.Warning}"
+                                                BorderThickness="1"
+                                                CornerRadius="{StaticResource Radius.S}"
+                                                Padding="6,1"
+                                                VerticalAlignment="Center"
+                                                Visibility="{Binding IsObsoleta, Converter={StaticResource BoolToVis}}">
+                                            <TextBlock Text="Obsoleta"
+                                                       FontSize="{StaticResource FontSize.Caption}"
+                                                       Foreground="{DynamicResource Brush.Warning}"/>
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Piastra.Descrizione, TargetNullValue=''}"
+                                               FontSize="{StaticResource FontSize.Caption}"
+                                               Foreground="{DynamicResource Brush.TextSecondary}"
+                                               TextWrapping="Wrap"
+                                               Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

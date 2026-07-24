@@ -73,14 +73,30 @@ public partial class OrdiniVenditaView : UserControl
         _ = ApriAssociaPiastraAsync(row);
     }
 
+    private void SceltaPiastra_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: RigaOrdineVenditaRow row }) return;
+        ApriSceltaPiastra(row);
+    }
+
     private void Riga_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
         if (sender is not DataGridRow { DataContext: RigaOrdineVenditaRow row }) return;
 
-        if (row.PiastraTrovata)
+        if (row.PiastraSingola)
             _ = ApriDettaglioPiastraAsync(row);
-        else
+        else if (row.MultipleCompatibili)
+            ApriSceltaPiastra(row);
+        else if (row.AssociaVisibile)
             _ = ApriAssociaPiastraAsync(row);
+        // Codice non conforme (vecchia codifica): nessuna azione possibile.
+    }
+
+    private void ApriSceltaPiastra(RigaOrdineVenditaRow row)
+    {
+        var vm = new SceltaPiastraOrdineViewModel(
+            row.Riga.CodiceArticolo, row.Riga.DescrizioneArticolo, row.PiastreCompatibili);
+        new SceltaPiastraOrdineWindow(vm) { Owner = Window.GetWindow(this) }.ShowDialog();
     }
 
     private async Task ApriDettaglioPiastraAsync(RigaOrdineVenditaRow row)
@@ -97,7 +113,7 @@ public partial class OrdiniVenditaView : UserControl
         if (DataContext is not OrdiniVenditaViewModel viewModel) return;
 
         var vm = App.ServiceProvider.GetRequiredService<AssociaPiastraOrdineViewModel>();
-        await vm.InitAsync(row.Riga.CodiceArticolo, row.Riga.DescrizioneArticolo);
+        await vm.InitAsync(row.Riga.CodiceArticolo, row.Riga.CodiceClienteGestionale, row.Riga.DescrizioneArticolo);
         new AssociaPiastraOrdineWindow(vm) { Owner = Window.GetWindow(this) }.ShowDialog();
 
         if (vm.Confermato)
