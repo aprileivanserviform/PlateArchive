@@ -17,6 +17,36 @@ namespace PlateArchive.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.0");
 
+            modelBuilder.Entity("PlateArchive.Core.Models.AllegatoCliente", b =>
+                {
+                    b.Property<int>("IdAllegato")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("DataCaricamento")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("DimensioneBytes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("IdCliente")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("NomeFile")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PercorsoFile")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("IdAllegato");
+
+                    b.HasIndex("IdCliente");
+
+                    b.ToTable("AllegatiClienti");
+                });
+
             modelBuilder.Entity("PlateArchive.Core.Models.CategoriaPiastra", b =>
                 {
                     b.Property<int>("IdCategoriaPiastra")
@@ -90,9 +120,6 @@ namespace PlateArchive.Data.Migrations
 
                     b.Property<int>("IdMacchinaStandard")
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("Matricola")
-                        .HasColumnType("TEXT");
 
                     b.Property<string>("Note")
                         .HasColumnType("TEXT");
@@ -213,12 +240,6 @@ namespace PlateArchive.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<decimal?>("AltezzaMassimaFoglioMm")
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal?>("AltezzaMinimaFoglioMm")
-                        .HasColumnType("TEXT");
-
                     b.Property<bool>("Attiva")
                         .HasColumnType("INTEGER");
 
@@ -231,12 +252,6 @@ namespace PlateArchive.Data.Migrations
 
                     b.Property<int?>("IdProduttore")
                         .HasColumnType("INTEGER");
-
-                    b.Property<decimal?>("LarghezzaMassimaFoglioMm")
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal?>("LarghezzaMinimaFoglioMm")
-                        .HasColumnType("TEXT");
 
                     b.Property<string>("NomeMacchina")
                         .IsRequired()
@@ -260,6 +275,35 @@ namespace PlateArchive.Data.Migrations
                     b.ToTable("MacchineStandard");
                 });
 
+            modelBuilder.Entity("PlateArchive.Core.Models.NotaTecnicaCliente", b =>
+                {
+                    b.Property<int>("IdNota")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("DataCreazione")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DataModifica")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("IdCliente")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Testo")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Titolo")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("IdNota");
+
+                    b.HasIndex("IdCliente");
+
+                    b.ToTable("NoteTecnicheClienti");
+                });
+
             modelBuilder.Entity("PlateArchive.Core.Models.Piastra", b =>
                 {
                     b.Property<int>("IdPiastra")
@@ -267,9 +311,6 @@ namespace PlateArchive.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<decimal?>("AltezzaMm")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("CodiceArticoloGestionale")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CodicePiastra")
@@ -283,9 +324,6 @@ namespace PlateArchive.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Descrizione")
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal?>("Durezza")
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("IdCategoriaPiastra")
@@ -306,12 +344,6 @@ namespace PlateArchive.Data.Migrations
                     b.Property<string>("Note")
                         .HasColumnType("TEXT");
 
-                    b.Property<decimal?>("Peso")
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal?>("SpessoreMm")
-                        .HasColumnType("TEXT");
-
                     b.Property<int>("Stato")
                         .HasColumnType("INTEGER");
 
@@ -319,10 +351,6 @@ namespace PlateArchive.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("IdPiastra");
-
-                    b.HasIndex("CodiceArticoloGestionale")
-                        .IsUnique()
-                        .HasFilter("[CodiceArticoloGestionale] IS NOT NULL");
 
                     b.HasIndex("CodicePiastra")
                         .IsUnique();
@@ -392,6 +420,17 @@ namespace PlateArchive.Data.Migrations
                     b.HasKey("IdProduttore");
 
                     b.ToTable("ProduttoriMacchine");
+                });
+
+            modelBuilder.Entity("PlateArchive.Core.Models.AllegatoCliente", b =>
+                {
+                    b.HasOne("PlateArchive.Core.Models.Cliente", "Cliente")
+                        .WithMany("Allegati")
+                        .HasForeignKey("IdCliente")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Cliente");
                 });
 
             modelBuilder.Entity("PlateArchive.Core.Models.ClienteMacchina", b =>
@@ -464,6 +503,17 @@ namespace PlateArchive.Data.Migrations
                     b.Navigation("Produttore");
                 });
 
+            modelBuilder.Entity("PlateArchive.Core.Models.NotaTecnicaCliente", b =>
+                {
+                    b.HasOne("PlateArchive.Core.Models.Cliente", "Cliente")
+                        .WithMany("NoteTecniche")
+                        .HasForeignKey("IdCliente")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Cliente");
+                });
+
             modelBuilder.Entity("PlateArchive.Core.Models.Piastra", b =>
                 {
                     b.HasOne("PlateArchive.Core.Models.CategoriaPiastra", "Categoria")
@@ -507,7 +557,11 @@ namespace PlateArchive.Data.Migrations
 
             modelBuilder.Entity("PlateArchive.Core.Models.Cliente", b =>
                 {
+                    b.Navigation("Allegati");
+
                     b.Navigation("Macchine");
+
+                    b.Navigation("NoteTecniche");
 
                     b.Navigation("Piastre");
                 });

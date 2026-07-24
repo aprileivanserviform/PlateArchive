@@ -73,13 +73,58 @@ namespace PlateArchive.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "AllegatiClienti",
+                columns: table => new
+                {
+                    IdAllegato = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    IdCliente = table.Column<int>(type: "INTEGER", nullable: false),
+                    NomeFile = table.Column<string>(type: "TEXT", nullable: false),
+                    PercorsoFile = table.Column<string>(type: "TEXT", nullable: false),
+                    DimensioneBytes = table.Column<long>(type: "INTEGER", nullable: false),
+                    DataCaricamento = table.Column<DateTime>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AllegatiClienti", x => x.IdAllegato);
+                    table.ForeignKey(
+                        name: "FK_AllegatiClienti_Clienti_IdCliente",
+                        column: x => x.IdCliente,
+                        principalTable: "Clienti",
+                        principalColumn: "IdCliente",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "NoteTecnicheClienti",
+                columns: table => new
+                {
+                    IdNota = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    IdCliente = table.Column<int>(type: "INTEGER", nullable: false),
+                    Titolo = table.Column<string>(type: "TEXT", nullable: false),
+                    Testo = table.Column<string>(type: "TEXT", nullable: true),
+                    DataCreazione = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    DataModifica = table.Column<DateTime>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_NoteTecnicheClienti", x => x.IdNota);
+                    table.ForeignKey(
+                        name: "FK_NoteTecnicheClienti_Clienti_IdCliente",
+                        column: x => x.IdCliente,
+                        principalTable: "Clienti",
+                        principalColumn: "IdCliente",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Piastre",
                 columns: table => new
                 {
                     IdPiastra = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
                     CodicePiastra = table.Column<string>(type: "TEXT", nullable: false),
-                    CodiceArticoloGestionale = table.Column<string>(type: "TEXT", nullable: true),
                     Descrizione = table.Column<string>(type: "TEXT", nullable: true),
                     Stato = table.Column<int>(type: "INTEGER", nullable: false),
                     TipoPiastra = table.Column<int>(type: "INTEGER", nullable: false),
@@ -89,9 +134,6 @@ namespace PlateArchive.Data.Migrations
                     IsEliminata = table.Column<bool>(type: "INTEGER", nullable: false),
                     LarghezzaMm = table.Column<decimal>(type: "TEXT", nullable: true),
                     AltezzaMm = table.Column<decimal>(type: "TEXT", nullable: true),
-                    SpessoreMm = table.Column<decimal>(type: "TEXT", nullable: true),
-                    Durezza = table.Column<decimal>(type: "TEXT", nullable: true),
-                    Peso = table.Column<decimal>(type: "TEXT", nullable: true),
                     Note = table.Column<string>(type: "TEXT", nullable: true),
                     DataCreazione = table.Column<DateTime>(type: "TEXT", nullable: false),
                     DataUltimaModifica = table.Column<DateTime>(type: "TEXT", nullable: false)
@@ -127,10 +169,6 @@ namespace PlateArchive.Data.Migrations
                     NomeMacchina = table.Column<string>(type: "TEXT", nullable: false),
                     IdFormato = table.Column<int>(type: "INTEGER", nullable: true),
                     IdProduttore = table.Column<int>(type: "INTEGER", nullable: true),
-                    LarghezzaMinimaFoglioMm = table.Column<decimal>(type: "TEXT", nullable: true),
-                    AltezzaMinimaFoglioMm = table.Column<decimal>(type: "TEXT", nullable: true),
-                    LarghezzaMassimaFoglioMm = table.Column<decimal>(type: "TEXT", nullable: true),
-                    AltezzaMassimaFoglioMm = table.Column<decimal>(type: "TEXT", nullable: true),
                     Versione = table.Column<string>(type: "TEXT", nullable: true),
                     Attiva = table.Column<bool>(type: "INTEGER", nullable: false),
                     Note = table.Column<string>(type: "TEXT", nullable: true)
@@ -187,7 +225,6 @@ namespace PlateArchive.Data.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     IdCliente = table.Column<int>(type: "INTEGER", nullable: false),
                     IdMacchinaStandard = table.Column<int>(type: "INTEGER", nullable: false),
-                    Matricola = table.Column<string>(type: "TEXT", nullable: true),
                     CodiceInternoCliente = table.Column<string>(type: "TEXT", nullable: true),
                     DataAssociazione = table.Column<DateTime>(type: "TEXT", nullable: false),
                     Attiva = table.Column<bool>(type: "INTEGER", nullable: false),
@@ -277,6 +314,11 @@ namespace PlateArchive.Data.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_AllegatiClienti_IdCliente",
+                table: "AllegatiClienti",
+                column: "IdCliente");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_CategoriePiastre_Codice",
                 table: "CategoriePiastre",
                 column: "Codice",
@@ -337,11 +379,9 @@ namespace PlateArchive.Data.Migrations
                 column: "IdProduttore");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Piastre_CodiceArticoloGestionale",
-                table: "Piastre",
-                column: "CodiceArticoloGestionale",
-                unique: true,
-                filter: "[CodiceArticoloGestionale] IS NOT NULL");
+                name: "IX_NoteTecnicheClienti_IdCliente",
+                table: "NoteTecnicheClienti",
+                column: "IdCliente");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Piastre_CodicePiastra",
@@ -380,10 +420,16 @@ namespace PlateArchive.Data.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "AllegatiClienti");
+
+            migrationBuilder.DropTable(
                 name: "ClientiPiastre");
 
             migrationBuilder.DropTable(
                 name: "Disegni");
+
+            migrationBuilder.DropTable(
+                name: "NoteTecnicheClienti");
 
             migrationBuilder.DropTable(
                 name: "PiastreMacchineCompatibili");
