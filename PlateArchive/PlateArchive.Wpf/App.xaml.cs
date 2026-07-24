@@ -31,6 +31,8 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        RegistraGestioneErrori();
+
         var config = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
@@ -143,6 +145,73 @@ public partial class App : Application
 
         // Avvia la sincronizzazione clienti in background senza bloccare l'avvio dell'app.
         AvviaSyncInBackground(provider);
+    }
+
+    /// <summary>
+    /// Rete di sicurezza contro gli errori non gestiti.
+    /// <para>
+    /// I comandi dei ViewModel usano <c>RelayCommand</c>, che riceve un <c>Action&lt;object?&gt;</c>:
+    /// le lambda <c>async _ =&gt; await ...</c> diventano quindi <b>async void</b>, e un errore al loro
+    /// interno (es. violazione di un vincolo di unicità al salvataggio) non è catturabile da chi
+    /// invoca il comando — arriva direttamente qui. Senza questi handler l'applicazione si
+    /// chiuderebbe di colpo, senza messaggio e perdendo il lavoro non salvato.
+    /// </para>
+    /// </summary>
+    private void RegistraGestioneErrori()
+    {
+        // Errori sul thread UI: sono quelli delle lambda async void dei comandi.
+        DispatcherUnhandledException += (_, e) =>
+        {
+            MostraErrore(e.Exception);
+            e.Handled = true;   // l'app resta aperta
+        };
+
+        // Errori in Task non attesi (es. operazioni in background).
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            e.SetObserved();
+            Dispatcher.Invoke(() => MostraErrore(e.Exception));
+        };
+    }
+
+    private static void MostraErrore(Exception ex) =>
+        MessageBox.Show(TraduciErrore(ex), "Operazione non riuscita", MessageBoxButton.OK, MessageBoxImage.Warning);
+
+    /// <summary>
+    /// Traduce l'errore tecnico in un messaggio comprensibile all'utente.
+    /// I casi riconosciuti sono quelli che capitano durante l'inserimento dei dati.
+    /// Metodo separato da <see cref="MostraErrore"/> per poter essere verificato senza aprire finestre.
+    /// </summary>
+    internal static string TraduciErrore(Exception ex)
+    {
+        // L'errore reale di SQLite è annidato dentro la DbUpdateException di EF Core.
+        var causa = ex is AggregateException agg ? agg.Flatten().InnerException ?? agg : ex;
+        while (causa.InnerException is not null) causa = causa.InnerException;
+
+        return causa.Message switch
+        {
+            var m when m.Contains("UNIQUE constraint failed") =>
+                "Esiste già un elemento con questo codice.\n\n" +
+                "I codici devono essere univoci: modificare il codice inserito e riprovare.",
+
+            var m when m.Contains("FOREIGN KEY constraint failed") =>
+                "L'elemento selezionato non esiste più nell'archivio.\n\n" +
+                "Potrebbe essere stato eliminato da un'altra postazione: aggiornare la schermata e riprovare.",
+
+            var m when m.Contains("NOT NULL constraint failed") =>
+                "Manca un dato obbligatorio.\n\n" +
+                "Compilare tutti i campi richiesti e riprovare.",
+
+            var m when m.Contains("database is locked") || m.Contains("SQLITE_BUSY") =>
+                "Il database è momentaneamente occupato da un'altra postazione.\n\n" +
+                "Attendere qualche secondo e riprovare.",
+
+            var m when m.Contains("unable to open database file") =>
+                "Impossibile raggiungere il database sulla cartella di rete condivisa.\n\n" +
+                "Verificare la connessione di rete e riprovare.",
+
+            _ => $"Si è verificato un errore imprevisto:\n\n{causa.Message}",
+        };
     }
 
     /// <summary>
