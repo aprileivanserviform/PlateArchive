@@ -843,6 +843,10 @@ public class PiastreViewModel : ViewModelBase
         {
             var p = _tutti.FirstOrDefault(x => x.IdPiastra == _idPiastraInModifica);
             if (p is null) return;
+            // Snapshot per ripristinare la lista se il salvataggio fallisce.
+            var precedente = (p.CodicePiastra, p.Descrizione, p.Stato, p.TipoPiastra,
+                              p.IdClienteEsclusivo, p.ClienteEsclusivo, p.IdCategoriaPiastra,
+                              p.Categoria, p.IdFormato, p.Formato, p.LarghezzaMm, p.AltezzaMm, p.Note);
             p.CodicePiastra            = FormCodicePiastra.Trim();
             p.Descrizione              = N(FormDescrizione);
             p.Stato                    = FormStato;
@@ -856,7 +860,17 @@ public class PiastreViewModel : ViewModelBase
             p.LarghezzaMm              = ParseDecimal(FormLarghezza);
             p.AltezzaMm                = ParseDecimal(FormAltezza);
             p.Note                     = N(FormNote);
-            await _piastreRepo.UpdateAsync(p);
+
+            if (!await ProvaAsync(() => _piastreRepo.UpdateAsync(p),
+                                  $"salvare la piastra '{p.CodicePiastra}'"))
+            {
+                // Ripristina la lista: il form resta aperto per la correzione.
+                (p.CodicePiastra, p.Descrizione, p.Stato, p.TipoPiastra,
+                 p.IdClienteEsclusivo, p.ClienteEsclusivo, p.IdCategoriaPiastra,
+                 p.Categoria, p.IdFormato, p.Formato, p.LarghezzaMm, p.AltezzaMm, p.Note) = precedente;
+                return;
+            }
+
             piastraSalvata = p;
         }
         else
@@ -877,7 +891,10 @@ public class PiastreViewModel : ViewModelBase
                 AltezzaMm                = ParseDecimal(FormAltezza),
                 Note                     = N(FormNote)
             };
-            await _piastreRepo.AddAsync(nuova);
+            if (!await ProvaAsync(() => _piastreRepo.AddAsync(nuova),
+                                  $"creare la piastra '{nuova.CodicePiastra}'"))
+                return;
+
             _tutti.Add(nuova);
             piastraSalvata = nuova;
         }
@@ -906,7 +923,11 @@ public class PiastreViewModel : ViewModelBase
                     Cliente          = cliente,
                     Piastra          = piastraSalvata
                 };
-                await _clientiPiastreRepo.AddAsync(cp);
+                // La piastra è già salvata: un errore qui non deve annullare la creazione.
+                await ProvaAsync(
+                    () => _clientiPiastreRepo.AddAsync(cp),
+                    $"associare il cliente '{cliente.RagioneSociale}' alla piastra "
+                    + $"'{piastraSalvata.CodicePiastra}' (la piastra è stata comunque salvata)");
             }
 
             // Associa le macchine compatibili selezionate nel form (solo in creazione;
@@ -924,7 +945,10 @@ public class PiastreViewModel : ViewModelBase
                     IdMacchinaStandard = macchina.IdMacchinaStandard,
                     Attiva             = true
                 };
-                await _compatRepo.AddAsync(compat);
+                await ProvaAsync(
+                    () => _compatRepo.AddAsync(compat),
+                    $"associare la macchina '{macchina.CodiceMacchina}' alla piastra "
+                    + $"'{piastraSalvata.CodicePiastra}' (la piastra è stata comunque salvata)");
             }
         }
 
@@ -968,7 +992,11 @@ public class PiastreViewModel : ViewModelBase
 
         if (conferma != MessageBoxResult.Yes) return;
 
-        await _piastreRepo.EliminaLogicamenteAsync(PiastraSelezionata.IdPiastra);
+        if (!await ProvaAsync(
+                () => _piastreRepo.EliminaLogicamenteAsync(PiastraSelezionata.IdPiastra),
+                $"eliminare la piastra '{PiastraSelezionata.CodicePiastra}'"))
+            return;
+
         _tutti.Remove(PiastraSelezionata);
         PiastraSelezionata = null;
         AggiornaFiltro();
@@ -1023,7 +1051,12 @@ public class PiastreViewModel : ViewModelBase
             IdMacchinaStandard = MacchinaCompatibileDaAggiungere.IdMacchinaStandard,
             Attiva             = true
         };
-        await _compatRepo.AddAsync(nuova);
+        if (!await ProvaAsync(
+                () => _compatRepo.AddAsync(nuova),
+                $"associare la macchina '{MacchinaCompatibileDaAggiungere.CodiceMacchina}' "
+                + $"alla piastra '{PiastraSelezionata.CodicePiastra}'"))
+            return;
+
         ChiudiAggiungiMacchina();
         await LoadDettaglioAsync();
     }
@@ -1047,7 +1080,11 @@ public class PiastreViewModel : ViewModelBase
 
         if (conferma != MessageBoxResult.Yes) return;
 
-        await _compatRepo.DeleteAsync(c.IdCompatibilita);
+        if (!await ProvaAsync(
+                () => _compatRepo.DeleteAsync(c.IdCompatibilita),
+                $"rimuovere la compatibilità con '{c.MacchinaStandard?.NomeMacchina}'"))
+            return;
+
         await LoadDettaglioAsync();
     }
 
@@ -1126,7 +1163,10 @@ public class PiastreViewModel : ViewModelBase
             disegnoEsistente.Formato                = formato;
             disegnoEsistente.Stato                  = StatoDisegno.DaVerificare;
             disegnoEsistente.DataUltimaModificaFile = DateTime.UtcNow;
-            await _disegniRepo.UpdateAsync(disegnoEsistente);
+            if (!await ProvaAsync(
+                    () => _disegniRepo.UpdateAsync(disegnoEsistente),
+                    $"aggiornare il disegno della piastra '{piastra.CodicePiastra}'"))
+                return;
         }
         else
         {
@@ -1140,7 +1180,10 @@ public class PiastreViewModel : ViewModelBase
                 Stato                  = StatoDisegno.Attivo,
                 DataUltimaModificaFile = DateTime.UtcNow
             };
-            await _disegniRepo.AddAsync(nuovoDisegno);
+            if (!await ProvaAsync(
+                    () => _disegniRepo.AddAsync(nuovoDisegno),
+                    $"collegare il disegno '{nuovoDisegno.NomeFile}' alla piastra '{piastra.CodicePiastra}'"))
+                return;
         }
 
         if (PiastraSelezionata == piastra)
@@ -1160,7 +1203,11 @@ public class PiastreViewModel : ViewModelBase
 
         if (conferma != MessageBoxResult.Yes) return;
 
-        await _disegniRepo.DeleteAsync(DisegnoCorrente.IdDisegno);
+        if (!await ProvaAsync(
+                () => _disegniRepo.DeleteAsync(DisegnoCorrente.IdDisegno),
+                $"rimuovere il disegno '{DisegnoCorrente.NomeFile}'"))
+            return;
+
         await LoadDettaglioAsync();
     }
 
@@ -1187,7 +1234,9 @@ public class PiastreViewModel : ViewModelBase
         DisegnoCorrente.Stato     = FormStatoDisegno;
         DisegnoCorrente.Note      = N(FormNoteDisegno);
 
-        await _disegniRepo.UpdateAsync(DisegnoCorrente);
+        await ProvaAsync(
+            () => _disegniRepo.UpdateAsync(DisegnoCorrente),
+            $"salvare i dati del disegno '{DisegnoCorrente.NomeFile}'");
     }
 
     // ─── Aggiungi / rimuovi cliente associato ─────────────────────────────────
@@ -1223,7 +1272,12 @@ public class PiastreViewModel : ViewModelBase
             Cliente           = ClienteSelezionato,
             Piastra           = PiastraSelezionata
         };
-        await _clientiPiastreRepo.AddAsync(nuova);
+        if (!await ProvaAsync(
+                () => _clientiPiastreRepo.AddAsync(nuova),
+                $"associare il cliente '{ClienteSelezionato.RagioneSociale}' "
+                + $"alla piastra '{PiastraSelezionata.CodicePiastra}'"))
+            return;
+
         ChiudiAggiungiCliente();
         await LoadDettaglioAsync();
     }
@@ -1252,7 +1306,11 @@ public class PiastreViewModel : ViewModelBase
 
         if (conferma != MessageBoxResult.Yes) return;
 
-        await _clientiPiastreRepo.DeleteAsync(cp.IdClientePiastra);
+        if (!await ProvaAsync(
+                () => _clientiPiastreRepo.DeleteAsync(cp.IdClientePiastra),
+                $"rimuovere l'associazione con il cliente '{cp.Cliente?.RagioneSociale}'"))
+            return;
+
         await LoadDettaglioAsync();
     }
 

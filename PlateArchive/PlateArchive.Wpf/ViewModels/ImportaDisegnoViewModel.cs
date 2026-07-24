@@ -398,7 +398,7 @@ public class ImportaDisegnoViewModel : ViewModelBase
                 Note                       = string.IsNullOrWhiteSpace(FormNote) ? null : FormNote.Trim(),
             };
             try   { await _piastreRepo.AddAsync(nuova); }
-            catch (Exception ex) { Errore = $"Impossibile creare la piastra: {ex.Message}"; return; }
+            catch (Exception ex) { Errore = $"Impossibile creare la piastra: {App.CausaErrore(ex) ?? ex.Message}"; return; }
             piastra = nuova;
 
             var percorsoEffettivo = await _fileArchivio.ArchiviaDisegnoAsync(
@@ -418,7 +418,7 @@ public class ImportaDisegnoViewModel : ViewModelBase
                 DataUltimaModificaFile = DateTime.UtcNow
             };
             try   { await _disegniRepo.AddAsync(nuovoDisegno); }
-            catch (Exception ex) { Errore = $"Impossibile salvare il disegno: {ex.Message}"; return; }
+            catch (Exception ex) { Errore = $"Impossibile salvare il disegno: {App.CausaErrore(ex) ?? ex.Message}"; return; }
             DisegnoCreato = nuovoDisegno;
         }
         else
@@ -443,7 +443,7 @@ public class ImportaDisegnoViewModel : ViewModelBase
                 DataUltimaModificaFile = DateTime.UtcNow
             };
             try   { await _disegniRepo.AddAsync(nuovoDisegno); }
-            catch (Exception ex) { Errore = $"Impossibile salvare il disegno: {ex.Message}"; return; }
+            catch (Exception ex) { Errore = $"Impossibile salvare il disegno: {App.CausaErrore(ex) ?? ex.Message}"; return; }
             DisegnoCreato = nuovoDisegno;
         }
 
@@ -459,7 +459,7 @@ public class ImportaDisegnoViewModel : ViewModelBase
                     Stato            = StatoClientePiastra.Attiva
                 });
             }
-            catch (Exception ex) { Errore = $"Impossibile associare il cliente: {ex.Message}"; return; }
+            catch (Exception ex) { Errore = $"Impossibile associare il cliente: {App.CausaErrore(ex) ?? ex.Message}"; return; }
         }
 
         Confermato = true;

@@ -182,14 +182,23 @@ public class FormatiMacchinaViewModel : ViewModelBase
             // Modifica in-place sull'oggetto già in lista (EF Core lo traccia).
             var f = Formati.FirstOrDefault(x => x.IdFormato == _idInModifica);
             if (f is null) return;
+            var nomePrecedente = f.NomeFormato;
+            var notePrecedenti = f.Note;
             f.NomeFormato = nome;
             f.Note        = N(FormNote);
-            await _formatiRepo.UpdateAsync(f);
+            if (!await ProvaAsync(() => _formatiRepo.UpdateAsync(f), $"salvare il formato '{nome}'"))
+            {
+                // Ripristina i valori in memoria: il form resta aperto per la correzione.
+                f.NomeFormato = nomePrecedente;
+                f.Note        = notePrecedenti;
+                return;
+            }
         }
         else
         {
             var nuovo = new FormatoMacchina { NomeFormato = nome, Note = N(FormNote) };
-            await _formatiRepo.AddAsync(nuovo);
+            if (!await ProvaAsync(() => _formatiRepo.AddAsync(nuovo), $"salvare il formato '{nome}'"))
+                return;
             Formati.Add(nuovo);
         }
 
@@ -224,7 +233,11 @@ public class FormatiMacchinaViewModel : ViewModelBase
         if (conferma != MessageBoxResult.Yes) return;
 
         // Soft-delete: imposta IsEliminata = true, non cancella il record.
-        await _formatiRepo.EliminaLogicamenteAsync(FormatoSelezionato.IdFormato);
+        if (!await ProvaAsync(
+                () => _formatiRepo.EliminaLogicamenteAsync(FormatoSelezionato.IdFormato),
+                $"eliminare il formato '{FormatoSelezionato.NomeFormato}'"))
+            return;
+
         Formati.Remove(FormatoSelezionato);
         FormatoSelezionato = null;
         ChiudiForm();

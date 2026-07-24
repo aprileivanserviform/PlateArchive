@@ -477,6 +477,9 @@ public class MacchineViewModel : ViewModelBase
             // Modifica in-place dell'oggetto già in _tutti (EF Core lo traccia).
             var m = _tutti.FirstOrDefault(x => x.IdMacchinaStandard == _idMacchinaInModifica);
             if (m is null) return;
+            // Snapshot per ripristinare la lista se il salvataggio fallisce.
+            var precedente = (m.CodiceMacchina, m.NomeMacchina, m.IdFormato, m.IdProduttore,
+                              m.Versione, m.Note, m.Formato, m.Produttore);
             m.CodiceMacchina = FormCodiceMacchina.Trim();
             m.NomeMacchina   = FormNomeMacchina.Trim();
             m.IdFormato      = FormFormatoSelezionato?.IdFormato;
@@ -486,7 +489,16 @@ public class MacchineViewModel : ViewModelBase
             // Aggiorna anche le navigazioni in memoria per il binding nella lista.
             m.Formato        = FormFormatoSelezionato;
             m.Produttore     = FormProduttoreSelezionato;
-            await _macchineRepo.UpdateAsync(m);
+
+            if (!await ProvaAsync(() => _macchineRepo.UpdateAsync(m),
+                                  $"salvare la macchina '{m.CodiceMacchina}'"))
+            {
+                // Ripristina la lista: il form resta aperto per la correzione.
+                (m.CodiceMacchina, m.NomeMacchina, m.IdFormato, m.IdProduttore,
+                 m.Versione, m.Note, m.Formato, m.Produttore) = precedente;
+                return;
+            }
+
             MacchinaSelezionata = m;
         }
         else
@@ -501,7 +513,10 @@ public class MacchineViewModel : ViewModelBase
                 Note           = N(FormNote),
                 Attiva         = true
             };
-            await _macchineRepo.AddAsync(nuova);
+            if (!await ProvaAsync(() => _macchineRepo.AddAsync(nuova),
+                                  $"salvare la macchina '{nuova.CodiceMacchina}'"))
+                return;
+
             nuova.Formato    = FormFormatoSelezionato;
             nuova.Produttore = FormProduttoreSelezionato;
             _tutti.Add(nuova);
@@ -516,7 +531,15 @@ public class MacchineViewModel : ViewModelBase
     {
         if (MacchinaSelezionata is null) return;
         MacchinaSelezionata.Attiva = !MacchinaSelezionata.Attiva;
-        await _macchineRepo.UpdateAsync(MacchinaSelezionata);
+
+        var azione = MacchinaSelezionata.Attiva ? "abilitare" : "disabilitare";
+        if (!await ProvaAsync(() => _macchineRepo.UpdateAsync(MacchinaSelezionata),
+                              $"{azione} la macchina '{MacchinaSelezionata.CodiceMacchina}'"))
+        {
+            MacchinaSelezionata.Attiva = !MacchinaSelezionata.Attiva;   // ripristina
+            return;
+        }
+
         OnPropertyChanged(nameof(MacchinaSelezionata));
         OnPropertyChanged(nameof(ToggleAttivaLabel));
         // Ricalcola il filtro perché la macchina potrebbe sparire dalla lista (SoloAttive = true).
@@ -571,7 +594,11 @@ public class MacchineViewModel : ViewModelBase
             FonteDato          = FonteDatoSelezionata,
             Attiva             = true
         };
-        await _compatRepo.AddAsync(nuova);
+        if (!await ProvaAsync(
+                () => _compatRepo.AddAsync(nuova),
+                $"associare la piastra '{PiastraCompatibileDaAggiungere.CodicePiastra}' alla macchina '{MacchinaSelezionata.CodiceMacchina}'"))
+            return;
+
         AnnullaAggiungiPiastra();
         // Ricarica il dettaglio per includere la nuova compatibilità.
         await LoadDettaglioAsync();
@@ -587,7 +614,12 @@ public class MacchineViewModel : ViewModelBase
     private async Task RimuoviCompatibilitaAsync(object? param)
     {
         if (param is not PiastraMacchinaCompatibile c) return;
-        await _compatRepo.DeleteAsync(c.IdCompatibilita);
+
+        if (!await ProvaAsync(
+                () => _compatRepo.DeleteAsync(c.IdCompatibilita),
+                $"rimuovere la compatibilità con la piastra '{c.Piastra?.CodicePiastra}'"))
+            return;
+
         // Aggiorna la lista in memoria senza ricaricare tutto dal DB.
         PiastreCompatibili.Remove(c);
     }
@@ -622,7 +654,11 @@ public class MacchineViewModel : ViewModelBase
             Cliente            = ClienteSelezionato,
             MacchinaStandard   = MacchinaSelezionata
         };
-        await _clientiMacchineRepo.AddAsync(nuova);
+        if (!await ProvaAsync(
+                () => _clientiMacchineRepo.AddAsync(nuova),
+                $"associare il cliente '{ClienteSelezionato.RagioneSociale}' alla macchina '{MacchinaSelezionata.CodiceMacchina}'"))
+            return;
+
         ChiudiAggiungiCliente();
         await LoadDettaglioAsync();
     }
@@ -651,7 +687,11 @@ public class MacchineViewModel : ViewModelBase
 
         if (conferma != MessageBoxResult.Yes) return;
 
-        await _clientiMacchineRepo.DeleteAsync(cm.IdClienteMacchina);
+        if (!await ProvaAsync(
+                () => _clientiMacchineRepo.DeleteAsync(cm.IdClienteMacchina),
+                $"rimuovere l'associazione con il cliente '{cm.Cliente?.RagioneSociale}'"))
+            return;
+
         await LoadDettaglioAsync();
     }
 
