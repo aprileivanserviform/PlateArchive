@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Input;
+using PlateArchive.Core.Enums;
 using PlateArchive.Core.Models;
 using PlateArchive.Data.Repositories.Interfaces;
 using PlateArchive.Wpf.Commands;
@@ -53,8 +54,9 @@ public class MacchineViewModel : ViewModelBase
     private string?             _avvisoDuplicato;
 
     // Aggiunta piastra compatibile (pannello inline nel dettaglio)
-    private bool     _isAggiungiPiastraVisible;
-    private Piastra? _piastraCompatibileDaAggiungere;
+    private bool                     _isAggiungiPiastraVisible;
+    private Piastra?                 _piastraCompatibileDaAggiungere;
+    private FonteDatoCompatibilita?  _fonteDatoSelezionata;
 
     // Aggiunta cliente associato (pannello inline nel dettaglio)
     private bool          _isAggiungiClienteVisible;
@@ -187,6 +189,16 @@ public class MacchineViewModel : ViewModelBase
         get => _piastraCompatibileDaAggiungere;
         set => SetField(ref _piastraCompatibileDaAggiungere, value);
     }
+
+    /// <summary>Come è stata verificata la compatibilità selezionata nel pannello di aggiunta (facoltativo).</summary>
+    public FonteDatoCompatibilita? FonteDatoSelezionata
+    {
+        get => _fonteDatoSelezionata;
+        set => SetField(ref _fonteDatoSelezionata, value);
+    }
+
+    /// <summary>Valori disponibili per il ComboBox "Fonte" — usati sia in aggiunta che (in sola lettura) nella griglia.</summary>
+    public IEnumerable<FonteDatoCompatibilita> FontiDato { get; } = Enum.GetValues<FonteDatoCompatibilita>();
 
     // ─── Pannello aggiungi cliente associato ──────────────────────────────────
 
@@ -562,6 +574,7 @@ public class MacchineViewModel : ViewModelBase
         {
             IdPiastra          = PiastraCompatibileDaAggiungere.IdPiastra,
             IdMacchinaStandard = MacchinaSelezionata.IdMacchinaStandard,
+            FonteDato          = FonteDatoSelezionata,
             Attiva             = true
         };
         await _compatRepo.AddAsync(nuova);
@@ -574,6 +587,7 @@ public class MacchineViewModel : ViewModelBase
     {
         IsAggiungiPiastraVisible       = false;
         PiastraCompatibileDaAggiungere = null;
+        FonteDatoSelezionata           = null;
     }
 
     private async Task RimuoviCompatibilitaAsync(object? param)
