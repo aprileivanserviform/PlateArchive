@@ -7,8 +7,8 @@ public interface IFileArchivioService
     /// <summary>
     /// Copia il disegno nella sottocartella corretta dell'archivio condiviso.
     /// <para>
-    /// Standard        → {cartellaBase}\Standard\{codicePiastra}{ext}
-    /// SpecialeCliente → {cartellaBase}\Clienti\{codiceCliente} - {ragioneSociale}\{codicePiastra}{ext}
+    /// Standard        → {cartellaBase}\Piastre Standard\{codicePiastra}{ext}
+    /// SpecialeCliente → {cartellaBase}\Piastre Clienti\{codiceCliente} - {ragioneSociale}\{codicePiastra}{ext}
     /// </para>
     /// Restituisce null se la cartella condivisa non è configurata o il file non esiste.
     /// </summary>
@@ -21,7 +21,7 @@ public interface IFileArchivioService
 
     /// <summary>
     /// Copia un allegato generico nella sottocartella Allegati del cliente.
-    /// Percorso risultante: {cartellaBase}\Clienti\{codiceCliente} - {ragioneSociale}\Allegati\{nomeFile}
+    /// Percorso risultante: {cartellaBase}\Piastre Clienti\{codiceCliente} - {ragioneSociale}\Allegati\{nomeFile}
     /// Se il nome esiste già viene aggiunto un suffisso numerico (_2, _3 …).
     /// Restituisce null se la cartella non è configurata o il file sorgente non esiste.
     /// </summary>

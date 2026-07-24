@@ -5,9 +5,9 @@ namespace PlateArchive.Services;
 /// <summary>
 /// Copia i file nella cartella condivisa aziendale rispettando la struttura:
 /// <code>
-///   {cartellaBase}\Standard\{codicePiastra}{ext}
-///   {cartellaBase}\Clienti\{codiceCliente} - {ragioneSociale}\{codicePiastra}{ext}
-///   {cartellaBase}\Clienti\{codiceCliente} - {ragioneSociale}\Allegati\{nomeFile}
+///   {cartellaBase}\Piastre Standard\{codicePiastra}{ext}
+///   {cartellaBase}\Piastre Clienti\{codiceCliente} - {ragioneSociale}\{codicePiastra}{ext}
+///   {cartellaBase}\Piastre Clienti\{codiceCliente} - {ragioneSociale}\Allegati\{nomeFile}
 /// </code>
 /// Le directory vengono create automaticamente al primo salvataggio.
 /// </summary>
@@ -27,7 +27,7 @@ public class FileArchivioService(string cartellaBase) : IFileArchivioService
 
         var sottocartella = tipoPiastra == TipoPiastra.SpecialeCliente && !string.IsNullOrWhiteSpace(codiceCliente)
             ? GetCartellaCliente(codiceCliente, ragioneSociale)
-            : Path.Combine(cartellaBase, "Standard");
+            : Path.Combine(cartellaBase, "Piastre Standard");
 
         Directory.CreateDirectory(sottocartella);
 
@@ -78,7 +78,7 @@ public class FileArchivioService(string cartellaBase) : IFileArchivioService
 
         var sottocartella = tipoPiastra == TipoPiastra.SpecialeCliente && !string.IsNullOrWhiteSpace(codiceCliente)
             ? GetCartellaCliente(codiceCliente, ragioneSociale)
-            : Path.Combine(cartellaBase, "Standard");
+            : Path.Combine(cartellaBase, "Piastre Standard");
 
         return Path.Combine(sottocartella, Path.GetFileName(percorsoOrigine));
     }
@@ -90,7 +90,7 @@ public class FileArchivioService(string cartellaBase) : IFileArchivioService
         var nomeCartella = string.IsNullOrWhiteSpace(ragioneSociale)
             ? codiceCliente
             : $"{codiceCliente} - {SanitizzaNome(ragioneSociale)}";
-        return Path.Combine(cartellaBase, "Clienti", nomeCartella);
+        return Path.Combine(cartellaBase, "Piastre Clienti", nomeCartella);
     }
 
     private static string SanitizzaNome(string nome)
