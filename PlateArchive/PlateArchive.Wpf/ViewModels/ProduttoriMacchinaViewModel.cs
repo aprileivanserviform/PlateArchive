@@ -175,14 +175,23 @@ public class ProduttoriMacchinaViewModel : ViewModelBase
         {
             var p = Produttori.FirstOrDefault(x => x.IdProduttore == _idInModifica);
             if (p is null) return;
+            var nomePrecedente = p.NomeProduttore;
+            var notePrecedenti = p.Note;
             p.NomeProduttore = nome;
             p.Note           = N(FormNote);
-            await _produttoriRepo.UpdateAsync(p);
+            if (!await ProvaAsync(() => _produttoriRepo.UpdateAsync(p), $"salvare il produttore '{nome}'"))
+            {
+                // Ripristina i valori in memoria: il form resta aperto per la correzione.
+                p.NomeProduttore = nomePrecedente;
+                p.Note           = notePrecedenti;
+                return;
+            }
         }
         else
         {
             var nuovo = new ProduttoreMacchina { NomeProduttore = nome, Note = N(FormNote) };
-            await _produttoriRepo.AddAsync(nuovo);
+            if (!await ProvaAsync(() => _produttoriRepo.AddAsync(nuovo), $"salvare il produttore '{nome}'"))
+                return;
             Produttori.Add(nuovo);
         }
 
@@ -214,7 +223,11 @@ public class ProduttoriMacchinaViewModel : ViewModelBase
 
         if (conferma != MessageBoxResult.Yes) return;
 
-        await _produttoriRepo.EliminaLogicamenteAsync(ProduttoreSelezionato.IdProduttore);
+        if (!await ProvaAsync(
+                () => _produttoriRepo.EliminaLogicamenteAsync(ProduttoreSelezionato.IdProduttore),
+                $"eliminare il produttore '{ProduttoreSelezionato.NomeProduttore}'"))
+            return;
+
         Produttori.Remove(ProduttoreSelezionato);
         ProduttoreSelezionato = null;
         ChiudiForm();

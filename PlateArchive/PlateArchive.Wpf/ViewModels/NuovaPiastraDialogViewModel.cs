@@ -245,17 +245,26 @@ public class NuovaPiastraDialogViewModel : ViewModelBase
             Note                     = N(FormNote)
         };
 
-        await _piastreRepo.AddAsync(nuova);
+        // Se la piastra non viene creata il dialog resta aperto: l'utente corregge e riprova.
+        if (!await ProvaAsync(() => _piastreRepo.AddAsync(nuova),
+                              $"creare la piastra '{nuova.CodicePiastra}'"))
+            return;
+
         PiastraCreata = nuova;
 
+        // Da qui in poi la piastra esiste già: un errore non deve far riprovare la creazione
+        // (darebbe "codice duplicato"). Si segnala il passo fallito e si chiude comunque.
         if (_clientePreimpostato is not null)
-            await _clientiPiastreRepo.AddAsync(new ClientePiastra
-            {
-                IdCliente        = _clientePreimpostato.IdCliente,
-                IdPiastra        = nuova.IdPiastra,
-                DataAssociazione = DateTime.UtcNow,
-                Stato            = StatoClientePiastra.Attiva
-            });
+            await ProvaAsync(
+                () => _clientiPiastreRepo.AddAsync(new ClientePiastra
+                {
+                    IdCliente        = _clientePreimpostato.IdCliente,
+                    IdPiastra        = nuova.IdPiastra,
+                    DataAssociazione = DateTime.UtcNow,
+                    Stato            = StatoClientePiastra.Attiva
+                }),
+                $"associare la piastra '{nuova.CodicePiastra}' al cliente "
+                + $"'{_clientePreimpostato.RagioneSociale}' (la piastra è stata comunque creata)");
 
         if (!string.IsNullOrEmpty(_percorsoDisegnoPendente))
             await AssociaDisegnoAsync(nuova, _percorsoDisegnoPendente);
@@ -299,7 +308,12 @@ public class NuovaPiastraDialogViewModel : ViewModelBase
             Stato                  = StatoDisegno.Attivo,
             DataUltimaModificaFile = DateTime.UtcNow
         };
-        await _disegniRepo.AddAsync(nuovoDisegno);
+
+        // Il file è già stato copiato in archivio: se il record fallisce, la piastra resta
+        // valida e il disegno si potrà ricollegare dalla schermata Piastre.
+        await ProvaAsync(
+            () => _disegniRepo.AddAsync(nuovoDisegno),
+            $"collegare il disegno '{nuovoDisegno.NomeFile}' alla piastra '{piastra.CodicePiastra}'");
     }
 
     private void SfogliaFile()

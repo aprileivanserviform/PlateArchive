@@ -179,39 +179,49 @@ public partial class App : Application
 
     /// <summary>
     /// Traduce l'errore tecnico in un messaggio comprensibile all'utente.
-    /// I casi riconosciuti sono quelli che capitano durante l'inserimento dei dati.
+    /// Usata dalla rete di sicurezza globale, quando non si sa quale operazione fosse in corso.
     /// Metodo separato da <see cref="MostraErrore"/> per poter essere verificato senza aprire finestre.
     /// </summary>
-    internal static string TraduciErrore(Exception ex)
+    internal static string TraduciErrore(Exception ex) =>
+        CausaErrore(ex) ?? $"Si è verificato un errore imprevisto:\n\n{Radice(ex).Message}";
+
+    /// <summary>
+    /// Descrive la causa dell'errore in una frase, senza riferimenti all'operazione in corso.
+    /// Restituisce <c>null</c> se l'errore non rientra tra i casi noti.
+    /// <para>
+    /// I ViewModel la compongono con la propria descrizione dell'operazione per ottenere
+    /// un messaggio contestuale (es. "Impossibile salvare la macchina 'X'. Esiste già...").
+    /// </para>
+    /// </summary>
+    internal static string? CausaErrore(Exception ex) => Radice(ex).Message switch
     {
-        // L'errore reale di SQLite è annidato dentro la DbUpdateException di EF Core.
-        var causa = ex is AggregateException agg ? agg.Flatten().InnerException ?? agg : ex;
-        while (causa.InnerException is not null) causa = causa.InnerException;
+        var m when m.Contains("UNIQUE constraint failed") =>
+            "Esiste già un elemento con questo codice: i codici devono essere univoci.",
 
-        return causa.Message switch
-        {
-            var m when m.Contains("UNIQUE constraint failed") =>
-                "Esiste già un elemento con questo codice.\n\n" +
-                "I codici devono essere univoci: modificare il codice inserito e riprovare.",
+        var m when m.Contains("FOREIGN KEY constraint failed") =>
+            "Un elemento collegato non esiste più nell'archivio: potrebbe essere stato "
+            + "eliminato da un'altra postazione. Aggiornare la schermata e riprovare.",
 
-            var m when m.Contains("FOREIGN KEY constraint failed") =>
-                "L'elemento selezionato non esiste più nell'archivio.\n\n" +
-                "Potrebbe essere stato eliminato da un'altra postazione: aggiornare la schermata e riprovare.",
+        var m when m.Contains("NOT NULL constraint failed") =>
+            "Manca un dato obbligatorio: compilare tutti i campi richiesti.",
 
-            var m when m.Contains("NOT NULL constraint failed") =>
-                "Manca un dato obbligatorio.\n\n" +
-                "Compilare tutti i campi richiesti e riprovare.",
+        var m when m.Contains("database is locked") || m.Contains("SQLITE_BUSY") =>
+            "Il database è momentaneamente occupato da un'altra postazione: "
+            + "attendere qualche secondo e riprovare.",
 
-            var m when m.Contains("database is locked") || m.Contains("SQLITE_BUSY") =>
-                "Il database è momentaneamente occupato da un'altra postazione.\n\n" +
-                "Attendere qualche secondo e riprovare.",
+        var m when m.Contains("unable to open database file") =>
+            "Impossibile raggiungere il database sulla cartella di rete condivisa: "
+            + "verificare la connessione di rete.",
 
-            var m when m.Contains("unable to open database file") =>
-                "Impossibile raggiungere il database sulla cartella di rete condivisa.\n\n" +
-                "Verificare la connessione di rete e riprovare.",
+        _ => null,
+    };
 
-            _ => $"Si è verificato un errore imprevisto:\n\n{causa.Message}",
-        };
+    /// <summary>L'errore reale di SQLite è annidato dentro la DbUpdateException di EF Core.</summary>
+    private static Exception Radice(Exception ex)
+    {
+        var e = ex is AggregateException agg ? agg.Flatten().InnerException ?? agg : ex;
+        while (e.InnerException is not null) e = e.InnerException;
+        return e;
     }
 
     /// <summary>

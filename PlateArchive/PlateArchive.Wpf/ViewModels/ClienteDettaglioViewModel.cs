@@ -468,13 +468,16 @@ public class ClienteDettaglioViewModel : ViewModelBase
     {
         if (MacchinaSelezionata is null || Cliente is null) return;
 
-        await _macchineRepo.AddAsync(new ClienteMacchina
-        {
-            IdCliente          = Cliente.IdCliente,
-            IdMacchinaStandard = MacchinaSelezionata.IdMacchinaStandard,
-            Note               = string.IsNullOrWhiteSpace(NoteNuovaMacchina) ? null : NoteNuovaMacchina,
-            Attiva             = true
-        });
+        if (!await ProvaAsync(
+                () => _macchineRepo.AddAsync(new ClienteMacchina
+                {
+                    IdCliente          = Cliente.IdCliente,
+                    IdMacchinaStandard = MacchinaSelezionata.IdMacchinaStandard,
+                    Note               = string.IsNullOrWhiteSpace(NoteNuovaMacchina) ? null : NoteNuovaMacchina,
+                    Attiva             = true
+                }),
+                $"associare la macchina '{MacchinaSelezionata.CodiceMacchina}' al cliente"))
+            return;
 
         await CaricaMacchineAsync();
         // Ricarica compatibilità perché la nuova macchina potrebbe avere piastre associate.
@@ -487,7 +490,11 @@ public class ClienteDettaglioViewModel : ViewModelBase
 
     private async Task RimuoviMacchinaAsync(ClienteMacchina macchina)
     {
-        await _macchineRepo.DeleteAsync(macchina.IdClienteMacchina);
+        if (!await ProvaAsync(
+                () => _macchineRepo.DeleteAsync(macchina.IdClienteMacchina),
+                $"rimuovere la macchina '{macchina.MacchinaStandard?.CodiceMacchina}' dal cliente"))
+            return;
+
         Macchine.Remove(macchina);
         await CaricaCompatibilitaAsync();
     }
@@ -539,14 +546,17 @@ public class ClienteDettaglioViewModel : ViewModelBase
             return;
         }
 
-        await _piastreRepo.AddAsync(new ClientePiastra
-        {
-            IdCliente         = Cliente.IdCliente,
-            IdPiastra         = idPiastra,
-            // IdClienteMacchina nullable: il cliente può avere la piastra senza una macchina specifica.
-            IdClienteMacchina = MacchinaPerPiastra?.IdClienteMacchina,
-            Stato             = StatoClientePiastra.Attiva
-        });
+        if (!await ProvaAsync(
+                () => _piastreRepo.AddAsync(new ClientePiastra
+                {
+                    IdCliente         = Cliente.IdCliente,
+                    IdPiastra         = idPiastra,
+                    // IdClienteMacchina nullable: il cliente può avere la piastra senza una macchina specifica.
+                    IdClienteMacchina = MacchinaPerPiastra?.IdClienteMacchina,
+                    Stato             = StatoClientePiastra.Attiva
+                }),
+                $"associare la piastra '{PiastraSelezionata.Piastra.CodicePiastra}' al cliente"))
+            return;
 
         await CaricaPiastreAsync();
         ChiudiFormPiastra();
@@ -563,7 +573,11 @@ public class ClienteDettaglioViewModel : ViewModelBase
 
     private async Task RimuoviPiastraAsync(ClientePiastra piastra)
     {
-        await _piastreRepo.DeleteAsync(piastra.IdClientePiastra);
+        if (!await ProvaAsync(
+                () => _piastreRepo.DeleteAsync(piastra.IdClientePiastra),
+                $"rimuovere la piastra '{piastra.Piastra?.CodicePiastra}' dal cliente"))
+            return;
+
         _tuttePiastre.Remove(piastra);
         AggiornaPiastre();
     }
@@ -573,7 +587,16 @@ public class ClienteDettaglioViewModel : ViewModelBase
     private async Task ToggleAttivaAsync(ClienteMacchina cm)
     {
         cm.Attiva = !cm.Attiva;
-        await _macchineRepo.UpdateAsync(cm);
+
+        var azione = cm.Attiva ? "riattivare" : "disattivare";
+        if (!await ProvaAsync(
+                () => _macchineRepo.UpdateAsync(cm),
+                $"{azione} la macchina '{cm.MacchinaStandard?.CodiceMacchina}'"))
+        {
+            cm.Attiva = !cm.Attiva;   // ripristina
+            return;
+        }
+
         // Notifica la DataGrid che la riga è cambiata (non è un ObservableObject, usiamo Replace).
         var idx = Macchine.IndexOf(cm);
         if (idx >= 0) { Macchine.RemoveAt(idx); Macchine.Insert(idx, cm); }
@@ -650,20 +673,34 @@ public class ClienteDettaglioViewModel : ViewModelBase
     {
         if (string.IsNullOrWhiteSpace(FormNotaTitolo) || Cliente is null) return;
 
+        var titolo = FormNotaTitolo.Trim();
+
         if (_notaInModifica is not null)
         {
-            _notaInModifica.Titolo = FormNotaTitolo.Trim();
+            var titoloPrecedente = _notaInModifica.Titolo;
+            var testoPrecedente  = _notaInModifica.Testo;
+            _notaInModifica.Titolo = titolo;
             _notaInModifica.Testo  = string.IsNullOrWhiteSpace(FormNotaTesto) ? null : FormNotaTesto.Trim();
-            await _noteRepo.UpdateAsync(_notaInModifica);
+
+            if (!await ProvaAsync(() => _noteRepo.UpdateAsync(_notaInModifica), $"salvare la nota «{titolo}»"))
+            {
+                // Ripristina i valori in memoria: il form resta aperto per la correzione.
+                _notaInModifica.Titolo = titoloPrecedente;
+                _notaInModifica.Testo  = testoPrecedente;
+                return;
+            }
         }
         else
         {
-            await _noteRepo.AddAsync(new NotaTecnicaCliente
-            {
-                IdCliente = Cliente.IdCliente,
-                Titolo    = FormNotaTitolo.Trim(),
-                Testo     = string.IsNullOrWhiteSpace(FormNotaTesto) ? null : FormNotaTesto.Trim()
-            });
+            if (!await ProvaAsync(
+                    () => _noteRepo.AddAsync(new NotaTecnicaCliente
+                    {
+                        IdCliente = Cliente.IdCliente,
+                        Titolo    = titolo,
+                        Testo     = string.IsNullOrWhiteSpace(FormNotaTesto) ? null : FormNotaTesto.Trim()
+                    }),
+                    $"salvare la nota «{titolo}»"))
+                return;
         }
 
         await CaricaNoteAsync();
@@ -691,7 +728,9 @@ public class ClienteDettaglioViewModel : ViewModelBase
 
         if (conferma != MessageBoxResult.Yes) return;
 
-        await _noteRepo.DeleteAsync(nota.IdNota);
+        if (!await ProvaAsync(() => _noteRepo.DeleteAsync(nota.IdNota), $"eliminare la nota «{nota.Titolo}»"))
+            return;
+
         NoteTecniche.Remove(nota);
     }
 
@@ -746,7 +785,8 @@ public class ClienteDettaglioViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            ErroreAllegato = $"Impossibile caricare il file: {ex.Message}";
+            // L'errore è mostrato in linea nel pannello allegati, non in una finestra.
+            ErroreAllegato = $"Impossibile caricare il file: {App.CausaErrore(ex) ?? ex.Message}";
         }
         finally
         {
@@ -785,7 +825,11 @@ public class ClienteDettaglioViewModel : ViewModelBase
 
         if (conferma != MessageBoxResult.Yes) return;
 
-        await _allegatiRepo.DeleteAsync(allegato.IdAllegato);
+        if (!await ProvaAsync(
+                () => _allegatiRepo.DeleteAsync(allegato.IdAllegato),
+                $"eliminare l'allegato «{allegato.NomeFile}»"))
+            return;
+
         Allegati.Remove(allegato);
     }
 }

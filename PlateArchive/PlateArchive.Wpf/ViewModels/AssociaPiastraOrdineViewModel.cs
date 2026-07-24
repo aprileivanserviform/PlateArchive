@@ -219,7 +219,8 @@ public class AssociaPiastraOrdineViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Errore = $"Impossibile associare la piastra: {ex.Message}";
+            // L'errore è mostrato in linea nella finestra, non in un MessageBox separato.
+            Errore = $"Impossibile associare la piastra: {App.CausaErrore(ex) ?? ex.Message}";
             return;
         }
 
