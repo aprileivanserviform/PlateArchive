@@ -74,7 +74,6 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0">
                             <TextBlock Text="Larghezza" Style="{StaticResource TextBlock.Caption}"/>
@@ -90,15 +89,6 @@
                             <TextBlock>
                                 <TextBlock.Text>
                                     <Binding Path="Piastra.AltezzaMm" StringFormat="{}{0:F1}"
-                                             FallbackValue="—" TargetNullValue="—"/>
-                                </TextBlock.Text>
-                            </TextBlock>
-                        </StackPanel>
-                        <StackPanel Grid.Column="2">
-                            <TextBlock Text="Peso (kg)" Style="{StaticResource TextBlock.Caption}"/>
-                            <TextBlock>
-                                <TextBlock.Text>
-                                    <Binding Path="Piastra.Peso" StringFormat="{}{0:F3}"
                                              FallbackValue="—" TargetNullValue="—"/>
                                 </TextBlock.Text>
                             </TextBlock>

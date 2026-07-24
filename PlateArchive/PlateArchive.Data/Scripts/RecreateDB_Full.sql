@@ -163,7 +163,6 @@ CREATE TABLE dbo.Piastre (
     IsEliminata              bit           NOT NULL CONSTRAINT DF_Piastre_IsEliminata DEFAULT 0,
     LarghezzaMm              decimal(18,2) NULL,
     AltezzaMm                decimal(18,2) NULL,
-    Peso                     decimal(18,2) NULL,
     Note                     nvarchar(max) NULL,
     DataCreazione            datetime2     NOT NULL CONSTRAINT DF_Piastre_DataCreazione DEFAULT GETUTCDATE(),
     DataUltimaModifica       datetime2     NOT NULL CONSTRAINT DF_Piastre_DataUltimaModifica DEFAULT GETUTCDATE(),

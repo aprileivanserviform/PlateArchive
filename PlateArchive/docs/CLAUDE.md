@@ -42,7 +42,7 @@ Ordine vendita (cliente + formato) → Piastra (stesso formato del cliente) → 
 5. I file disegno **non** si salvano nel database: solo metadati e percorso file (server condiviso o Autodesk Vault).
 6. I clienti provengono dal gestionale DB2; DB2 è la fonte primaria dell'anagrafica cliente.
 7. Il codice macchina deve essere standardizzato (`CodiceMacchina` univoco) per evitare duplicati.
-8. La piastra **non** porta dati di prodotto: spessore e durezza stanno solo nel gestionale, perché lo stesso disegno serve più spessori/durezze dello stesso formato (TASK-21).
+8. La piastra **non** porta dati di prodotto: spessore, durezza e peso stanno solo nel gestionale, perché lo stesso disegno serve più spessori/durezze dello stesso formato (TASK-21/22).
 9. Il **formato macchina è obbligatorio** su ogni piastra: è il criterio con cui viene abbinata alle righe ordine. La colonna resta nullable nel DB (i formati sono a cancellazione logica), l'obbligatorietà è applicativa.
 
 ## Entità principali (PlateArchive.Core)

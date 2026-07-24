@@ -32,7 +32,6 @@ public class NuovaPiastraDialogViewModel : ViewModelBase
     private FormatoMacchina?  _formFormatoSelezionato;
     private string            _formLarghezza            = string.Empty;
     private string            _formAltezza              = string.Empty;
-    private string            _formPeso                 = string.Empty;
     private string            _formNote                 = string.Empty;
     private string?           _percorsoDisegnoPendente;
 
@@ -141,12 +140,6 @@ public class NuovaPiastraDialogViewModel : ViewModelBase
         set => SetField(ref _formAltezza, value);
     }
 
-    public string FormPeso
-    {
-        get => _formPeso;
-        set => SetField(ref _formPeso, value);
-    }
-
     public string FormNote
     {
         get => _formNote;
@@ -249,7 +242,6 @@ public class NuovaPiastraDialogViewModel : ViewModelBase
             IdFormato                = FormFormatoSelezionato?.IdFormato,
             LarghezzaMm              = ParseDecimal(FormLarghezza),
             AltezzaMm                = ParseDecimal(FormAltezza),
-            Peso                     = ParseDecimal(FormPeso),
             Note                     = N(FormNote)
         };
 

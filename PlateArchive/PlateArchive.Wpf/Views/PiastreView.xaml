@@ -399,13 +399,6 @@
                                                 SortMemberPath="AltezzaMm"
                                                 HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
 
-                            <!-- Peso -->
-                            <DataGridTextColumn x:Name="ColPeso"
-                                                Binding="{Binding Peso, StringFormat='{}{0:F3}', TargetNullValue='—'}"
-                                                Width="Auto"
-                                                SortMemberPath="Peso"
-                                                HeaderTemplate="{StaticResource FiltroColonnaHeader}"/>
-
                             <!-- Data creazione -->
                             <DataGridTextColumn x:Name="ColDataCreazione"
                                                 Binding="{Binding DataCreazione, StringFormat='dd/MM/yyyy'}"
@@ -598,40 +591,29 @@
                                        Visibility="{Binding IsClienteEsclusivoNonValido, Converter={StaticResource BoolToVis}}"/>
                         </StackPanel>
 
-                        <!-- Formato macchina e Peso -->
-                        <Grid Margin="0,0,0,10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="Formato macchina *" Style="{StaticResource FieldLabel}"/>
-                                <ComboBox ItemsSource="{Binding FormatiMacchine}"
-                                          SelectedItem="{Binding FormFormatoSelezionato}"
-                                          DisplayMemberPath="NomeFormato">
-                                    <ComboBox.Style>
-                                        <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsFormatoNonValido}" Value="True">
-                                                    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Error}"/>
-                                                    <Setter Property="BorderThickness" Value="1"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </ComboBox.Style>
-                                </ComboBox>
-                                <TextBlock Text="Campo obbligatorio."
-                                           FontSize="{StaticResource FontSize.Caption}"
-                                           Foreground="{DynamicResource Brush.Error}"
-                                           Margin="0,2,0,0"
-                                           Visibility="{Binding IsFormatoNonValido, Converter={StaticResource BoolToVis}}"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="Peso (kg)" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Text="{Binding FormPeso, UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>
-                        </Grid>
+                        <!-- Formato macchina (obbligatorio) -->
+                        <StackPanel Margin="0,0,0,10">
+                            <TextBlock Text="Formato macchina *" Style="{StaticResource FieldLabel}"/>
+                            <ComboBox ItemsSource="{Binding FormatiMacchine}"
+                                      SelectedItem="{Binding FormFormatoSelezionato}"
+                                      DisplayMemberPath="NomeFormato">
+                                <ComboBox.Style>
+                                    <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsFormatoNonValido}" Value="True">
+                                                <Setter Property="BorderBrush" Value="{DynamicResource Brush.Error}"/>
+                                                <Setter Property="BorderThickness" Value="1"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ComboBox.Style>
+                            </ComboBox>
+                            <TextBlock Text="Campo obbligatorio."
+                                       FontSize="{StaticResource FontSize.Caption}"
+                                       Foreground="{DynamicResource Brush.Error}"
+                                       Margin="0,2,0,0"
+                                       Visibility="{Binding IsFormatoNonValido, Converter={StaticResource BoolToVis}}"/>
+                        </StackPanel>
 
                         <!-- Misure (spessore e durezza sono dati del gestionale, vedi TASK-21) -->
                         <TextBlock Text="Misure (mm)" Style="{StaticResource FieldLabel}"/>
@@ -954,8 +936,6 @@
                                         <TextBlock Text="{Binding PiastraSelezionata.Categoria.Descrizione, FallbackValue='—'}"/>
                                     </StackPanel>
                                     <StackPanel Grid.Column="1">
-                                        <TextBlock Text="Peso (kg)" Style="{StaticResource TextBlock.Caption}"/>
-                                        <TextBlock Text="{Binding PiastraSelezionata.Peso, StringFormat='{}{0:F3}', FallbackValue='—', TargetNullValue='—'}" Margin="0,0,0,8"/>
                                         <TextBlock Text="Creato il" Style="{StaticResource TextBlock.Caption}"/>
                                         <TextBlock Margin="0,0,0,8">
                                             <TextBlock.Text>

@@ -27,7 +27,6 @@ public partial class PiastreView : UserControl
         ColStato.Header         = vm.FiltroStato;
         ColLarghezza.Header     = vm.FiltroLarghezza;
         ColAltezza.Header       = vm.FiltroAltezza;
-        ColPeso.Header          = vm.FiltroPeso;
         ColDataCreazione.Header = vm.FiltroDataCreazione;
         ColDataModifica.Header  = vm.FiltroDataModifica;
     }

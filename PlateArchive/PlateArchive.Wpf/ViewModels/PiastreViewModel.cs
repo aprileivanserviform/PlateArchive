@@ -59,7 +59,6 @@ public class PiastreViewModel : ViewModelBase
     private FormatoMacchina?   _formFormatoSelezionato;
     private string             _formLarghezza            = string.Empty;
     private string             _formAltezza              = string.Empty;
-    private string             _formPeso                 = string.Empty;
     private string             _formNote                 = string.Empty;
     private string?            _erroreCodiceDuplicato;
     private string?            _erroreDisegno;
@@ -120,7 +119,7 @@ public class PiastreViewModel : ViewModelBase
         foreach (var f in new[] {
             FiltroCodice, FiltroDescrizione,
             FiltroCategoria, FiltroFormato, FiltroTipo, FiltroStato,
-            FiltroLarghezza, FiltroAltezza, FiltroPeso,
+            FiltroLarghezza, FiltroAltezza,
             FiltroDataCreazione, FiltroDataModifica })
         {
             f.Cambiato += AggiornaFiltro;
@@ -178,7 +177,6 @@ public class PiastreViewModel : ViewModelBase
     public FiltroColonna FiltroStato         { get; } = new("Stato piastra",   FiltroColonnaTipo.Enum);
     public FiltroColonna FiltroLarghezza     { get; } = new("Larghezza",       FiltroColonnaTipo.Numerico);
     public FiltroColonna FiltroAltezza       { get; } = new("Altezza",         FiltroColonnaTipo.Numerico);
-    public FiltroColonna FiltroPeso          { get; } = new("Peso",            FiltroColonnaTipo.Numerico);
     public FiltroColonna FiltroDataCreazione { get; } = new("Data creazione",  FiltroColonnaTipo.Data);
     public FiltroColonna FiltroDataModifica  { get; } = new("Ultima modifica", FiltroColonnaTipo.Data);
 
@@ -564,12 +562,6 @@ public class PiastreViewModel : ViewModelBase
         set => SetField(ref _formAltezza, value);
     }
 
-    public string FormPeso
-    {
-        get => _formPeso;
-        set => SetField(ref _formPeso, value);
-    }
-
     public string FormNote
     {
         get => _formNote;
@@ -744,8 +736,6 @@ public class PiastreViewModel : ViewModelBase
                 ? p.LarghezzaMm.Value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) : null)
             && FiltroAltezza.ApplicaA(p.AltezzaMm.HasValue
                 ? p.AltezzaMm.Value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture) : null)
-            && FiltroPeso.ApplicaA(p.Peso.HasValue
-                ? p.Peso.Value.ToString("F3", System.Globalization.CultureInfo.InvariantCulture) : null)
             && FiltroDataCreazione.ApplicaA(p.DataCreazione.ToString("yyyy-MM-dd"))
             && FiltroDataModifica.ApplicaA(p.DataUltimaModifica.ToString("yyyy-MM-dd"))))
         {
@@ -789,7 +779,6 @@ public class PiastreViewModel : ViewModelBase
         FormFormatoSelezionato   = FormatiMacchine.FirstOrDefault(f => f.IdFormato == PiastraSelezionata.IdFormato);
         FormLarghezza            = PiastraSelezionata.LarghezzaMm?.ToString("F1")  ?? string.Empty;
         FormAltezza              = PiastraSelezionata.AltezzaMm?.ToString("F1")    ?? string.Empty;
-        FormPeso                 = PiastraSelezionata.Peso?.ToString("F3")         ?? string.Empty;
         FormNote                 = PiastraSelezionata.Note                          ?? string.Empty;
         FormClienteEsclusivo     = PiastraSelezionata.IdClienteEsclusivo.HasValue
             ? _tuttiClienti.FirstOrDefault(c => c.IdCliente == PiastraSelezionata.IdClienteEsclusivo)
@@ -813,7 +802,7 @@ public class PiastreViewModel : ViewModelBase
     private void ResetForm()
     {
         FormCodicePiastra = FormDescrizione = FormNote = string.Empty;
-        FormLarghezza = FormAltezza = FormPeso = string.Empty;
+        FormLarghezza = FormAltezza = string.Empty;
         FormStato                = StatoPiastra.Attiva;
         FormCategoriaSelezionata = CategoriePiastre.FirstOrDefault(c => c.Codice == "STD");
         FormFormatoSelezionato   = null;
@@ -866,7 +855,6 @@ public class PiastreViewModel : ViewModelBase
             p.Formato                  = FormFormatoSelezionato;
             p.LarghezzaMm              = ParseDecimal(FormLarghezza);
             p.AltezzaMm                = ParseDecimal(FormAltezza);
-            p.Peso                     = ParseDecimal(FormPeso);
             p.Note                     = N(FormNote);
             await _piastreRepo.UpdateAsync(p);
             piastraSalvata = p;
@@ -887,7 +875,6 @@ public class PiastreViewModel : ViewModelBase
                 Formato                  = FormFormatoSelezionato,
                 LarghezzaMm              = ParseDecimal(FormLarghezza),
                 AltezzaMm                = ParseDecimal(FormAltezza),
-                Peso                     = ParseDecimal(FormPeso),
                 Note                     = N(FormNote)
             };
             await _piastreRepo.AddAsync(nuova);

@@ -43,7 +43,6 @@ public class ImportaDisegnoViewModel : ViewModelBase
     private FormatoMacchina?   _formFormato;
     private string       _formLarghezza           = string.Empty;
     private string       _formAltezza             = string.Empty;
-    private string       _formPeso                = string.Empty;
     private string       _formNote                = string.Empty;
     private Cliente?     _formCliente;
     private string       _filtroCliente           = string.Empty;
@@ -146,7 +145,7 @@ public class ImportaDisegnoViewModel : ViewModelBase
                     FormStato         = StatoPiastra.Attiva;
                     FormCategoria     = CategoriePiastre.FirstOrDefault(c => c.Codice == "STD");
                     FormFormato       = null;
-                    FormLarghezza = FormAltezza = FormPeso = FormNote = string.Empty;
+                    FormLarghezza = FormAltezza = FormNote = string.Empty;
                 }
             }
         }
@@ -210,7 +209,6 @@ public class ImportaDisegnoViewModel : ViewModelBase
 
     public string FormLarghezza { get => _formLarghezza; set => SetField(ref _formLarghezza, value); }
     public string FormAltezza   { get => _formAltezza;   set => SetField(ref _formAltezza,   value); }
-    public string FormPeso      { get => _formPeso;      set => SetField(ref _formPeso,      value); }
     public string FormNote      { get => _formNote;      set => SetField(ref _formNote,      value); }
 
     // ─── Ricerca cliente ──────────────────────────────────────────────────────
@@ -397,7 +395,6 @@ public class ImportaDisegnoViewModel : ViewModelBase
                 Formato                    = FormFormato,
                 LarghezzaMm                = decimal.TryParse(FormLarghezza, out var l) ? l : null,
                 AltezzaMm                  = decimal.TryParse(FormAltezza,   out var a) ? a : null,
-                Peso                       = decimal.TryParse(FormPeso,      out var p) ? p : null,
                 Note                       = string.IsNullOrWhiteSpace(FormNote) ? null : FormNote.Trim(),
             };
             try   { await _piastreRepo.AddAsync(nuova); }

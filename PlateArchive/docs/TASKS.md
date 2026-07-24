@@ -1376,6 +1376,37 @@ piastra associata a un cliente comparirà nella vista Ordini vendita per gli art
 
 ---
 
+## TASK-22 — Via il peso dalla piastra
+
+**Priorità:** Media
+**Stato:** `[x]` — implementato 2026-07-23 (branch feat/articolo-gestionale-cliente)
+
+**Dipende da:** TASK-21
+
+### Contesto
+
+Come spessore e durezza (TASK-21), anche il **peso** è un dato di prodotto del gestionale, non
+un attributo del disegno. Viene quindi rimosso dalla gestione piastre.
+
+### Realizzato
+
+- Rimossa la proprietà `Peso` da `Piastra`; tolto il campo dai tre form (Piastre,
+  NuovaPiastraDialog, ImportaDisegno), la colonna/filtro dalla griglia e i blocchi nei dettagli
+  (PiastreView e PiastraDettaglioWindow). Nel form, "Formato macchina" ora occupa l'intera riga.
+- **Migrazione EF** `20260723061212_RimuoviPesoPiastra` (drop colonna `Peso`); aggiornati
+  `schema_completo.sql` e `RecreateDB_Full.sql`.
+- Script prod manuale: [rimuovi_peso.sql](sql/rimuovi_peso.sql).
+
+### Acceptance criteria
+
+- [x] `dotnet build` senza errori/warning nuovi; nessun riferimento residuo a `Peso`/`FormPeso`
+  fuori dalle migrazioni storiche
+- [x] migrazione EF generata e applicata al DB di sviluppo
+- [ ] **Prod**: eseguire `rimuovi_peso.sql`
+- [ ] verifica a video: form e griglia senza il campo Peso
+
+---
+
 ## Evolutivi futuri (fuori scope MVP)
 
 | Funzione | Riferimento |

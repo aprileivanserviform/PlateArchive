@@ -150,23 +150,12 @@
                                   DisplayMemberPath="NomeFormato"
                                   Margin="0,0,0,10"/>
 
-                        <Grid Margin="0,0,0,10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="8"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="Categoria" Style="{StaticResource FieldLabel}"/>
-                                <ComboBox ItemsSource="{Binding CategoriePiastre}"
-                                          SelectedItem="{Binding FormCategoria}"
-                                          DisplayMemberPath="Descrizione"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="Peso (kg)" Style="{StaticResource FieldLabel}"/>
-                                <TextBox Text="{Binding FormPeso, UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>
-                        </Grid>
+                        <StackPanel Margin="0,0,0,10">
+                            <TextBlock Text="Categoria" Style="{StaticResource FieldLabel}"/>
+                            <ComboBox ItemsSource="{Binding CategoriePiastre}"
+                                      SelectedItem="{Binding FormCategoria}"
+                                      DisplayMemberPath="Descrizione"/>
+                        </StackPanel>
 
                         <!-- Spessore e durezza sono dati del gestionale, vedi TASK-21 -->
                         <TextBlock Text="Misure (mm)" Style="{StaticResource FieldLabel}"/>

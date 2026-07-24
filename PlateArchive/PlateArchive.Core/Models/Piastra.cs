@@ -40,11 +40,10 @@ public class Piastra
     public bool    IsEliminata              { get; set; } = false;
 
     // ─── Misure fisiche ───────────────────────────────────────────────────────
-    // Spessore e durezza NON sono qui per scelta (TASK-21): sono dati di prodotto del
+    // Spessore, durezza e peso NON sono qui per scelta (TASK-21/22): sono dati di prodotto del
     // gestionale — lo stesso disegno serve più spessori/durezze dello stesso formato.
     public decimal? LarghezzaMm { get; set; }
     public decimal? AltezzaMm   { get; set; }
-    public decimal? Peso        { get; set; }
 
     public string?  Note            { get; set; }
     public DateTime DataCreazione   { get; set; }

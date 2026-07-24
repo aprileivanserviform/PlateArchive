@@ -1,7 +1,7 @@
 -- =============================================================================
 -- SCHEMA COMPLETO  PlateArchiveDB  (SQL Server)
 -- Generato: 2026-07-16
--- Stato:    riflette tutte le migrazioni EF Core fino a 20260722143719_RimuoviSpessoreDurezzaPiastra
+-- Stato:    riflette tutte le migrazioni EF Core fino a 20260723061212_RimuoviPesoPiastra
 --
 -- IDEMPOTENTE: ogni istruzione è protetta da IF NOT EXISTS / IF EXISTS.
 -- Sicuro da rieseguire su un DB già parzialmente configurato.
@@ -162,7 +162,6 @@ BEGIN
         [IsEliminata]              bit            NOT NULL DEFAULT 0,
         [LarghezzaMm]              decimal(18,2)  NULL,
         [AltezzaMm]                decimal(18,2)  NULL,
-        [Peso]                     decimal(18,2)  NULL,
         [Note]                     nvarchar(max)  NULL,
         [DataCreazione]            datetime2      NOT NULL DEFAULT SYSUTCDATETIME(),
         [DataUltimaModifica]       datetime2      NOT NULL DEFAULT SYSUTCDATETIME(),
@@ -415,6 +414,9 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[__EFMigrationsHistory] WHERE [MigrationId] =
 
 IF NOT EXISTS (SELECT 1 FROM [dbo].[__EFMigrationsHistory] WHERE [MigrationId] = N'20260722143719_RimuoviSpessoreDurezzaPiastra')
     INSERT INTO [dbo].[__EFMigrationsHistory] VALUES (N'20260722143719_RimuoviSpessoreDurezzaPiastra', N'9.0.0');
+
+IF NOT EXISTS (SELECT 1 FROM [dbo].[__EFMigrationsHistory] WHERE [MigrationId] = N'20260723061212_RimuoviPesoPiastra')
+    INSERT INTO [dbo].[__EFMigrationsHistory] VALUES (N'20260723061212_RimuoviPesoPiastra', N'9.0.0');
 
 GO
 PRINT 'Schema PlateArchiveDB aggiornato.';
