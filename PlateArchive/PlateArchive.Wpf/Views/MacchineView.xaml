@@ -297,6 +297,13 @@
                                             </DataTemplate>
                                         </ComboBox.ItemTemplate>
                                     </ComboBox>
+                                    <TextBlock Text="Fonte (facoltativa):"
+                                               FontSize="{StaticResource FontSize.Caption}"
+                                               Foreground="{DynamicResource Brush.Primary}"
+                                               Margin="0,0,0,6"/>
+                                    <ComboBox ItemsSource="{Binding FontiDato}"
+                                              SelectedItem="{Binding FonteDatoSelezionata}"
+                                              Margin="0,0,0,8"/>
                                     <StackPanel Orientation="Horizontal">
                                         <Button Content="Conferma"
                                                 Command="{Binding ConfermaAggiungiPiastraCommand}"
@@ -338,6 +345,9 @@
                                                            Width="Auto"/>
                                         <DataGridTextColumn Header="Descrizione"
                                                            Binding="{Binding Piastra.Descrizione}"
+                                                           Width="Auto"/>
+                                        <DataGridTextColumn Header="Fonte"
+                                                           Binding="{Binding FonteDato, TargetNullValue='—'}"
                                                            Width="Auto"/>
                                     </DataGrid.Columns>
                                 </DataGrid>

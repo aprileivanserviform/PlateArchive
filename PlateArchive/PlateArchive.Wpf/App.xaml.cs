@@ -38,12 +38,13 @@ public partial class App : Application
 
         var services = new ServiceCollection();
 
-        // ─── Database (SQL Server) ────────────────────────────────────────────
+        // ─── Database (SQLite) ─────────────────────────────────────────────────
         // La stringa di connessione deve essere presente in appsettings.json.
+        // Il file .db vive sulla cartella di rete condivisa (stesso host dei disegni).
         var connStr = config.GetConnectionString("PlateArchiveDB")
             ?? throw new InvalidOperationException("Stringa di connessione 'PlateArchiveDB' non trovata in appsettings.json");
         services.AddDbContext<PlateArchiveDbContext>(opt =>
-            opt.UseSqlServer(connStr));
+            opt.UseSqlite(connStr));
 
         // ─── Repository (Scoped) ──────────────────────────────────────────────
         // Scoped = una istanza per scope DI (una per schermata — NavigationService crea un nuovo scope ad ogni navigazione).
@@ -113,6 +114,25 @@ public partial class App : Application
 
         var provider = services.BuildServiceProvider();
         ServiceProvider = provider;
+
+        // Applica automaticamente le migrazioni pendenti allo schema SQLite.
+        // Sostituisce il vecchio workflow di script SQL manuali: con SQLite l'aggiornamento
+        // schema è un'operazione locale e leggera, non serve più un intervento manuale separato.
+        try
+        {
+            using var migrationScope = provider.CreateScope();
+            migrationScope.ServiceProvider.GetRequiredService<PlateArchiveDbContext>().Database.Migrate();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Impossibile aggiornare/raggiungere il database:\n{ex.Message}\n\nVerificare la connessione alla cartella di rete condivisa.",
+                "Errore database",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+            Shutdown();
+            return;
+        }
 
         // Naviga alla Dashboard come schermata iniziale.
         var navigation = provider.GetRequiredService<NavigationService>();

@@ -1,6 +1,6 @@
 # PlateArchive — CLAUDE.md
 
-Applicazione desktop WPF (.NET) per la gestione dell'archivio tecnico-commerciale **Cliente – Macchina – Piastra – Disegno**. Collegata a un database relazionale SQL Server.
+Applicazione desktop WPF (.NET) per la gestione dell'archivio tecnico-commerciale **Cliente – Macchina – Piastra – Disegno**. Collegata a un database SQLite (file condiviso sulla stessa cartella di rete usata per i disegni).
 
 ## Struttura soluzione
 
